@@ -1,0 +1,31 @@
+{
+  "name": "@am/playground",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local experimentation + performance benchmarks for @am/react-gantt",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "bench": "vitest bench"
+  },
+  "dependencies": {
+    "@am/react-gantt": "workspace:*",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@am/config-typescript": "workspace:*",
+    "@am/oxlint-config": "workspace:*",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
+  }
+}

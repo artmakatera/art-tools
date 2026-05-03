@@ -1,0 +1,43 @@
+.task {
+  position: absolute;
+  box-sizing: border-box;
+  background-color: var(--am-gantt-task-bg);
+  border-radius: 4px;
+  cursor: move;
+}
+
+.taskInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+
+
+.taskContent {
+  vertical-align: middle;
+  text-align: center;
+  font-size: 14px;
+  color: var(--am-gantt-task-color);
+  position: relative;
+  z-index: 1;
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  cursor: ew-resize;
+  background-color: black;
+  z-index: 10;
+  padding: 0;
+  border: none;
+}
+
+.startResizer {
+  left: 0;
+}
+.endResizer {
+  right: 0;
+}

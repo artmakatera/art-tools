@@ -1,0 +1,9 @@
+{
+  "extends": "@am/config-typescript/react-app.json",
+  "compilerOptions": {
+    "paths": {
+      "@am/react-gantt": ["../../packages/react-gantt/src/index.ts"]
+    }
+  },
+  "include": ["src", "bench"]
+}

@@ -21,16 +21,62 @@ importers:
         specifier: ^2.9.8
         version: 2.9.8
       typescript:
-        specifier: 5.9.2
-        version: 5.9.2
+        specifier: ^6.0.3
+        version: 6.0.3
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(jsdom@29.1.1)(vite@8.0.10)
 
+  apps/playground:
+    dependencies:
+      '@am/react-gantt':
+        specifier: workspace:*
+        version: link:../../packages/react-gantt
+      react:
+        specifier: ^19.2.5
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.2.5
+        version: 19.2.5(react@19.2.5)
+    devDependencies:
+      '@am/config-typescript':
+        specifier: workspace:*
+        version: link:../../packages/config-typescript
+      '@am/oxlint-config':
+        specifier: workspace:*
+        version: link:../../packages/oxlint-config
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.1
+        version: 6.0.1(vite@8.0.10)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vite:
+        specifier: ^8.0.10
+        version: 8.0.10
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.5(jsdom@29.1.1)(vite@8.0.10)
+
+  packages/config-typescript: {}
+
   packages/oxlint-config: {}
 
   packages/react-gantt:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
     devDependencies:
+      '@am/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
       '@am/oxlint-config':
         specifier: workspace:*
         version: link:../oxlint-config
@@ -62,14 +108,14 @@ importers:
         specifier: ^19.2.5
         version: 19.2.5(react@19.2.5)
       typescript:
-        specifier: 5.9.2
-        version: 5.9.2
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^8.0.10
         version: 8.0.10
       vite-plugin-dts:
         specifier: ^5.0.0
-        version: 5.0.0(typescript@5.9.2)(vite@8.0.10)
+        version: 5.0.0(typescript@6.0.3)(vite@8.0.10)
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(jsdom@29.1.1)(vite@8.0.10)
@@ -682,6 +728,10 @@ packages:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
     engines: {node: '>=18'}
 
+  clsx@2.1.1:
+    resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
+    engines: {node: '>=6'}
+
   compare-versions@6.1.1:
     resolution: {integrity: sha512-4hm4VPpIecmlg59CHXnRDnqGplJFrbLG4aFEl5vl6cK1u76ws3LLvX7ikFnTDl5vo39sjWD6AaDPYodJp/NNHg==}
 
@@ -1045,8 +1095,8 @@ packages:
     resolution: {integrity: sha512-REEB2rVTVDTf4hav1gJ5dIsGylWZrNonvjXFtk1dCi8gND3PhZtnYkyry1bra/Fo+iP6ctTEZbg6vWfdfHq/1A==}
     hasBin: true
 
-  typescript@5.9.2:
-    resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -1656,6 +1706,8 @@ snapshots:
 
   chai@6.2.2: {}
 
+  clsx@2.1.1: {}
+
   compare-versions@6.1.1: {}
 
   confbox@0.1.8: {}
@@ -2017,13 +2069,13 @@ snapshots:
       '@turbo/windows-64': 2.9.8
       '@turbo/windows-arm64': 2.9.8
 
-  typescript@5.9.2: {}
+  typescript@6.0.3: {}
 
   ufo@1.6.4: {}
 
   undici@7.25.0: {}
 
-  unplugin-dts@1.0.0(typescript@5.9.2)(vite@8.0.10):
+  unplugin-dts@1.0.0(typescript@6.0.3)(vite@8.0.10):
     dependencies:
       '@rollup/pluginutils': 5.3.0
       '@volar/typescript': 2.4.28
@@ -2032,7 +2084,7 @@ snapshots:
       kolorist: 1.8.0
       local-pkg: 1.1.2
       magic-string: 0.30.21
-      typescript: 5.9.2
+      typescript: 6.0.3
       unplugin: 2.3.11
     optionalDependencies:
       vite: 8.0.10
@@ -2046,9 +2098,9 @@ snapshots:
       picomatch: 4.0.4
       webpack-virtual-modules: 0.6.2
 
-  vite-plugin-dts@5.0.0(typescript@5.9.2)(vite@8.0.10):
+  vite-plugin-dts@5.0.0(typescript@6.0.3)(vite@8.0.10):
     dependencies:
-      unplugin-dts: 1.0.0(typescript@5.9.2)(vite@8.0.10)
+      unplugin-dts: 1.0.0(typescript@6.0.3)(vite@8.0.10)
     optionalDependencies:
       vite: 8.0.10
     transitivePeerDependencies:
