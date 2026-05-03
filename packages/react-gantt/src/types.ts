@@ -1,4 +1,4 @@
-export interface Task {
+export interface GanttTask {
   id: string;
   name: string;
   start: Date;
@@ -8,7 +8,7 @@ export interface Task {
 }
 
 export interface GanttProps {
-  tasks: readonly Task[];
+  tasks: readonly GanttTask[];
   rowHeight?: number;
-  onTaskClick?: (task: Task) => void;
+  onTaskClick?: (task: GanttTask) => void;
 }

@@ -13,14 +13,15 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
-    "./style.css": "./dist/style.css",
-    "./package.json": "./package.json"
+    "./style.css": {
+      "types": "./src/style.css.d.ts",
+      "style": "./dist/style.css",
+      "default": "./dist/style.css"
+    }
   },
   "files": [
-    "dist"
-  ],
-  "sideEffects": [
-    "**/*.css"
+    "dist",
+    "src/style.css.d.ts"
   ],
   "scripts": {
     "build": "vite build",

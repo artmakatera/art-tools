@@ -1,7 +1,7 @@
 {
   "extends": "@am/config-typescript/react-library.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
   },
   "include": ["src", "test"],
   "exclude": ["dist", "node_modules"]

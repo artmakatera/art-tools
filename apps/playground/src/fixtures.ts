@@ -1,9 +1,9 @@
-import type { Task } from '@am/react-gantt';
+import type { GanttTask } from '@am/react-gantt';
 
 const DAY_MS = 1000 * 60 * 60 * 24;
 const PROJECT_START = new Date('2026-01-01').getTime();
 
-export function generateTasks(count: number): Task[] {
+export function generateTasks(count: number): GanttTask[] {
   return Array.from({ length: count }, (_, i) => {
     const start = new Date(PROJECT_START + i * DAY_MS * 2);
     const end = new Date(start.getTime() + DAY_MS * 5);
