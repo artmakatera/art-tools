@@ -26,6 +26,7 @@
     "format": {
       "cache": false
     },
-    "format:check": {}
+    "format:check": {},
+    "test": {}
   }
 }
