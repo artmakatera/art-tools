@@ -13,7 +13,9 @@ interface TaskProps {
   progress: number;
   onProgressChange: (newProgress: number) => void;
   onResize: (newWidth: number, newLeft: number) => void;
+  onResizeEnd: (newWidth: number, newLeft: number) => void;
   onMove: (newLeft: number) => void;
+  onMoveEnd: (newLeft: number) => void;
 }
 
 export function Task({
@@ -26,14 +28,16 @@ export function Task({
   progress = 30,
   onProgressChange,
   onResize,
+  onResizeEnd,
   onMove,
+  onMoveEnd,
 }: TaskProps) {
   const onMouseDown = useDrag({
     onStart: () => ({ startLeft: left }),
     onDrag: (deltaX, { startLeft }) => onMove(startLeft + deltaX),
     onEnd: (deltaX, { startLeft }) => {
       const snapped = Math.round((startLeft + deltaX) / colWidth) * colWidth;
-      onMove(snapped);
+      onMoveEnd(snapped);
     },
   });
 
@@ -57,6 +61,7 @@ export function Task({
           left={left}
           colWidth={colWidth}
           onResize={onResize}
+          onResizeEnd={onResizeEnd}
         />
       </div>
     </div>

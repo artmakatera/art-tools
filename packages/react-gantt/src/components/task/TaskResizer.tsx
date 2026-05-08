@@ -7,6 +7,7 @@ interface TaskResizerProps {
   left: number;
   colWidth: number;
   onResize: (newWidth: number, newLeft: number) => void;
+  onResizeEnd: (newWidth: number, newLeft: number) => void;
 }
 
 export function TaskResizer({
@@ -14,6 +15,7 @@ export function TaskResizer({
   left,
   colWidth,
   onResize,
+  onResizeEnd,
 }: TaskResizerProps) {
   const onStartHandleMouseDown = useDrag({
     onStart: () => ({ startWidth: width, startLeft: left }),
@@ -32,7 +34,7 @@ export function TaskResizer({
         colWidth,
         Math.round(rawWidth / colWidth) * colWidth,
       );
-      onResize(snappedWidth, snappedLeft);
+      onResizeEnd(snappedWidth, snappedLeft);
     },
   });
 
@@ -48,7 +50,7 @@ export function TaskResizer({
         colWidth,
         Math.round(rawWidth / colWidth) * colWidth,
       );
-      onResize(snappedWidth, startLeft);
+      onResizeEnd(snappedWidth, startLeft);
     },
   });
 
