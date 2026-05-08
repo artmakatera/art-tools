@@ -1,0 +1,49 @@
+.calendar {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  border-radius: var(--am-gantt-calendar-radius, 6px);
+  overflow: hidden;
+  background: var(--am-gantt-calendar-bg, #ffffff);
+  font-family: inherit;
+  user-select: none;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:first-child .cell {
+  background: var(--am-gantt-calendar-header-bg, #f8fafc);
+  font-weight: 600;
+  color: var(--am-gantt-calendar-header-color, #0f172a);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  font-size: 13px;
+  color: var(--am-gantt-calendar-color, #334155);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cell:last-child {
+  border-right: none;
+}
+
+.cellWeekend {
+  background: var(--am-gantt-calendar-weekend-bg, #f1f5f9);
+  color: var(--am-gantt-calendar-weekend-color, #64748b);
+}

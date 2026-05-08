@@ -1,0 +1,29 @@
+.grid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+}
+
+.body {
+  position: relative;
+  background: var(--am-gantt-grid-bg, #ffffff);
+  border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  border-top: none;
+  border-bottom-left-radius: var(--am-gantt-calendar-radius, 6px);
+  border-bottom-right-radius: var(--am-gantt-calendar-radius, 6px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  box-sizing: border-box;
+}
+
+.row:last-child {
+  border-bottom: none;
+}

@@ -16,5 +16,14 @@
   --am-gantt-task-bg-progress: rgba(0, 0, 0, 0.12);
   --am-gantt-task-color: #fff;
   --am-gantt-task-border-radius: 4px;
-  
+
+ 
+  --am-gantt-calendar-bg: #ffffff;
+  --am-gantt-calendar-border: #e2e8f0;
+  --am-gantt-calendar-radius: 6px;
+  --am-gantt-calendar-color: #334155;
+  --am-gantt-calendar-header-bg: #f8fafc;
+  --am-gantt-calendar-header-color: #0f172a;
+  --am-gantt-calendar-weekend-bg: #f1f5f9;
+  --am-gantt-calendar-weekend-color: #64748b;
 }

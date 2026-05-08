@@ -1,32 +1,15 @@
-import { Task } from "@am/react-gantt"
-import { useState } from "react"
+import { Grid} from "@am/react-gantt"
 import "@am/react-gantt/style.css";
+import { mockTasks } from "./mock";
+
+
 
 export function App() {
-  const [progress, setProgress] = useState(0)
-  const [width, setWidth] = useState(350)
-  const [left, setLeft] = useState(200)
 
   return (
     <div style ={{ margin: "0 auto", width: "1000px" }}>
-      <div>
-        Progress: {Math.ceil(progress)}%
-      </div>
-
-      <Task
-        width={width}
-        height={30}
-        left={left}
-        top={146}
-        title="Sample Task"
-        onProgressChange={(newProgress) => setProgress(newProgress)}
-        progress={progress}
-        onResize={(newWidth, newLeft) => {
-          setWidth(newWidth)
-          setLeft(newLeft)
-        }}
-        onMove={(newLeft) => setLeft(newLeft)}
-      />
+    
+     <Grid tasks={mockTasks} colWidth={100} rowHeight={40} />
     </div>
   )
 }

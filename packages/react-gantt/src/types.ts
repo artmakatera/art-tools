@@ -1,10 +1,25 @@
+type GanttTaskType = "task" | "milestone" | "projects"
+
+export type CalendarUnit = "day" | "week" | "month" | "quarter" | "year";
+
+
+export type Scale = {
+  unit: CalendarUnit;
+  step: number;
+  format: (date: Date) => string;
+};
+
+
 export interface GanttTask {
-  id: string;
+  id: string | number;
   name: string;
-  start: Date;
-  end: Date;
+
+  startDate: Date;
+  endDate?: Date;
+  duration?: number;
   progress?: number;
-  dependencies?: readonly string[];
+ dependency?: string;
+  type?: GanttTaskType;
 }
 
 export interface GanttProps {
