@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { buildDatesFromTasks, diffDays } from "../../core/dateUtils";
+import { buildDatesFromTasks, diffDays, isWeekend } from "../../core/dateUtils";
 import type { GanttTask, Scale } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Task } from "../task/Task";
@@ -76,6 +76,19 @@ export function Grid({
         className={styles.body}
         style={{ height: bodyHeight, width: totalWidth }}
       >
+        <div className={styles.cols} aria-hidden>
+          {dates.map((date) => (
+            <div
+              key={date.toISOString()}
+              className={
+                isWeekend(date)
+                  ? `${styles.col} ${styles.colWeekend}`
+                  : styles.col
+              }
+              style={{ width: colWidth, height: bodyHeight }}
+            />
+          ))}
+        </div>
         {tasks.map((task, index) => {
           const base = computeTaskState(task, origin, colWidth);
           const override = overrides[task.id] ?? {};
@@ -94,6 +107,7 @@ export function Grid({
                 top={TASK_VERTICAL_PADDING}
                 width={width}
                 height={rowHeight - TASK_VERTICAL_PADDING * 2}
+                colWidth={colWidth}
                 title={task.name}
                 progress={progress}
                 onProgressChange={(p) => updateTask(task.id, { progress: p })}

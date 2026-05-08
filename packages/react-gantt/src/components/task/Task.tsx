@@ -8,6 +8,7 @@ interface TaskProps {
   height: number;
   left: number;
   top: number;
+  colWidth: number;
   title: string;
   progress: number;
   onProgressChange: (newProgress: number) => void;
@@ -20,6 +21,7 @@ export function Task({
   height,
   left,
   top,
+  colWidth,
   title,
   progress = 30,
   onProgressChange,
@@ -29,6 +31,10 @@ export function Task({
   const onMouseDown = useDrag({
     onStart: () => ({ startLeft: left }),
     onDrag: (deltaX, { startLeft }) => onMove(startLeft + deltaX),
+    onEnd: (deltaX, { startLeft }) => {
+      const snapped = Math.round((startLeft + deltaX) / colWidth) * colWidth;
+      onMove(snapped);
+    },
   });
 
   return (
@@ -46,7 +52,12 @@ export function Task({
           onProgressChange={onProgressChange}
         />
         <div className={styles.taskContent}>{title}</div>
-        <TaskResizer width={width} left={left} onResize={onResize} />
+        <TaskResizer
+          width={width}
+          left={left}
+          colWidth={colWidth}
+          onResize={onResize}
+        />
       </div>
     </div>
   );
