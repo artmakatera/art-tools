@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import {
   addDays,
   buildDatesFromTasks,
-  diffDays,
   isWeekend,
 } from "../../core/dateUtils";
-import type { GanttTask, Scale } from "../../types";
+import type { GanttTask, Id, Scale, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Task } from "../task/Task";
 import styles from "./Grid.module.css";
+import { computeTaskState } from "../../core/barUtils";
+import { DEFAULT_COL_WIDTH, DEFAULT_PAD_DAYS, DEFAULT_ROW_HEIGHT, TASK_VERTICAL_PADDING } from "../../core/constants";
 
 type GridProps = {
   tasks: readonly GanttTask[];
@@ -18,37 +19,12 @@ type GridProps = {
   padDays?: number;
 };
 
-const DEFAULT_COL_WIDTH = 40;
-const DEFAULT_ROW_HEIGHT = 36;
-const DEFAULT_PAD_DAYS = 1;
-const TASK_VERTICAL_PADDING = 6;
-
-interface TaskState {
-  left: number;
-  width: number;
-  progress: number;
-}
-
 interface GridState {
   padLeft: number;
   padRight: number;
-  overrides: Record<string | number, Partial<TaskState>>;
+  overrides: Record<Id, Partial<TaskState>>;
 }
 
-function computeTaskState(
-  task: GanttTask,
-  origin: Date,
-  colWidth: number,
-): TaskState {
-  const startOffset = diffDays(origin, task.startDate);
-  const endDate = task.endDate ?? task.startDate;
-  const span = Math.max(1, diffDays(task.startDate, endDate) + 1);
-  return {
-    left: startOffset * colWidth,
-    width: span * colWidth,
-    progress: task.progress ?? 0,
-  };
-}
 
 export function Grid({
   tasks,
@@ -90,7 +66,7 @@ export function Grid({
   const bodyHeight = tasks.length * rowHeight;
   const offsetLeft = padLeft * colWidth;
 
-  const updateTask = (id: string | number, patch: Partial<TaskState>) => {
+  const updateTask = (id: Id, patch: Partial<TaskState>) => {
     setState((prev) => ({
       ...prev,
       overrides: {
@@ -101,7 +77,7 @@ export function Grid({
   };
 
   const commitTask = (
-    id: string | number,
+    id: Id,
     patch: Partial<TaskState>,
     isResize = false,
   ) => {

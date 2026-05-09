@@ -9,9 +9,11 @@ export type Scale = {
   format: (date: Date) => string;
 };
 
+export type Id = string | number;
+
 
 export interface GanttTask {
-  id: string | number;
+  id: Id;
   name: string;
 
   startDate: Date;
@@ -20,10 +22,19 @@ export interface GanttTask {
   progress?: number;
  dependency?: string;
   type?: GanttTaskType;
+  parentId?: Id | null;
 }
 
 export interface GanttProps {
   tasks: readonly GanttTask[];
   rowHeight?: number;
   onTaskClick?: (task: GanttTask) => void;
+}
+
+
+
+export interface TaskState {
+  left: number;
+  width: number;
+  progress: number;
 }
