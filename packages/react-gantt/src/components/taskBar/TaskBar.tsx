@@ -1,6 +1,6 @@
 import { useDrag } from "../../hooks/useDrag";
 import { TaskProgress } from "./progress/TaskProgress";
-import styles from "./Task.module.css";
+import styles from "./TaskBar.module.css";
 import { TaskResizer } from "./TaskResizer";
 
 interface TaskProps {
@@ -18,7 +18,7 @@ interface TaskProps {
   onMoveEnd: (newLeft: number) => void;
 }
 
-export function Task({
+export function TaskBar({
   width,
   height,
   left,

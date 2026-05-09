@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import taskStyles from '../src/components/task/Task.module.css';
-import progressStyles from '../src/components/task/progress/TaskProgress.module.css';
+import taskStyles from '../src/components/taskBar/TaskBar.module.css';
+import progressStyles from '../src/components/taskBar/progress/TaskProgress.module.css';
 
 describe('CSS Modules pipeline', () => {
   it('returns a class-name map for Task.module.css', () => {

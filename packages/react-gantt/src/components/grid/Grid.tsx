@@ -6,7 +6,7 @@ import {
 } from "../../core/dateUtils";
 import type { GanttTask, Id, Scale, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
-import { Task } from "../task/Task";
+import { TaskBar } from "../taskBar/TaskBar";
 import styles from "./Grid.module.css";
 import { computeTaskState } from "../../core/barUtils";
 import { DEFAULT_COL_WIDTH, DEFAULT_PAD_DAYS, DEFAULT_ROW_HEIGHT, TASK_VERTICAL_PADDING } from "../../core/constants";
@@ -161,7 +161,7 @@ export function Grid({
               className={styles.row}
               style={{ top, height: rowHeight }}
             >
-              <Task
+              <TaskBar
                 left={visualLeft}
                 top={TASK_VERTICAL_PADDING}
                 width={width}

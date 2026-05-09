@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useDrag } from "../../hooks/useDrag";
-import styles from "./Task.module.css";
+import styles from "./TaskBar.module.css";
 
 interface TaskResizerProps {
   width: number;
