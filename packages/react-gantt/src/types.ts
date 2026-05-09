@@ -1,4 +1,4 @@
-type GanttTaskType = "task" | "milestone" | "projects"
+type GanttTaskType = "task" | "milestone" | "project"
 
 export type CalendarUnit = "day" | "week" | "month" | "quarter" | "year";
 

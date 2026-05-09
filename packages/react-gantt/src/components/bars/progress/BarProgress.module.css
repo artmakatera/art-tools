@@ -1,13 +1,13 @@
-.taskProgress {
+.barProgress {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
-  background-color: var(--am-gantt-task-bg-progress);
+  background-color: var(--am-gantt-bar-progress-bg, var(--am-gantt-task-bg-progress));
   border-radius: 4px 0 0 4px;
 }
 
-.taskProgressResizeHandle {
+.barProgressResizeHandle {
   position: absolute;
   top: 0;
   right: 0;
@@ -18,7 +18,7 @@
   z-index: 10;
 }
 
-.taskProgressResizeHandle:after {
+.barProgressResizeHandle:after {
   content: "";
   position: absolute;
   top: 100%;

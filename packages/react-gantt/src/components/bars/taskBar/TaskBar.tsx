@@ -1,9 +1,9 @@
-import { useDrag } from "../../hooks/useDrag";
-import { TaskProgress } from "./progress/TaskProgress";
+import { Bar } from "../Bar";
+import { BarProgress } from "../progress/BarProgress";
 import styles from "./TaskBar.module.css";
 import { TaskResizer } from "./TaskResizer";
 
-interface TaskProps {
+interface TaskBarProps {
   width: number;
   height: number;
   left: number;
@@ -31,25 +31,22 @@ export function TaskBar({
   onResizeEnd,
   onMove,
   onMoveEnd,
-}: TaskProps) {
-  const onMouseDown = useDrag({
-    onStart: () => ({ startLeft: left }),
-    onDrag: (deltaX, { startLeft }) => onMove(startLeft + deltaX),
-    onEnd: (deltaX, { startLeft }) => {
-      const snapped = Math.round((startLeft + deltaX) / colWidth) * colWidth;
-      onMoveEnd(snapped);
-    },
-  });
-
+}: TaskBarProps) {
   return (
-    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div
+    <Bar
+      left={left}
+      top={top}
+      width={width}
+      height={height}
+      colWidth={colWidth}
+      dragAnchor={left}
       className={styles.task}
-      style={{ width, height, left, top, lineHeight: `${height}px` }}
-      onMouseDown={onMouseDown}
+      style={{ lineHeight: `${height}px` }}
+      onMove={onMove}
+      onMoveEnd={onMoveEnd}
     >
       <div className={styles.taskInner}>
-        <TaskProgress
+        <BarProgress
           width={width}
           height={height}
           progress={progress}
@@ -64,6 +61,6 @@ export function TaskBar({
           onResizeEnd={onResizeEnd}
         />
       </div>
-    </div>
+    </Bar>
   );
 }

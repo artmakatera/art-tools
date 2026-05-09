@@ -1,17 +1,17 @@
 import { useDrag } from "../../../hooks/useDrag";
-import styles from "./TaskProgress.module.css";
+import styles from "./BarProgress.module.css";
 
-type TaskProgressResizeHandleProps = {
+type BarProgressResizeHandleProps = {
   width: number;
   onResize: (newWidth: number) => void;
   parentWidth: number;
 };
 
-export function TaskProgressResizeHandle({
+export function BarProgressResizeHandle({
   width,
   onResize,
   parentWidth,
-}: TaskProgressResizeHandleProps) {
+}: BarProgressResizeHandleProps) {
   const onMouseDown = useDrag({
     onStart: () => ({ startWidth: width }),
     onDrag: (deltaX, { startWidth }) => {
@@ -23,7 +23,7 @@ export function TaskProgressResizeHandle({
 
   return (
     <progress
-      className={styles.taskProgressResizeHandle}
+      className={styles.barProgressResizeHandle}
       onMouseDown={onMouseDown}
     />
   );

@@ -1,15 +1,18 @@
 import { useMemo, useState } from "react";
-import {
-  addDays,
-  buildDatesFromTasks,
-  isWeekend,
-} from "../../core/dateUtils";
+import { addDays, buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
 import type { GanttTask, Id, Scale, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
-import { TaskBar } from "../taskBar/TaskBar";
+import { TaskBar } from "../bars/taskBar/TaskBar";
+import { ProjectBar } from "../bars/projectBar/ProjectBar";
+import { MilestoneBar } from "../bars/milestoneBar/MilestoneBar";
 import styles from "./Grid.module.css";
-import { computeTaskState } from "../../core/barUtils";
-import { DEFAULT_COL_WIDTH, DEFAULT_PAD_DAYS, DEFAULT_ROW_HEIGHT, TASK_VERTICAL_PADDING } from "../../core/constants";
+import { commitTaskState, computeTaskState } from "../../core/barUtils";
+import {
+  DEFAULT_COL_WIDTH,
+  DEFAULT_PAD_DAYS,
+  DEFAULT_ROW_HEIGHT,
+  TASK_VERTICAL_PADDING,
+} from "../../core/constants";
 
 type GridProps = {
   tasks: readonly GanttTask[];
@@ -24,7 +27,6 @@ interface GridState {
   padRight: number;
   overrides: Record<Id, Partial<TaskState>>;
 }
-
 
 export function Grid({
   tasks,
@@ -55,6 +57,7 @@ export function Grid({
     const rightPad = Array.from({ length: padRight }, (_, i) =>
       addDays(last, i + 1),
     );
+
     return [...leftPad, ...baseDates, ...rightPad];
   }, [baseDates, padLeft, padRight]);
 
@@ -76,48 +79,27 @@ export function Grid({
     }));
   };
 
-  const commitTask = (
-    id: Id,
-    patch: Partial<TaskState>,
-    isResize = false,
-  ) => {
+  const commitTask = (id: Id, patch: Partial<TaskState>, isResize = false) => {
     setState((prev) => {
       const task = tasks.find((t) => t.id === id);
       if (!task) return prev;
-      const base = computeTaskState(task, origin, colWidth);
-      const prevOverride = prev.overrides[id] ?? {};
-      let left = patch.left ?? prevOverride.left ?? base.left;
-      let width = patch.width ?? prevOverride.width ?? base.width;
-      let pl = prev.padLeft;
-      let pr = prev.padRight;
 
-      const minLeft = -pl * colWidth;
-      if (left < minLeft) {
-        pl = pl + 1;
-        const newMin = -pl * colWidth;
-        if (isResize) {
-          width = left + width - newMin;
-        }
-        left = newMin;
-      }
-      const maxRight = (dataCols + pr) * colWidth;
-      if (left + width > maxRight) {
-        pr = pr + 1;
-        const newMax = (dataCols + pr) * colWidth;
-        if (isResize) {
-          width = newMax - left;
-        } else {
-          left = newMax - width;
-        }
-      }
+      const next = commitTaskState({
+        task,
+        origin,
+        colWidth,
+        dataCols,
+        prevOverride: prev.overrides[id] ?? {},
+        prevPadLeft: prev.padLeft,
+        prevPadRight: prev.padRight,
+        patch,
+        isResize,
+      });
 
       return {
-        padLeft: pl,
-        padRight: pr,
-        overrides: {
-          ...prev.overrides,
-          [id]: { ...prevOverride, ...patch, left, width },
-        },
+        padLeft: next.padLeft,
+        padRight: next.padRight,
+        overrides: { ...prev.overrides, [id]: next.override },
       };
     });
   };
@@ -155,17 +137,51 @@ export function Grid({
           const progress = override.progress ?? base.progress;
           const top = index * rowHeight;
           const visualLeft = offsetLeft + left;
-          return (
-            <div
-              key={task.id}
-              className={styles.row}
-              style={{ top, height: rowHeight }}
-            >
+          const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
+
+          let bar;
+          if (task.type === "milestone") {
+            bar = (
+              <MilestoneBar
+                size={barHeight}
+                centerLeft={visualLeft}
+                top={TASK_VERTICAL_PADDING}
+                colWidth={colWidth}
+                title={task.name}
+                onMove={(newCenter) =>
+                  updateTask(task.id, { left: newCenter - offsetLeft })
+                }
+                onMoveEnd={(newCenter) =>
+                  commitTask(task.id, { left: newCenter - offsetLeft })
+                }
+              />
+            );
+          } else if (task.type === "project") {
+            bar = (
+              <ProjectBar
+                left={visualLeft}
+                top={TASK_VERTICAL_PADDING}
+                width={width}
+                height={barHeight}
+                colWidth={colWidth}
+                title={task.name}
+                progress={progress}
+                onProgressChange={(p) => updateTask(task.id, { progress: p })}
+                onMove={(newVisualLeft) =>
+                  updateTask(task.id, { left: newVisualLeft - offsetLeft })
+                }
+                onMoveEnd={(newVisualLeft) =>
+                  commitTask(task.id, { left: newVisualLeft - offsetLeft })
+                }
+              />
+            );
+          } else {
+            bar = (
               <TaskBar
                 left={visualLeft}
                 top={TASK_VERTICAL_PADDING}
                 width={width}
-                height={rowHeight - TASK_VERTICAL_PADDING * 2}
+                height={barHeight}
                 colWidth={colWidth}
                 title={task.name}
                 progress={progress}
@@ -190,6 +206,16 @@ export function Grid({
                   )
                 }
               />
+            );
+          }
+
+          return (
+            <div
+              key={task.id}
+              className={styles.row}
+              style={{ top, height: rowHeight }}
+            >
+              {bar}
             </div>
           );
         })}

@@ -4,6 +4,7 @@
   background-color: var(--am-gantt-task-bg);
   border-radius: 4px;
   cursor: move;
+  --am-gantt-bar-progress-bg: var(--am-gantt-task-bg-progress);
 }
 
 .taskInner {

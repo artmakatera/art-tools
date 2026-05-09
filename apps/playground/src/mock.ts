@@ -3,6 +3,14 @@ import type { GanttTask } from "@am/react-gantt";
 
 export const mockTasks: GanttTask[] = [
   {
+    id: "0",
+    name: "Project 1",
+    startDate: new Date("2026-01-01"),
+    endDate: new Date("2026-01-10"),
+    progress: 40,
+    type: "project",
+  },
+  {
     id: "1",
     name: "Task 1",
     startDate: new Date("2026-01-01"),
@@ -23,4 +31,11 @@ export const mockTasks: GanttTask[] = [
     endDate: new Date("2026-01-10"),
     progress: 80,
   },
+
+  {
+    id: "4",
+    name: "Milestone 1",
+    startDate: new Date("2026-01-05"),
+    type: "milestone",
+  }
 ];

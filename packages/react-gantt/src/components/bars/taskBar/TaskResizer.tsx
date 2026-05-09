@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useDrag } from "../../hooks/useDrag";
+import { useDrag } from "../../../hooks/useDrag";
 import styles from "./TaskBar.module.css";
 
 interface TaskResizerProps {

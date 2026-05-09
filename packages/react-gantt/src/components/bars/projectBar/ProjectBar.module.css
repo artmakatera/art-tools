@@ -1,0 +1,25 @@
+.project {
+  position: absolute;
+  box-sizing: border-box;
+  background-color: var(--am-gantt-project-bg);
+  border-radius: 4px;
+  cursor: move;
+  overflow: hidden;
+  --am-gantt-bar-progress-bg: var(--am-gantt-project-bg-progress);
+}
+
+.projectInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.projectContent {
+  vertical-align: middle;
+  text-align: center;
+  font-size: 14px;
+  color: var(--am-gantt-project-color);
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
