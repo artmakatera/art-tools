@@ -37,6 +37,7 @@ export function Bar({
       const snapped = Math.round((start + deltaX) / colWidth) * colWidth;
       onMoveEnd(snapped);
     },
+    autoScroll: true,
   });
 
   return (
