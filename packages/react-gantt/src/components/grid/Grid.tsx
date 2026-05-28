@@ -2,16 +2,18 @@ import { useMemo, useState } from "react";
 import { addDays, buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
 import type { GanttTask, Id, Scale, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
-import { TaskBar } from "../bars/taskBar/TaskBar";
-import { ProjectBar } from "../bars/projectBar/ProjectBar";
-import { MilestoneBar } from "../bars/milestoneBar/MilestoneBar";
+import { Bar } from "../bars/common/Bar";
 import styles from "./Grid.module.css";
-import { commitTaskState, computeTaskState } from "../../core/barUtils";
+import {
+  applyPixelPatch,
+  commitTaskState,
+  getFinestUnit,
+  type PixelPatch,
+} from "../../core/barUtils";
 import {
   DEFAULT_COL_WIDTH,
   DEFAULT_PAD_DAYS,
   DEFAULT_ROW_HEIGHT,
-  TASK_VERTICAL_PADDING,
 } from "../../core/constants";
 
 type GridProps = {
@@ -64,22 +66,31 @@ export function Grid({
   const origin = baseDates[0];
   if (!origin) return null;
 
+  const snapToDay = getFinestUnit(scales) !== "day";
   const dataCols = baseDates.length;
   const extendedWidth = extendedDates.length * colWidth;
   const bodyHeight = tasks.length * rowHeight;
   const offsetLeft = padLeft * colWidth;
 
-  const updateTask = (id: Id, patch: Partial<TaskState>) => {
-    setState((prev) => ({
-      ...prev,
-      overrides: {
-        ...prev.overrides,
-        [id]: { ...prev.overrides[id], ...patch },
-      },
-    }));
+  const updateTask = (id: Id, patch: PixelPatch) => {
+    setState((prev) => {
+      const task = tasks.find((t) => t.id === id);
+      if (!task) return prev;
+      const nextOverride = applyPixelPatch(
+        task,
+        prev.overrides[id] ?? {},
+        patch,
+        origin,
+        colWidth,
+      );
+      return {
+        ...prev,
+        overrides: { ...prev.overrides, [id]: nextOverride },
+      };
+    });
   };
 
-  const commitTask = (id: Id, patch: Partial<TaskState>, isResize = false) => {
+  const commitTask = (id: Id, patch: PixelPatch, isResize = false) => {
     setState((prev) => {
       const task = tasks.find((t) => t.id === id);
       if (!task) return prev;
@@ -129,96 +140,21 @@ export function Grid({
             />
           ))}
         </div>
-        {tasks.map((task, index) => {
-          const base = computeTaskState(task, origin, colWidth);
-          const override = overrides[task.id] ?? {};
-          const left = override.left ?? base.left;
-          const width = override.width ?? base.width;
-          const progress = override.progress ?? base.progress;
-          const top = index * rowHeight;
-          const visualLeft = offsetLeft + left;
-          const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
-
-          let bar;
-          if (task.type === "milestone") {
-            bar = (
-              <MilestoneBar
-                size={barHeight}
-                centerLeft={visualLeft}
-                top={TASK_VERTICAL_PADDING}
-                colWidth={colWidth}
-                title={task.name}
-                onMove={(newCenter) =>
-                  updateTask(task.id, { left: newCenter - offsetLeft })
-                }
-                onMoveEnd={(newCenter) =>
-                  commitTask(task.id, { left: newCenter - offsetLeft })
-                }
-              />
-            );
-          } else if (task.type === "project") {
-            bar = (
-              <ProjectBar
-                left={visualLeft}
-                top={TASK_VERTICAL_PADDING}
-                width={width}
-                height={barHeight}
-                colWidth={colWidth}
-                title={task.name}
-                progress={progress}
-                onProgressChange={(p) => updateTask(task.id, { progress: p })}
-                onMove={(newVisualLeft) =>
-                  updateTask(task.id, { left: newVisualLeft - offsetLeft })
-                }
-                onMoveEnd={(newVisualLeft) =>
-                  commitTask(task.id, { left: newVisualLeft - offsetLeft })
-                }
-              />
-            );
-          } else {
-            bar = (
-              <TaskBar
-                left={visualLeft}
-                top={TASK_VERTICAL_PADDING}
-                width={width}
-                height={barHeight}
-                colWidth={colWidth}
-                title={task.name}
-                progress={progress}
-                onProgressChange={(p) => updateTask(task.id, { progress: p })}
-                onMove={(newVisualLeft) =>
-                  updateTask(task.id, { left: newVisualLeft - offsetLeft })
-                }
-                onMoveEnd={(newVisualLeft) =>
-                  commitTask(task.id, { left: newVisualLeft - offsetLeft })
-                }
-                onResize={(newWidth, newVisualLeft) =>
-                  updateTask(task.id, {
-                    width: newWidth,
-                    left: newVisualLeft - offsetLeft,
-                  })
-                }
-                onResizeEnd={(newWidth, newVisualLeft) =>
-                  commitTask(
-                    task.id,
-                    { width: newWidth, left: newVisualLeft - offsetLeft },
-                    true,
-                  )
-                }
-              />
-            );
-          }
-
-          return (
-            <div
-              key={task.id}
-              className={styles.row}
-              style={{ top, height: rowHeight }}
-            >
-              {bar}
-            </div>
-          );
-        })}
+        {tasks.map((task, index) => (
+          <Bar
+            key={task.id}
+            task={task}
+            index={index}
+            override={overrides[task.id] ?? {}}
+            origin={origin}
+            colWidth={colWidth}
+            rowHeight={rowHeight}
+            offsetLeft={offsetLeft}
+            snapToDay={snapToDay}
+            onUpdate={updateTask}
+            onCommit={commitTask}
+          />
+        ))}
       </div>
     </div>
   );

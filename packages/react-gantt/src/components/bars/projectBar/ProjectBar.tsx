@@ -1,4 +1,4 @@
-import { Bar } from "../Bar";
+import { DraggableBar } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./ProjectBar.module.css";
 
@@ -28,7 +28,7 @@ export function ProjectBar({
   onMoveEnd,
 }: ProjectBarProps) {
   return (
-    <Bar
+    <DraggableBar
       left={left}
       top={top}
       width={width}
@@ -49,6 +49,6 @@ export function ProjectBar({
         />
         <div className={styles.projectContent}>{title}</div>
       </div>
-    </Bar>
+    </DraggableBar>
   );
 }

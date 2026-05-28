@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
-import { useDrag } from "../../hooks/useDrag";
+import { useDrag } from "../../../hooks/useDrag";
 
-interface BarProps {
+interface DraggableBarProps {
   left: number;
   top: number;
   width: number;
@@ -16,7 +16,7 @@ interface BarProps {
   children?: ReactNode;
 }
 
-export function Bar({
+export function DraggableBar({
   left,
   top,
   width,
@@ -29,7 +29,7 @@ export function Bar({
   onMove,
   onMoveEnd,
   children,
-}: BarProps) {
+}: DraggableBarProps) {
   const onMouseDown = useDrag({
     onStart: () => ({ start: dragAnchor }),
     onDrag: (deltaX, { start }) => onMove(start + deltaX),

@@ -1,4 +1,4 @@
-import { Bar } from "../Bar";
+import { DraggableBar } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./TaskBar.module.css";
 import { TaskResizer } from "./TaskResizer";
@@ -33,7 +33,7 @@ export function TaskBar({
   onMoveEnd,
 }: TaskBarProps) {
   return (
-    <Bar
+    <DraggableBar
       left={left}
       top={top}
       width={width}
@@ -61,6 +61,6 @@ export function TaskBar({
           onResizeEnd={onResizeEnd}
         />
       </div>
-    </Bar>
+    </DraggableBar>
   );
 }

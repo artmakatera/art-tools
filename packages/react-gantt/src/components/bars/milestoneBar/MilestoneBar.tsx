@@ -1,4 +1,4 @@
-import { Bar } from "../Bar";
+import { DraggableBar } from "../common/DraggableBar";
 import styles from "./MilestoneBar.module.css";
 
 interface MilestoneBarProps {
@@ -21,7 +21,7 @@ export function MilestoneBar({
   onMoveEnd,
 }: MilestoneBarProps) {
   return (
-    <Bar
+    <DraggableBar
       left={centerLeft - size / 2}
       top={top}
       width={size}
@@ -34,6 +34,6 @@ export function MilestoneBar({
       onMoveEnd={onMoveEnd}
     >
       <div className={styles.milestoneShape} />
-    </Bar>
+    </DraggableBar>
   );
 }

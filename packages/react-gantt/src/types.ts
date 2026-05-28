@@ -34,7 +34,7 @@ export interface GanttProps {
 
 
 export interface TaskState {
-  left: number;
-  width: number;
+  startDate: Date;
+  endDate?: Date;
   progress: number;
 }
