@@ -1,5 +1,4 @@
 import type { CalendarUnit, GanttTask, Scale, TaskState } from "../types";
-import { addDays } from "./dateUtils";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -99,76 +98,3 @@ export function applyPatch(
   return next;
 }
 
-export interface CommitTaskStateInput {
-  task: GanttTask;
-  prevOverride: Partial<TaskState>;
-  prevPadLeft: number;
-  prevPadRight: number;
-  minStartDate: Date;
-  maxEndDate: Date;
-  patch: DatePatch;
-  isResize: boolean;
-}
-
-export interface CommitTaskStateOutput {
-  override: Partial<TaskState>;
-  padLeft: number;
-  padRight: number;
-}
-
-export function commitTaskState({
-  task,
-  prevOverride,
-  prevPadLeft,
-  prevPadRight,
-  minStartDate,
-  maxEndDate,
-  patch,
-  isResize,
-}: CommitTaskStateInput): CommitTaskStateOutput {
-  const baseOverride = applyPatch(task, prevOverride, patch);
-  const positional =
-    patch.startDate !== undefined || patch.endDate !== undefined;
-
-  if (!positional) {
-    return {
-      override: baseOverride,
-      padLeft: prevPadLeft,
-      padRight: prevPadRight,
-    };
-  }
-
-  const isMilestone = task.type === "milestone";
-  let cStart = baseOverride.startDate ?? task.startDate;
-  let cEnd = isMilestone
-    ? cStart
-    : (baseOverride.endDate ?? task.endDate ?? cStart);
-
-  let padLeft = prevPadLeft;
-  let padRight = prevPadRight;
-
-  if (cStart < minStartDate) {
-    const newStart = addDays(minStartDate, -1);
-    const delta = newStart.getTime() - cStart.getTime();
-    cStart = newStart;
-    if (!isResize) {
-      cEnd = new Date(cEnd.getTime() + delta);
-    }
-    padLeft += 2;
-  }
-
-  if (cEnd > maxEndDate) {
-    const newEnd = addDays(maxEndDate, 1);
-    const delta = newEnd.getTime() - cEnd.getTime();
-    cEnd = newEnd;
-    if (!isResize) {
-      cStart = new Date(cStart.getTime() + delta);
-    }
-    padRight += 2;
-  }
-
-  const override: Partial<TaskState> = { ...baseOverride, startDate: cStart };
-  if (!isMilestone) override.endDate = cEnd;
-
-  return { override, padLeft, padRight };
-}

@@ -41,3 +41,14 @@ export interface TaskState {
   endDate?: Date;
   progress: number;
 }
+
+
+export type Overrides = Record<Id, Partial<TaskState>>;
+
+type CommandType = "create" | "update" | "delete";
+export type TaskCommand = {
+  type: CommandType;
+  task: GanttTask;
+};
+
+export type CommittedOverrides = Record<Id, TaskCommand[]>;

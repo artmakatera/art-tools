@@ -17,10 +17,9 @@ interface BarProps {
   origin: Date;
   colWidth: number;
   rowHeight: number;
-  offsetLeft: number;
   snapToDay: boolean;
   onUpdate: (id: Id, patch: DatePatch) => void;
-  onCommit: (id: Id, patch: DatePatch, isResize?: boolean) => void;
+  onCommit: (id: Id, patch: DatePatch) => void;
 }
 
 export function Bar({
@@ -30,7 +29,6 @@ export function Bar({
   origin,
   colWidth,
   rowHeight,
-  offsetLeft,
   snapToDay,
   onUpdate,
   onCommit,
@@ -43,20 +41,18 @@ export function Bar({
     { snapToDay },
   );
   const top = index * rowHeight;
-  const visualLeft = offsetLeft + left;
+  const visualLeft = left;
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
 
-  const moveAt = (newVisualLeft: number): DatePatch => ({
-    startDate: pxToDate(newVisualLeft - offsetLeft, origin, colWidth),
+  const moveAt = (newLeft: number): DatePatch => ({
+    startDate: pxToDate(newLeft, origin, colWidth),
+    endDate: pxToDate(newLeft + width - colWidth, origin, colWidth),
   });
 
-  const resizeAt = (newWidth: number, newVisualLeft: number): DatePatch => {
-    const startPx = newVisualLeft - offsetLeft;
-    return {
-      startDate: pxToDate(startPx, origin, colWidth),
-      endDate: pxToDate(startPx + newWidth - colWidth, origin, colWidth),
-    };
-  };
+  const resizeAt = (newWidth: number, newLeft: number): DatePatch => ({
+    startDate: pxToDate(newLeft, origin, colWidth),
+    endDate: pxToDate(newLeft + newWidth - colWidth, origin, colWidth),
+  });
 
   return (
     <div className={styles.row} style={{ top, height: rowHeight }}>
@@ -96,7 +92,7 @@ export function Bar({
           colWidth={colWidth}
           title={task.name}
           progress={progress}
-          onProgressChange={(p) => onUpdate(task.id, { progress: p })}
+          onProgressChange={(p) => onCommit(task.id, { progress: p })}
           onMove={(newVisualLeft) => onUpdate(task.id, moveAt(newVisualLeft))}
           onMoveEnd={(newVisualLeft) =>
             onCommit(task.id, moveAt(newVisualLeft))
@@ -105,7 +101,7 @@ export function Bar({
             onUpdate(task.id, resizeAt(newWidth, newVisualLeft))
           }
           onResizeEnd={(newWidth, newVisualLeft) =>
-            onCommit(task.id, resizeAt(newWidth, newVisualLeft), true)
+            onCommit(task.id, resizeAt(newWidth, newVisualLeft))
           }
         />
       ) : null}

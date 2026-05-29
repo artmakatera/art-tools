@@ -1,14 +1,13 @@
-import { useMemo, useState } from "react";
-import { addDays, buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
-import type { GanttTask, Id, Scale, TaskState } from "../../types";
+import { useMemo } from "react";
+import { buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
+import type { GanttTask, Id, Overrides, Scale } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import styles from "./Grid.module.css";
 import {
-  applyPatch,
-  commitTaskState,
-  type DatePatch,
+
   getFinestUnit,
+  type DatePatch,
 } from "../../core/barUtils";
 import {
   DEFAULT_COL_WIDTH,
@@ -17,18 +16,16 @@ import {
 } from "../../core/constants";
 
 type GridProps = {
-  tasks: readonly GanttTask[];
+  tasks: GanttTask[];
   colWidth?: number;
   rowHeight?: number;
   scales?: Scale[];
   padDays?: number;
+  overrides: Overrides;
+  onUpdateTask: (id: Id, patch: DatePatch) => void
+  onCommitTask: (id: Id, patch: DatePatch) => void
 };
 
-interface GridState {
-  padLeft: number;
-  padRight: number;
-  overrides: Record<Id, Partial<TaskState>>;
-}
 
 export function Grid({
   tasks,
@@ -36,92 +33,38 @@ export function Grid({
   rowHeight = DEFAULT_ROW_HEIGHT,
   scales,
   padDays = DEFAULT_PAD_DAYS,
+  overrides,
+  onUpdateTask,
+  onCommitTask
 }: GridProps) {
-  const baseDates = useMemo(
+
+  const dates = useMemo(
     () => buildDatesFromTasks(tasks, padDays),
     [tasks, padDays],
   );
 
-  const [state, setState] = useState<GridState>({
-    padLeft: 0,
-    padRight: 0,
-    overrides: {},
-  });
-  const { padLeft, padRight, overrides } = state;
-
-  const extendedDates = useMemo(() => {
-    const first = baseDates[0];
-    const last = baseDates[baseDates.length - 1];
-    if (!first || !last) return baseDates;
-    const leftPad = Array.from({ length: padLeft }, (_, i) =>
-      addDays(first, i - padLeft),
-    );
-    const rightPad = Array.from({ length: padRight }, (_, i) =>
-      addDays(last, i + 1),
-    );
-
-    return [...leftPad, ...baseDates, ...rightPad];
-  }, [baseDates, padLeft, padRight]);
-
-  const origin = baseDates[0];
+  const origin = dates[0];
   if (!origin) return null;
 
   const snapToDay = getFinestUnit(scales) !== "day";
-  const dataCols = baseDates.length;
-  const extendedWidth = extendedDates.length * colWidth;
+  const totalWidth = dates.length * colWidth;
   const bodyHeight = tasks.length * rowHeight;
-  const offsetLeft = padLeft * colWidth;
 
-  const updateTask = (id: Id, patch: DatePatch) => {
-    setState((prev) => {
-      const task = tasks.find((t) => t.id === id);
-      if (!task) return prev;
-      const nextOverride = applyPatch(task, prev.overrides[id] ?? {}, patch);
-      return {
-        ...prev,
-        overrides: { ...prev.overrides, [id]: nextOverride },
-      };
-    });
-  };
-
-  const commitTask = (id: Id, patch: DatePatch, isResize = false) => {
-    setState((prev) => {
-      const task = tasks.find((t) => t.id === id);
-      if (!task) return prev;
-
-      const next = commitTaskState({
-        task,
-        prevOverride: prev.overrides[id] ?? {},
-        prevPadLeft: prev.padLeft,
-        prevPadRight: prev.padRight,
-        minStartDate: addDays(origin, -prev.padLeft),
-        maxEndDate: addDays(origin, dataCols - 1 + prev.padRight),
-        patch,
-        isResize,
-      });
-
-      return {
-        padLeft: next.padLeft,
-        padRight: next.padRight,
-        overrides: { ...prev.overrides, [id]: next.override },
-      };
-    });
-  };
 
   return (
-    <div className={styles.grid} style={{ width: extendedWidth }}>
+    <div className={styles.grid} style={{ width: totalWidth }}>
       <Calendar
         colWidth={colWidth}
         rowHeight={rowHeight}
-        dates={extendedDates}
+        dates={dates}
         scales={scales}
       />
       <div
         className={styles.body}
-        style={{ height: bodyHeight, width: extendedWidth }}
+        style={{ height: bodyHeight, width: totalWidth }}
       >
         <div className={styles.cols} aria-hidden>
-          {extendedDates.map((date) => (
+          {dates.map((date) => (
             <div
               key={date.toISOString()}
               className={
@@ -142,10 +85,9 @@ export function Grid({
             origin={origin}
             colWidth={colWidth}
             rowHeight={rowHeight}
-            offsetLeft={offsetLeft}
             snapToDay={snapToDay}
-            onUpdate={updateTask}
-            onCommit={commitTask}
+            onUpdate={onUpdateTask}
+            onCommit={onCommitTask}
           />
         ))}
       </div>
