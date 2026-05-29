@@ -1,4 +1,6 @@
+import { useState } from "react";
 import {
+  applyPatch,
   computeTaskPixels,
   type DatePatch,
   pxToDate,
@@ -13,26 +15,24 @@ import styles from "./Bar.module.css";
 interface BarProps {
   task: GanttTask;
   index: number;
-  override: Partial<TaskState>;
   origin: Date;
   colWidth: number;
   rowHeight: number;
   snapToDay: boolean;
   onUpdate: (id: Id, patch: DatePatch) => void;
-  onCommit: (id: Id, patch: DatePatch) => void;
 }
 
 export function Bar({
   task,
   index,
-  override,
   origin,
   colWidth,
   rowHeight,
   snapToDay,
   onUpdate,
-  onCommit,
 }: BarProps) {
+  const [override, setOverride] = useState<Partial<TaskState>>({});
+
   const { left, width, progress } = computeTaskPixels(
     task,
     override,
@@ -54,6 +54,17 @@ export function Bar({
     endDate: pxToDate(newLeft + newWidth - colWidth, origin, colWidth),
   });
 
+  const handleOverride = (patch: DatePatch) => {
+    setOverride((prev) => {
+      return { ...prev, ...applyPatch(task, prev, patch) };
+    });
+  };
+
+  const handleUpdate = (id: Id, patch: DatePatch) => {
+    onUpdate(id, patch);
+    setOverride({});
+  };
+
   return (
     <div className={styles.row} style={{ top, height: rowHeight }}>
       {task.type === "milestone" && (
@@ -63,8 +74,8 @@ export function Bar({
           top={TASK_VERTICAL_PADDING}
           colWidth={colWidth}
           title={task.name}
-          onMove={(newCenter) => onUpdate(task.id, moveAt(newCenter))}
-          onMoveEnd={(newCenter) => onCommit(task.id, moveAt(newCenter))}
+          onMove={(newCenter) => handleOverride(moveAt(newCenter))}
+          onMoveEnd={(newCenter) => handleUpdate(task.id, moveAt(newCenter))}
         />
       )}
       {task.type === "project" && (
@@ -76,10 +87,10 @@ export function Bar({
           colWidth={colWidth}
           title={task.name}
           progress={progress}
-          onProgressChange={(p) => onUpdate(task.id, { progress: p })}
-          onMove={(newVisualLeft) => onUpdate(task.id, moveAt(newVisualLeft))}
+          onProgressChange={(p) => handleOverride({ progress: p })}
+          onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
           onMoveEnd={(newVisualLeft) =>
-            onCommit(task.id, moveAt(newVisualLeft))
+            handleUpdate(task.id, moveAt(newVisualLeft))
           }
         />
       )}
@@ -92,16 +103,16 @@ export function Bar({
           colWidth={colWidth}
           title={task.name}
           progress={progress}
-          onProgressChange={(p) => onCommit(task.id, { progress: p })}
-          onMove={(newVisualLeft) => onUpdate(task.id, moveAt(newVisualLeft))}
+          onProgressChange={(p) => handleUpdate(task.id, { progress: p })}
+          onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
           onMoveEnd={(newVisualLeft) =>
-            onCommit(task.id, moveAt(newVisualLeft))
+            handleUpdate(task.id, moveAt(newVisualLeft))
           }
           onResize={(newWidth, newVisualLeft) =>
-            onUpdate(task.id, resizeAt(newWidth, newVisualLeft))
+            handleOverride(resizeAt(newWidth, newVisualLeft))
           }
           onResizeEnd={(newWidth, newVisualLeft) =>
-            onCommit(task.id, resizeAt(newWidth, newVisualLeft))
+            handleUpdate(task.id, resizeAt(newWidth, newVisualLeft))
           }
         />
       ) : null}

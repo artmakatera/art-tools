@@ -9,16 +9,14 @@ import { useTaskList } from "./hooks/useTaskList";
 
 
 export function Gantt({ tasks, rowHeight = 32, colWidth }: GanttProps) {
-  const {tasksList, overrides, updateTask, commitTask} =  useTaskList(tasks);
+  const {tasksList, updateTask} =  useTaskList(tasks);
 
   return (
     <Grid
       tasks={tasksList}
       colWidth={colWidth}
       rowHeight={rowHeight}
-      overrides={overrides}
       onUpdateTask={updateTask}
-      onCommitTask={commitTask}
     />
   );
 }

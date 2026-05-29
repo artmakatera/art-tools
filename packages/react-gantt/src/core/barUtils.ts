@@ -33,7 +33,7 @@ export interface TaskPixels {
 
 export function computeTaskPixels(
   task: GanttTask,
-  override: Partial<TaskState>,
+  override: Partial<TaskState> = {},
   origin: Date,
   colWidth: number,
   options?: { snapToDay?: boolean },

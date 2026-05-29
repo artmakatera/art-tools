@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
-import type { GanttTask, Id, Overrides, Scale } from "../../types";
+import type { GanttTask, Id, Scale } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import styles from "./Grid.module.css";
@@ -21,9 +21,7 @@ type GridProps = {
   rowHeight?: number;
   scales?: Scale[];
   padDays?: number;
-  overrides: Overrides;
   onUpdateTask: (id: Id, patch: DatePatch) => void
-  onCommitTask: (id: Id, patch: DatePatch) => void
 };
 
 
@@ -33,9 +31,7 @@ export function Grid({
   rowHeight = DEFAULT_ROW_HEIGHT,
   scales,
   padDays = DEFAULT_PAD_DAYS,
-  overrides,
   onUpdateTask,
-  onCommitTask
 }: GridProps) {
 
   const dates = useMemo(
@@ -81,13 +77,11 @@ export function Grid({
             key={task.id}
             task={task}
             index={index}
-            override={overrides[task.id] ?? {}}
             origin={origin}
             colWidth={colWidth}
             rowHeight={rowHeight}
             snapToDay={snapToDay}
             onUpdate={onUpdateTask}
-            onCommit={onCommitTask}
           />
         ))}
       </div>

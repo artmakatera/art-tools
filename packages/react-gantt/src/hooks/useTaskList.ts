@@ -1,13 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
-import type { CommittedOverrides, GanttTask, Id, Overrides, TaskCommand } from "../types";
-import { applyPatch, type DatePatch } from "../core/barUtils";
+import type { CommittedOverrides, GanttTask, Id, TaskCommand } from "../types";
+import {  type DatePatch } from "../core/barUtils";
 import { getTaskList } from "../core/prepareData";
 
 
 
 export const useTaskList = (tasks: GanttTask[]) => {
   const [committedChanges, setCommittedChanges] = useState<CommittedOverrides>({});
-  const [overrides, setOverrides] = useState<Overrides>({});
 
   const tasksList = useMemo(
     () => getTaskList(tasks, committedChanges),
@@ -16,14 +15,6 @@ export const useTaskList = (tasks: GanttTask[]) => {
 
   const updateTask = useCallback((id: Id, patch: DatePatch) => {
 
-    setOverrides((prev) => {
-      const task = tasks.find((t) => t.id === id);
-      if (!task) return prev;
-      return { ...prev, [id]: applyPatch(task, prev[id] ?? {}, patch) };
-    });
-  }, [tasks]);
-
-  const commitTask = useCallback((id: Id, patch: DatePatch) => {
     setCommittedChanges((prev) => {
       const original = tasks.find((t) => t.id === id);
       const commands = prev[id] ?? [];
@@ -40,13 +31,8 @@ export const useTaskList = (tasks: GanttTask[]) => {
       const nextCommand: TaskCommand = { type: "update", task: nextTask };
       return { ...prev, [id]: [...commands, nextCommand] };
     });
-    setOverrides((prev) => {
-      if (!(id in prev)) return prev;
-      const { [id]: _, ...rest } = prev;
-      return rest;
-    });
   }, [tasks]);
 
-  return { tasksList, updateTask, commitTask, overrides };
+  return { tasksList, updateTask };
 
 }
