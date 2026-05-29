@@ -1,19 +1,11 @@
+import { useMemo } from 'react';
+import { Grid } from './components/grid/Grid';
 import type { GanttProps } from './types';
+import { getTaskList } from './core/prepareData';
 
-export function Gantt({ tasks, rowHeight = 32, onTaskClick }: GanttProps) {
+export function Gantt({ tasks, rowHeight = 32, colWidth }: GanttProps) {
+  const taskList = useMemo(() => getTaskList(tasks), [tasks])
   return (
-    <div className="react-gantt">
-      {tasks.map((task) => (
-        <button
-          key={task.id}
-          type="button"
-          className="react-gantt__row"
-          style={{ height: rowHeight }}
-          onClick={() => onTaskClick?.(task)}
-        >
-          {task.name}
-        </button>
-      ))}
-    </div>
+    <Grid tasks={taskList} colWidth={colWidth} rowHeight={rowHeight}  />
   );
 }

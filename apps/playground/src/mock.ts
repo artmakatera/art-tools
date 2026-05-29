@@ -16,6 +16,7 @@ export const mockTasks: GanttTask[] = [
     startDate: new Date("2026-01-01"),
     endDate: new Date("2026-01-05"),
     progress: 50,
+    parentId: "0",
   },
   {
     id: "2",
@@ -23,6 +24,7 @@ export const mockTasks: GanttTask[] = [
     startDate: new Date("2026-01-03"),
     endDate: new Date("2026-01-08"),
     progress: 30,
+    parentId: "0",
   },
   {
     id: "3",
@@ -30,6 +32,8 @@ export const mockTasks: GanttTask[] = [
     startDate: new Date("2026-01-06"),
     endDate: new Date("2026-01-10"),
     progress: 80,
+    parentId: "0",
+
   },
 
   {
@@ -37,5 +41,7 @@ export const mockTasks: GanttTask[] = [
     name: "Milestone 1",
     startDate: new Date("2026-01-05"),
     type: "milestone",
+    parentId: "0",
+
   }
 ];

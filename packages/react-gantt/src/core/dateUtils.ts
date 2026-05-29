@@ -75,3 +75,10 @@ export function buildDatesFromTasks(
   const span = diffDays(start, max) + 1 + padDays;
   return buildDates(start, span);
 }
+
+
+export function getEndDate(startDate: Date, endDate?: Date, duration?: number, ): Date {
+  if (endDate) return endDate;
+  if (duration === undefined) return startDate;
+  return addDays(startDate, duration - 1);
+}

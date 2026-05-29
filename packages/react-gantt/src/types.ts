@@ -26,8 +26,11 @@ export interface GanttTask {
 }
 
 export interface GanttProps {
-  tasks: readonly GanttTask[];
+  tasks:  GanttTask[];
   rowHeight?: number;
+  colWidth?: number;
+  scales?: Scale[];
+  padDays?: number;
   onTaskClick?: (task: GanttTask) => void;
 }
 
