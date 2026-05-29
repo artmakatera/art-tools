@@ -1,4 +1,8 @@
-import { computeTaskPixels, type PixelPatch } from "../../../core/barUtils";
+import {
+  computeTaskPixels,
+  type DatePatch,
+  pxToDate,
+} from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
 import type { GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
@@ -15,8 +19,8 @@ interface BarProps {
   rowHeight: number;
   offsetLeft: number;
   snapToDay: boolean;
-  onUpdate: (id: Id, patch: PixelPatch) => void;
-  onCommit: (id: Id, patch: PixelPatch, isResize?: boolean) => void;
+  onUpdate: (id: Id, patch: DatePatch) => void;
+  onCommit: (id: Id, patch: DatePatch, isResize?: boolean) => void;
 }
 
 export function Bar({
@@ -42,6 +46,18 @@ export function Bar({
   const visualLeft = offsetLeft + left;
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
 
+  const moveAt = (newVisualLeft: number): DatePatch => ({
+    startDate: pxToDate(newVisualLeft - offsetLeft, origin, colWidth),
+  });
+
+  const resizeAt = (newWidth: number, newVisualLeft: number): DatePatch => {
+    const startPx = newVisualLeft - offsetLeft;
+    return {
+      startDate: pxToDate(startPx, origin, colWidth),
+      endDate: pxToDate(startPx + newWidth - colWidth, origin, colWidth),
+    };
+  };
+
   return (
     <div className={styles.row} style={{ top, height: rowHeight }}>
       {task.type === "milestone" && (
@@ -51,12 +67,8 @@ export function Bar({
           top={TASK_VERTICAL_PADDING}
           colWidth={colWidth}
           title={task.name}
-          onMove={(newCenter) =>
-            onUpdate(task.id, { left: newCenter - offsetLeft })
-          }
-          onMoveEnd={(newCenter) =>
-            onCommit(task.id, { left: newCenter - offsetLeft })
-          }
+          onMove={(newCenter) => onUpdate(task.id, moveAt(newCenter))}
+          onMoveEnd={(newCenter) => onCommit(task.id, moveAt(newCenter))}
         />
       )}
       {task.type === "project" && (
@@ -69,11 +81,9 @@ export function Bar({
           title={task.name}
           progress={progress}
           onProgressChange={(p) => onUpdate(task.id, { progress: p })}
-          onMove={(newVisualLeft) =>
-            onUpdate(task.id, { left: newVisualLeft - offsetLeft })
-          }
+          onMove={(newVisualLeft) => onUpdate(task.id, moveAt(newVisualLeft))}
           onMoveEnd={(newVisualLeft) =>
-            onCommit(task.id, { left: newVisualLeft - offsetLeft })
+            onCommit(task.id, moveAt(newVisualLeft))
           }
         />
       )}
@@ -87,24 +97,15 @@ export function Bar({
           title={task.name}
           progress={progress}
           onProgressChange={(p) => onUpdate(task.id, { progress: p })}
-          onMove={(newVisualLeft) =>
-            onUpdate(task.id, { left: newVisualLeft - offsetLeft })
-          }
+          onMove={(newVisualLeft) => onUpdate(task.id, moveAt(newVisualLeft))}
           onMoveEnd={(newVisualLeft) =>
-            onCommit(task.id, { left: newVisualLeft - offsetLeft })
+            onCommit(task.id, moveAt(newVisualLeft))
           }
           onResize={(newWidth, newVisualLeft) =>
-            onUpdate(task.id, {
-              width: newWidth,
-              left: newVisualLeft - offsetLeft,
-            })
+            onUpdate(task.id, resizeAt(newWidth, newVisualLeft))
           }
           onResizeEnd={(newWidth, newVisualLeft) =>
-            onCommit(
-              task.id,
-              { width: newWidth, left: newVisualLeft - offsetLeft },
-              true,
-            )
+            onCommit(task.id, resizeAt(newWidth, newVisualLeft), true)
           }
         />
       ) : null}

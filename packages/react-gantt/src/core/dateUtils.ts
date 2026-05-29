@@ -1,4 +1,5 @@
 import type { CalendarUnit } from "../types";
+import { memoize } from "./utils";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -58,22 +59,32 @@ interface TaskDates {
   endDate?: Date;
 }
 
-export function buildDatesFromTasks(
-  tasks: readonly TaskDates[],
-  padDays = 0,
-): Date[] {
-  const first = tasks[0];
-  if (!first) return [];
-  let min = first.startDate;
+function getMinMaxDatesNonCached(tasks: readonly TaskDates[]): { min: Date; max: Date } {
+   const first = tasks[0];
+  if (!first) return { min: new Date(), max: new Date() };
+    let min = first.startDate;
   let max = first.endDate ?? first.startDate;
   for (const t of tasks) {
     if (t.startDate < min) min = t.startDate;
     const end = t.endDate ?? t.startDate;
     if (end > max) max = end;
   }
-  const start = addDays(min, -padDays);
-  const span = diffDays(start, max) + 1 + padDays;
-  return buildDates(start, span);
+  return { min, max };
+}
+
+export const getMinMaxDates = memoize(getMinMaxDatesNonCached, 3);
+
+
+
+
+export function buildDatesFromTasks(
+  tasks: readonly TaskDates[],
+  padDays = 0,
+): Date[] {
+  const { min, max } = getMinMaxDates(tasks);
+  let start = addDays(min, -padDays);
+  let end = addDays(max, padDays);
+  return buildDates(start, diffDays(start, end) + 1);
 }
 
 

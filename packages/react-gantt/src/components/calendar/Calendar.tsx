@@ -1,5 +1,6 @@
+import type { Scale } from "../../types";
 import styles from "./Calendar.module.css";
-import { CalendarRow, type Scale } from "./CalendarRow";
+import { CalendarRow,  } from "./CalendarRow";
 
 type CalendarProps = {
   colWidth: number;
@@ -12,13 +13,13 @@ const DEFAULT_SCALES: Scale[] = [
   {
     unit: "month",
     step: 1,
-    format: (d) =>
+    format: (d: Date) =>
       d.toLocaleString(undefined, { month: "long", year: "numeric" }),
   },
   {
     unit: "day",
     step: 1,
-    format: (d) => String(d.getDate()),
+    format: (d: Date) => String(d.getDate()),
   },
 ];
 

@@ -57,89 +57,56 @@ export function computeTaskPixels(
   };
 }
 
-function pxToDate(pxOffset: number, origin: Date, colWidth: number): Date {
-  return new Date(origin.getTime() + (pxOffset / colWidth) * MS_PER_DAY);
-}
-
-function pxToDateSnapped(
+export function pxToDate(
   pxOffset: number,
   origin: Date,
   colWidth: number,
 ): Date {
-  return addDays(origin, Math.round(pxOffset / colWidth));
+  return new Date(origin.getTime() + (pxOffset / colWidth) * MS_PER_DAY);
 }
 
-export interface PixelPatch {
-  left?: number;
-  width?: number;
+export interface DatePatch {
+  startDate?: Date;
+  endDate?: Date;
   progress?: number;
 }
 
-export function applyPixelPatch(
+export function applyPatch(
   task: GanttTask,
   prevOverride: Partial<TaskState>,
-  patch: PixelPatch,
-  origin: Date,
-  colWidth: number,
-): Partial<TaskState> {
-  return buildOverride(task, prevOverride, patch, origin, colWidth, pxToDate);
-}
-
-function buildOverride(
-  task: GanttTask,
-  prevOverride: Partial<TaskState>,
-  patch: PixelPatch,
-  origin: Date,
-  colWidth: number,
-  toDate: (px: number, origin: Date, cw: number) => Date,
+  patch: DatePatch,
 ): Partial<TaskState> {
   const next: Partial<TaskState> = { ...prevOverride };
   if (patch.progress !== undefined) next.progress = patch.progress;
-  if (patch.left === undefined && patch.width === undefined) return next;
 
   const isMilestone = task.type === "milestone";
 
-  if (patch.width !== undefined) {
-    const base = computeTaskPixels(task, prevOverride, origin, colWidth);
-    const newLeft = patch.left ?? base.left;
-    next.startDate = toDate(newLeft, origin, colWidth);
-    if (!isMilestone) {
-      next.endDate = toDate(
-        newLeft + patch.width - colWidth,
-        origin,
-        colWidth,
-      );
-    }
+  if (patch.endDate !== undefined) {
+    if (patch.startDate !== undefined) next.startDate = patch.startDate;
+    if (!isMilestone) next.endDate = patch.endDate;
     return next;
   }
 
-  if (patch.left !== undefined) {
-    const newStart = toDate(patch.left, origin, colWidth);
-    next.startDate = newStart;
+  if (patch.startDate !== undefined) {
+    next.startDate = patch.startDate;
     if (!isMilestone) {
       const prevStart = prevOverride.startDate ?? task.startDate;
       const prevEnd = prevOverride.endDate ?? task.endDate ?? prevStart;
       const duration = prevEnd.getTime() - prevStart.getTime();
-      next.endDate = new Date(newStart.getTime() + duration);
+      next.endDate = new Date(patch.startDate.getTime() + duration);
     }
   }
   return next;
 }
 
-interface Position {
-  left: number;
-  width: number;
-}
-
 export interface CommitTaskStateInput {
   task: GanttTask;
-  origin: Date;
-  colWidth: number;
-  dataCols: number;
   prevOverride: Partial<TaskState>;
   prevPadLeft: number;
   prevPadRight: number;
-  patch: PixelPatch;
+  minStartDate: Date;
+  maxEndDate: Date;
+  patch: DatePatch;
   isResize: boolean;
 }
 
@@ -151,94 +118,57 @@ export interface CommitTaskStateOutput {
 
 export function commitTaskState({
   task,
-  origin,
-  colWidth,
-  dataCols,
   prevOverride,
   prevPadLeft,
   prevPadRight,
+  minStartDate,
+  maxEndDate,
   patch,
   isResize,
 }: CommitTaskStateInput): CommitTaskStateOutput {
-  const base = computeTaskPixels(task, prevOverride, origin, colWidth);
-  const candidate: Position = {
-    left: patch.left ?? base.left,
-    width: patch.width ?? base.width,
-  };
+  const baseOverride = applyPatch(task, prevOverride, patch);
+  const positional =
+    patch.startDate !== undefined || patch.endDate !== undefined;
 
-  const afterLeft = extendForLeftOverflow(
-    candidate,
-    prevPadLeft,
-    colWidth,
-    isResize,
-  );
-  const afterRight = extendForRightOverflow(
-    afterLeft.position,
-    prevPadRight,
-    dataCols,
-    colWidth,
-    isResize,
-  );
-
-  const override = buildOverride(
-    task,
-    prevOverride,
-    {
-      left: afterRight.position.left,
-      width: afterRight.position.width,
-      progress: patch.progress,
-    },
-    origin,
-    colWidth,
-    pxToDateSnapped,
-  );
-
-  return {
-    override,
-    padLeft: afterLeft.padLeft,
-    padRight: afterRight.padRight,
-  };
-}
-
-function extendForLeftOverflow(
-  position: Position,
-  padLeft: number,
-  colWidth: number,
-  isResize: boolean,
-): { position: Position; padLeft: number } {
-  const minLeft = -padLeft * colWidth;
-  if (position.left > minLeft) {
-    return { position, padLeft };
+  if (!positional) {
+    return {
+      override: baseOverride,
+      padLeft: prevPadLeft,
+      padRight: prevPadRight,
+    };
   }
-  const newMin = -(padLeft + 1) * colWidth;
-  return {
-    position: {
-      left: newMin,
-      width: isResize
-        ? position.left + position.width - newMin
-        : position.width,
-    },
-    padLeft: padLeft + 2,
-  };
-}
 
-function extendForRightOverflow(
-  position: Position,
-  padRight: number,
-  dataCols: number,
-  colWidth: number,
-  isResize: boolean,
-): { position: Position; padRight: number } {
-  const maxRight = (dataCols + padRight) * colWidth;
-  if (position.left + position.width < maxRight) {
-    return { position, padRight };
+  const isMilestone = task.type === "milestone";
+  let cStart = baseOverride.startDate ?? task.startDate;
+  let cEnd = isMilestone
+    ? cStart
+    : (baseOverride.endDate ?? task.endDate ?? cStart);
+
+  let padLeft = prevPadLeft;
+  let padRight = prevPadRight;
+
+  if (cStart < minStartDate) {
+    const newStart = addDays(minStartDate, -1);
+    const delta = newStart.getTime() - cStart.getTime();
+    cStart = newStart;
+    if (!isResize) {
+      cEnd = new Date(cEnd.getTime() + delta);
+    }
+    padLeft += 2;
   }
-  const newMax = (dataCols + padRight + 1) * colWidth;
-  return {
-    position: {
-      left: isResize ? position.left : newMax - position.width,
-      width: isResize ? newMax - position.left : position.width,
-    },
-    padRight: padRight + 2,
-  };
+
+  if (cEnd > maxEndDate) {
+    const newEnd = addDays(maxEndDate, 1);
+    const delta = newEnd.getTime() - cEnd.getTime();
+    cEnd = newEnd;
+    if (!isResize) {
+      cStart = new Date(cStart.getTime() + delta);
+    }
+    padRight += 2;
+  }
+
+  const override: Partial<TaskState> = { ...baseOverride, startDate: cStart };
+  if (!isMilestone) override.endDate = cEnd;
+
+  return { override, padLeft, padRight };
 }

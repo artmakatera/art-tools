@@ -5,10 +5,10 @@ import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import styles from "./Grid.module.css";
 import {
-  applyPixelPatch,
+  applyPatch,
   commitTaskState,
+  type DatePatch,
   getFinestUnit,
-  type PixelPatch,
 } from "../../core/barUtils";
 import {
   DEFAULT_COL_WIDTH,
@@ -72,17 +72,11 @@ export function Grid({
   const bodyHeight = tasks.length * rowHeight;
   const offsetLeft = padLeft * colWidth;
 
-  const updateTask = (id: Id, patch: PixelPatch) => {
+  const updateTask = (id: Id, patch: DatePatch) => {
     setState((prev) => {
       const task = tasks.find((t) => t.id === id);
       if (!task) return prev;
-      const nextOverride = applyPixelPatch(
-        task,
-        prev.overrides[id] ?? {},
-        patch,
-        origin,
-        colWidth,
-      );
+      const nextOverride = applyPatch(task, prev.overrides[id] ?? {}, patch);
       return {
         ...prev,
         overrides: { ...prev.overrides, [id]: nextOverride },
@@ -90,19 +84,18 @@ export function Grid({
     });
   };
 
-  const commitTask = (id: Id, patch: PixelPatch, isResize = false) => {
+  const commitTask = (id: Id, patch: DatePatch, isResize = false) => {
     setState((prev) => {
       const task = tasks.find((t) => t.id === id);
       if (!task) return prev;
 
       const next = commitTaskState({
         task,
-        origin,
-        colWidth,
-        dataCols,
         prevOverride: prev.overrides[id] ?? {},
         prevPadLeft: prev.padLeft,
         prevPadRight: prev.padRight,
+        minStartDate: addDays(origin, -prev.padLeft),
+        maxEndDate: addDays(origin, dataCols - 1 + prev.padRight),
         patch,
         isResize,
       });
