@@ -14,12 +14,12 @@ import { applyPatch, type DatePatch } from "./core/barUtils";
 
 
 export function Gantt({ tasks, rowHeight = 32, colWidth }: GanttProps) {
-  const [commitedChanges, setCommitedChanges] = useState<CommittedOverrides>({});
+  const [committedChanges, setCommittedChanges] = useState<CommittedOverrides>({});
   const [overrides, setOverrides] = useState<Overrides>({});
 
   const tasksList = useMemo(
-    () => getTaskList(tasks, commitedChanges),
-    [tasks, commitedChanges],
+    () => getTaskList(tasks, committedChanges),
+    [tasks, committedChanges],
   );
 
   const updateTask = useCallback((id: Id, patch: DatePatch) => {
@@ -32,7 +32,7 @@ export function Gantt({ tasks, rowHeight = 32, colWidth }: GanttProps) {
   }, [tasks]);
 
   const commitTask = useCallback((id: Id, patch: DatePatch) => {
-    setCommitedChanges((prev) => {
+    setCommittedChanges((prev) => {
       const original = tasks.find((t) => t.id === id);
       const commands = prev[id] ?? [];
       const lastCommand = commands[commands.length - 1];

@@ -5,9 +5,9 @@ type TaskRecordsByParentId = Map<Id | null, GanttTask[]>;
 
 export function getTaskList(
   tasks: GanttTask[],
-  commitedChanges: CommittedOverrides = {},
+  committedChanges: CommittedOverrides = {},
 ): GanttTask[] {
-  const resolved = resolveCommittedTasks(tasks, commitedChanges);
+  const resolved = resolveCommittedTasks(tasks, committedChanges);
   const taskByParentId = groupTaskByParentId(resolved);
   const roots = taskByParentId.get(null) ?? [];
   return roots.flatMap(
@@ -17,20 +17,20 @@ export function getTaskList(
 
 function resolveCommittedTasks(
   tasks: GanttTask[],
-  commitedChanges: CommittedOverrides,
+  committedChanges: CommittedOverrides,
 ): GanttTask[] {
   const result: GanttTask[] = [];
   const seenIds = new Set<Id>();
 
   for (const task of tasks) {
     seenIds.add(task.id);
-    const commands = commitedChanges[task.id];
+    const commands = committedChanges[task.id];
     const latest = commands?.[commands.length - 1];
     if (latest?.type === "delete") continue;
     result.push(latest?.task ?? task);
   }
 
-  for (const commands of Object.values(commitedChanges)) {
+  for (const commands of Object.values(committedChanges)) {
     const latest = commands[commands.length - 1];
     if (latest?.type === "create" && !seenIds.has(latest.task.id)) {
       result.push(latest.task);
@@ -76,16 +76,22 @@ export function getParentTaskData(
 
   let endDate = getEndDate(startDate, taskEndDate, duration);
   let progressSum = 0;
+  let notMilestoneCount = 0;
 
   for (const child of children) {
     if (child.startDate < startDate) startDate = child.startDate;
     if (child.progress !== undefined) progressSum += child.progress;
 
-    if (child.endDate && (!endDate || child.endDate > endDate))
-      endDate = child.endDate;
+      if (child.endDate && (!endDate || child.endDate > endDate)) {
+        endDate = child.endDate;
+      }
+
+      if (child.type !== "milestone") {
+        notMilestoneCount++;
+      }
   }
 
-  const progress = Math.round(progressSum / children.length);
+  const progress = Math.round(progressSum /notMilestoneCount) || 0;
 
   return {
     ...task,
