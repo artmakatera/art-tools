@@ -1,6 +1,6 @@
 import { Gantt} from "@am/react-gantt"
 import "@am/react-gantt/style.css";
-import { mockTasks } from "./mock";
+import { mockTasks, mockDependencies } from "./mock";
 
 
 
@@ -9,7 +9,7 @@ export function App() {
   return (
     <div style ={{ margin: "0 auto", width: "1000px" }}>
     
-     <Gantt tasks={mockTasks} colWidth={100} rowHeight={40} />
+     <Gantt tasks={mockTasks} dependencies={mockDependencies} colWidth={100} rowHeight={40} />
     </div>
   )
 }

@@ -1,0 +1,28 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.segment {
+  position: absolute;
+  background: var(--am-gantt-dependency-color, #94a3b8);
+}
+
+.arrowRight,
+.arrowLeft {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+.arrowRight {
+  border-left: 8px solid var(--am-gantt-dependency-color, #94a3b8);
+}
+
+.arrowLeft {
+  border-right: 8px solid var(--am-gantt-dependency-color, #94a3b8);
+}

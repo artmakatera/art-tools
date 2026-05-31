@@ -8,7 +8,7 @@ import { useTaskList } from "./hooks/useTaskList";
 
 
 
-export function Gantt({ tasks, rowHeight = 32, colWidth }: GanttProps) {
+export function Gantt({ tasks, dependencies, rowHeight = 32, colWidth }: GanttProps) {
   const {tasksList, updateTask} =  useTaskList(tasks);
 
   return (
@@ -17,6 +17,7 @@ export function Gantt({ tasks, rowHeight = 32, colWidth }: GanttProps) {
       colWidth={colWidth}
       rowHeight={rowHeight}
       onUpdateTask={updateTask}
+      dependencies={dependencies}
     />
   );
 }

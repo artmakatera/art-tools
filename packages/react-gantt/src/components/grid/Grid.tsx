@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
-import type { GanttTask, Id, Scale } from "../../types";
+import type { GanttTask, Id, Scale, TaskDependency } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
+import { DependencyLinksProvider } from "../dependency-links/DependencyLinksContext";
+import { DependencyLinks } from "../dependency-links/DependencyLinks";
 import styles from "./Grid.module.css";
 import {
 
@@ -17,6 +19,7 @@ import {
 
 type GridProps = {
   tasks: GanttTask[];
+  dependencies?: TaskDependency[];
   colWidth?: number;
   rowHeight?: number;
   scales?: Scale[];
@@ -27,6 +30,7 @@ type GridProps = {
 
 export function Grid({
   tasks,
+  dependencies,
   colWidth = DEFAULT_COL_WIDTH,
   rowHeight = DEFAULT_ROW_HEIGHT,
   scales,
@@ -55,36 +59,46 @@ export function Grid({
         dates={dates}
         scales={scales}
       />
-      <div
-        className={styles.body}
-        style={{ height: bodyHeight, width: totalWidth }}
+      <DependencyLinksProvider
+        tasks={tasks}
+        dependencies={dependencies ?? []}
+        origin={origin}
+        colWidth={colWidth}
+        rowHeight={rowHeight}
+        snapToDay={snapToDay}
       >
-        <div className={styles.cols} aria-hidden>
-          {dates.map((date) => (
-            <div
-              key={date.toISOString()}
-              className={
-                isWeekend(date)
-                  ? `${styles.col} ${styles.colWeekend}`
-                  : styles.col
-              }
-              style={{ width: colWidth, height: bodyHeight }}
+        <div
+          className={styles.body}
+          style={{ height: bodyHeight, width: totalWidth }}
+        >
+          <div className={styles.cols} aria-hidden>
+            {dates.map((date) => (
+              <div
+                key={date.toISOString()}
+                className={
+                  isWeekend(date)
+                    ? `${styles.col} ${styles.colWeekend}`
+                    : styles.col
+                }
+                style={{ width: colWidth, height: bodyHeight }}
+              />
+            ))}
+          </div>
+          {tasks.map((task, index) => (
+            <Bar
+              key={task.id}
+              task={task}
+              index={index}
+              origin={origin}
+              colWidth={colWidth}
+              rowHeight={rowHeight}
+              snapToDay={snapToDay}
+              onUpdate={onUpdateTask}
             />
           ))}
+          <DependencyLinks width={totalWidth} height={bodyHeight} />
         </div>
-        {tasks.map((task, index) => (
-          <Bar
-            key={task.id}
-            task={task}
-            index={index}
-            origin={origin}
-            colWidth={colWidth}
-            rowHeight={rowHeight}
-            snapToDay={snapToDay}
-            onUpdate={onUpdateTask}
-          />
-        ))}
-      </div>
+      </DependencyLinksProvider>
     </div>
   );
 }

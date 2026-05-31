@@ -5,4 +5,4 @@ export { ProjectBar } from './components/bars/projectBar/ProjectBar';
 export { MilestoneBar } from './components/bars/milestoneBar/MilestoneBar';
 export { Calendar } from './components/calendar/Calendar';
 export { Grid } from './components/grid/Grid';
-export type { GanttProps, GanttTask } from './types';
+export type { GanttProps, GanttTask, TaskDependency, TaskDependencyType } from './types';

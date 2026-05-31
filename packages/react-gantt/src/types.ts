@@ -20,18 +20,20 @@ export interface GanttTask {
   endDate?: Date;
   duration?: number;
   progress?: number;
- dependency?: string;
   type?: GanttTaskType;
   parentId?: Id | null;
+
 }
 
+
 export interface GanttProps {
-  tasks:  GanttTask[];
+  tasks: GanttTask[];
   rowHeight?: number;
   colWidth?: number;
   scales?: Scale[];
   padDays?: number;
   onTaskClick?: (task: GanttTask) => void;
+  dependencies?: TaskDependency[];
 }
 
 
@@ -52,3 +54,14 @@ export type TaskCommand = {
 };
 
 export type CommittedOverrides = Record<Id, TaskCommand[]>;
+
+
+export type TaskDependencyType = "FS" | "FF" | "SS" | "SF";
+
+
+export type TaskDependency = {
+  from: Id;
+  to: Id;
+  type: TaskDependencyType;
+  lag?: number;
+}
