@@ -101,6 +101,8 @@ export function Grid({
               />
             ))}
           </div>
+          <DependencyLinks width={totalWidth} height={bodyHeight} />
+
           {tasks.map((task, index) => (
             <Bar
               key={task.id}
@@ -116,7 +118,6 @@ export function Grid({
 
             />
           ))}
-          <DependencyLinks width={totalWidth} height={bodyHeight} />
         </div>
       </DependencyLinksProvider>
     </div>

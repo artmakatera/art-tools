@@ -32,4 +32,7 @@
   --am-gantt-calendar-header-color: #0f172a;
   --am-gantt-calendar-weekend-bg: #f1f5f9;
   --am-gantt-calendar-weekend-color: #64748b;
+
+  --am-gantt-links-z-index: 2;
+  --am-gantt-task-bar-z-index: 3;
 }

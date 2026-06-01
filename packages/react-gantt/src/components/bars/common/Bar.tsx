@@ -20,7 +20,7 @@ interface BarProps {
   snapToDay: boolean;
   onUpdate: (id: Id, patch: DatePatch) => void;
   override?: Partial<TaskState>;
-  onOverride: (id:Id, patch: DatePatch) => void;
+  onOverride: (id:Id, patch: DatePatch | null) => void;
 }
 
 export const Bar = memo(function Bar({

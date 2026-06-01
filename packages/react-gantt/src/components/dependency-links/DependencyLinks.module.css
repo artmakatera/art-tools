@@ -2,7 +2,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 2;
+  z-index: var(--am-gantt-links-z-index, 2);
 }
 
 .segment {
