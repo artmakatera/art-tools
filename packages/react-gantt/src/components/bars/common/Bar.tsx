@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { memo } from "react";
 import {
-  applyPatch,
   computeTaskPixels,
   type DatePatch,
   pxToDate,
@@ -20,22 +19,26 @@ interface BarProps {
   rowHeight: number;
   snapToDay: boolean;
   onUpdate: (id: Id, patch: DatePatch) => void;
+  override?: Partial<TaskState>;
+  onOverride: (id:Id, patch: DatePatch) => void;
 }
 
-export function Bar({
+export const Bar = memo(function Bar({
   task,
   index,
   origin,
   colWidth,
   rowHeight,
   snapToDay,
+  override,
+  onOverride,
   onUpdate,
 }: BarProps) {
-  const [override, setOverride] = useState<Partial<TaskState>>({});
+  console.log("Bar render", { taskId: task.id, override });
 
   const { left, width, progress } = computeTaskPixels(
     task,
-    override,
+    override || {},
     origin,
     colWidth,
     { snapToDay },
@@ -55,14 +58,12 @@ export function Bar({
   });
 
   const handleOverride = (patch: DatePatch) => {
-    setOverride((prev) => {
-      return { ...prev, ...applyPatch(task, prev, patch) };
-    });
+    onOverride(task.id, patch);
   };
 
   const handleUpdate = (id: Id, patch: DatePatch) => {
     onUpdate(id, patch);
-    setOverride({});
+    onOverride(id, null);
   };
 
   return (
@@ -118,4 +119,4 @@ export function Bar({
       ) : null}
     </div>
   );
-}
+})

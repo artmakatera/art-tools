@@ -1,6 +1,6 @@
 import { computeTaskPixels } from "../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../core/constants";
-import type { GanttTask, Id, TaskDependency, TaskDependencyType } from "../../types";
+import type { GanttTask, Id, TaskDependency, TaskDependencyType, TaskState } from "../../types";
 
 /** Length of the horizontal stub that leaves a bar before the link turns. */
 const STUB = 12;
@@ -25,27 +25,27 @@ interface Box {
   centerY: number;
 }
 
+/** Maps a task to its horizontal pixel span; captures origin/colWidth/snapToDay. */
+type PixelFn = (task: GanttTask) => { left: number; width: number };
+
 /**
  * Build a lookup of every task's pixel bounds.
  *
- * x-coordinates come from {@link computeTaskPixels} (the same source the bars
- * use, so links stay glued to bar edges). The y-coordinate is derived from the
- * task's row index — the visual order of `tasks` maps 1:1 to grid rows.
+ * x-coordinates come from `toPixels` (backed by {@link computeTaskPixels}, the
+ * same source the bars use, so links stay glued to bar edges). The y-coordinate
+ * is derived from the task's row index — the visual order of `tasks` maps 1:1
+ * to grid rows.
  */
 function buildBoxes(
   tasks: GanttTask[],
-  origin: Date,
-  colWidth: number,
   rowHeight: number,
-  snapToDay: boolean,
+  toPixels: PixelFn,
 ): Map<Id, Box> {
   const boxes = new Map<Id, Box>();
   const half = (rowHeight - TASK_VERTICAL_PADDING * 2) / 2;
 
   tasks.forEach((task, index) => {
-    const { left, width } = computeTaskPixels(task, {}, origin, colWidth, {
-      snapToDay,
-    });
+    const { left, width } = toPixels(task);
     const centerY = index * rowHeight + rowHeight / 2;
 
     if (task.type === "milestone") {
@@ -133,6 +133,16 @@ function routeLink(type: TaskDependencyType, from: Box, to: Box): Point[] {
   }
 }
 
+export interface DependencyLinkParams {
+  tasks: GanttTask[];
+  dependencies: TaskDependency[];
+  origin: Date;
+  colWidth: number;
+  rowHeight: number;
+  snapToDay: boolean;
+  overrides: Record<string, Partial<TaskState>>;
+}
+
 /**
  * Compute the polyline geometry for every dependency. Dependencies whose
  * endpoints are not present in `tasks` are skipped.
@@ -140,15 +150,18 @@ function routeLink(type: TaskDependencyType, from: Box, to: Box): Point[] {
  * `lag` is intentionally not drawn: the gap it implies is already baked into
  * each task's scheduled dates, and therefore into the bar edges we connect.
  */
-export function computeDependencyLinks(
-  tasks: GanttTask[],
-  dependencies: TaskDependency[],
-  origin: Date,
-  colWidth: number,
-  rowHeight: number,
-  snapToDay: boolean,
-): DependencyLink[] {
-  const boxes = buildBoxes(tasks, origin, colWidth, rowHeight, snapToDay);
+export function computeDependencyLinks({
+  tasks,
+  dependencies,
+  origin,
+  colWidth,
+  rowHeight,
+  snapToDay,
+  overrides
+}: DependencyLinkParams): DependencyLink[] {
+  const boxes = buildBoxes(tasks, rowHeight, (task) =>
+    computeTaskPixels(task, overrides[task.id] || {}, origin, colWidth, { snapToDay }),
+  );
   const links: DependencyLink[] = [];
 
   for (const dep of dependencies) {

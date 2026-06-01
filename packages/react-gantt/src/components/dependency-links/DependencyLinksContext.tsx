@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { GanttTask, TaskDependency } from "../../types";
+import type { GanttTask, TaskDependency, TaskState } from "../../types";
 import { computeDependencyLinks, type DependencyLink } from "./geometry";
 
 const DependencyLinksContext = createContext<DependencyLink[] | null>(null);
@@ -12,6 +12,7 @@ interface DependencyLinksProviderProps {
   rowHeight: number;
   snapToDay: boolean;
   children: ReactNode;
+  overrides: Record<string, Partial<TaskState>>;
 }
 
 /**
@@ -27,18 +28,20 @@ export function DependencyLinksProvider({
   rowHeight,
   snapToDay,
   children,
+  overrides,
 }: DependencyLinksProviderProps) {
   const links = useMemo(
     () =>
-      computeDependencyLinks(
+      computeDependencyLinks({
         tasks,
         dependencies,
         origin,
         colWidth,
         rowHeight,
         snapToDay,
-      ),
-    [tasks, dependencies, origin, colWidth, rowHeight, snapToDay],
+        overrides,
+      }),
+    [tasks, dependencies, origin, colWidth, rowHeight, snapToDay, overrides],
   );
 
   return (

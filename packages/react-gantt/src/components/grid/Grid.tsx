@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
-import type { GanttTask, Id, Scale, TaskDependency } from "../../types";
+import type { GanttTask, Id, Scale, TaskDependency, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import { DependencyLinksProvider } from "../dependency-links/DependencyLinksContext";
@@ -37,6 +37,22 @@ export function Grid({
   padDays = DEFAULT_PAD_DAYS,
   onUpdateTask,
 }: GridProps) {
+  const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
+
+  const handleOverride = useCallback((id: Id, patch: Partial<TaskState> | null) => {
+    setOverrides((prev) => {
+      // If patch is null, remove the override for this task
+      if (patch === null) {
+        const { [id]: _, ...rest } = prev;
+        return rest;
+      }
+
+      // Otherwise, update or add the override for this task
+      return ({
+      ...prev,
+      [id]: { ...prev[id], ...patch },
+    })});
+  }, []);
 
   const dates = useMemo(
     () => buildDatesFromTasks(tasks, padDays),
@@ -66,6 +82,7 @@ export function Grid({
         colWidth={colWidth}
         rowHeight={rowHeight}
         snapToDay={snapToDay}
+        overrides={overrides}
       >
         <div
           className={styles.body}
@@ -94,6 +111,9 @@ export function Grid({
               rowHeight={rowHeight}
               snapToDay={snapToDay}
               onUpdate={onUpdateTask}
+              override={overrides[task.id]}
+              onOverride={handleOverride}
+
             />
           ))}
           <DependencyLinks width={totalWidth} height={bodyHeight} />
