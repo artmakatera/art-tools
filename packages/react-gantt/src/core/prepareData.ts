@@ -15,7 +15,7 @@ export function getTaskList(
   );
 }
 
-function resolveCommittedTasks(
+export function resolveCommittedTasks(
   tasks: GanttTask[],
   committedChanges: CommittedOverrides,
 ): GanttTask[] {
