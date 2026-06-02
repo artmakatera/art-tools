@@ -77,12 +77,52 @@ export function buildDependencyGraph(
 }
 
 /**
+ * Earliest start `task` may take so that *every* incoming dependency is
+ * satisfied — the latest constraint across all predecessors, or `null` when the
+ * task has none.
+ */
+function earliestStart(
+  task: GanttTask,
+  predecessorDeps: Map<Id, TaskDependency[]>,
+  current: Map<Id, GanttTask>,
+): Date | null {
+  const duration = durationDaysOf(task);
+  let earliest: Date | null = null;
+  for (const dep of predecessorDeps.get(task.id) ?? []) {
+    const pred = current.get(dep.from);
+    if (!pred) continue;
+    const candidate = constrainedStart(spanOf(pred), dep.type, dep.lag ?? 0, duration);
+    if (earliest === null || candidate > earliest) earliest = candidate;
+  }
+  return earliest;
+}
+
+/** A copy of `task` moved to `start`, preserving its duration. */
+function movedTo(task: GanttTask, start: Date): GanttTask {
+  return {
+    ...task,
+    startDate: start,
+    endDate:
+      task.type === "milestone"
+        ? task.endDate
+        : addDays(start, durationDaysOf(task)),
+  };
+}
+
+/**
  * Re-schedule the dependents of a changed task.
  *
- * Walks the dependency graph forward from `changedId`: each successor is moved
- * (its duration preserved) so that its binding edge satisfies *all* of its
- * predecessors — taking the latest constraint when several apply — then its own
- * successors are revisited. Returns only the tasks whose dates moved.
+ * First clamps the changed task itself forward if the user moved it so that it
+ * violates one of its own predecessors — e.g. dragging a start-to-start
+ * successor before its predecessor snaps its start back onto the predecessor's
+ * (a valid earlier/later move is left untouched).
+ *
+ * Then walks the dependency graph forward from `changedId`. Dependencies act as
+ * a lower bound: a successor is pushed later only when a move would violate it
+ * (taking the latest constraint when several predecessors apply), and is never
+ * pulled earlier when a predecessor moves back. Its duration is preserved and
+ * its own successors are then revisited. Returns only the tasks whose dates
+ * moved.
  *
  * `current` is the working set of effective tasks and is mutated in place as
  * the schedule settles. A per-call iteration cap keeps dependency cycles from
@@ -96,6 +136,20 @@ export function scheduleDependents(
   const { successorsOf, predecessorDeps } = graph;
 
   const changed = new Map<Id, GanttTask>();
+
+  // Clamp the dragged task forward to satisfy its own predecessors before
+  // cascading. Only a violating (too-early) move is corrected; the constraint
+  // is a lower bound, so a valid drag is preserved.
+  const changedTask = current.get(changedId);
+  if (changedTask) {
+    const earliest = earliestStart(changedTask, predecessorDeps, current);
+    if (earliest !== null && diffDays(changedTask.startDate, earliest) > 0) {
+      const clamped = movedTo(changedTask, earliest);
+      current.set(changedId, clamped);
+      changed.set(changedId, clamped);
+    }
+  }
+
   const queue = new Queue<Id>([changedId]);
   const maxIterations = (graph.size + 1) * (current.size + 1);
   let iterations = 0;
@@ -108,31 +162,13 @@ export function scheduleDependents(
       const successor = current.get(successorId);
       if (!successor) continue;
 
-      const duration = durationDaysOf(successor);
-      let earliest: Date | null = null;
-      for (const dep of predecessorDeps.get(successorId) ?? []) {
-        const pred = current.get(dep.from);
-        if (!pred) continue;
-        const candidate = constrainedStart(
-          spanOf(pred),
-          dep.type,
-          dep.lag ?? 0,
-          duration,
-        );
-        if (earliest === null || candidate > earliest) earliest = candidate;
-      }
-
+      const earliest = earliestStart(successor, predecessorDeps, current);
       if (earliest === null) continue;
-      if (diffDays(successor.startDate, earliest) === 0) continue; // unchanged
+      // Lower bound only: push a violating (too-early) successor forward, but
+      // never pull it earlier when a predecessor moves back.
+      if (diffDays(successor.startDate, earliest) <= 0) continue;
 
-      const next: GanttTask = {
-        ...successor,
-        startDate: earliest,
-        endDate:
-          successor.type === "milestone"
-            ? successor.endDate
-            : addDays(earliest, duration),
-      };
+      const next = movedTo(successor, earliest);
       current.set(successorId, next);
       changed.set(successorId, next);
       queue.enqueue(successorId);
