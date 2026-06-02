@@ -9,7 +9,7 @@ import { useTaskList } from "./hooks/useTaskList";
 
 
 export function Gantt({ tasks, dependencies, rowHeight = 32, colWidth }: GanttProps) {
-  const {tasksList, updateTask} =  useTaskList(tasks);
+  const {tasksList, updateTask} =  useTaskList(tasks, dependencies);
 
   return (
     <Grid

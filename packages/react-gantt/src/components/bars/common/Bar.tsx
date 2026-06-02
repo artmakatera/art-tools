@@ -34,8 +34,6 @@ export const Bar = memo(function Bar({
   onOverride,
   onUpdate,
 }: BarProps) {
-  console.log("Bar render", { taskId: task.id, override });
-
   const { left, width, progress } = computeTaskPixels(
     task,
     override || {},
