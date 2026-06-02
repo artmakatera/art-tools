@@ -26,6 +26,7 @@
 
 .col {
   box-sizing: border-box;
+  flex-shrink: 0;
   border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
 }
 

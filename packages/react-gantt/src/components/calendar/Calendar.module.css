@@ -1,6 +1,7 @@
 .calendar {
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
   border-radius: var(--am-gantt-calendar-radius, 6px);
   overflow: hidden;
@@ -30,6 +31,7 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  flex-shrink: 0;
   padding: 0 8px;
   border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
   font-size: 13px;
