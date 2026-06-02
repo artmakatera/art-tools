@@ -21,6 +21,7 @@ interface BarProps {
   onUpdate: (id: Id, patch: DatePatch) => void;
   override?: Partial<TaskState>;
   onOverride: (id:Id, patch: DatePatch | null) => void;
+  onTaskClick?: (task: GanttTask) => void;
 }
 
 export const Bar = memo(function Bar({
@@ -33,6 +34,7 @@ export const Bar = memo(function Bar({
   override,
   onOverride,
   onUpdate,
+  onTaskClick,
 }: BarProps) {
   const { left, width, progress } = computeTaskPixels(
     task,
@@ -65,7 +67,11 @@ export const Bar = memo(function Bar({
   };
 
   return (
-    <div className={styles.row} style={{ top, height: rowHeight }}>
+    <div
+      className={styles.row}
+      style={{ top, height: rowHeight }}
+      onClick={onTaskClick ? () => onTaskClick(task) : undefined}
+    >
       {task.type === "milestone" && (
         <MilestoneBar
           size={barHeight}
