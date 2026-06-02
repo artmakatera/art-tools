@@ -25,6 +25,7 @@ type GridProps = {
   scales?: Scale[];
   padDays?: number;
   onUpdateTask: (id: Id, patch: DatePatch) => void
+  onTaskClick?: (task: GanttTask) => void;
 };
 
 
@@ -36,6 +37,7 @@ export function Grid({
   scales,
   padDays = DEFAULT_PAD_DAYS,
   onUpdateTask,
+  onTaskClick,
 }: GridProps) {
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
 
@@ -115,7 +117,7 @@ export function Grid({
               onUpdate={onUpdateTask}
               override={overrides[task.id]}
               onOverride={handleOverride}
-
+              onTaskClick={onTaskClick}
             />
           ))}
         </div>

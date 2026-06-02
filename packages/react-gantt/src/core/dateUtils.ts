@@ -59,9 +59,9 @@ interface TaskDates {
   endDate?: Date;
 }
 
-function getMinMaxDatesNonCached(tasks: readonly TaskDates[]): { min: Date; max: Date } {
+function getMinMaxDatesNonCached(tasks: readonly TaskDates[]): { min: Date; max: Date } | null {
    const first = tasks[0];
-  if (!first) return { min: new Date(), max: new Date() };
+  if (!first) return null;
     let min = first.startDate;
   let max = first.endDate ?? first.startDate;
   for (const t of tasks) {
@@ -81,7 +81,10 @@ export function buildDatesFromTasks(
   tasks: readonly TaskDates[],
   padDays = 0,
 ): Date[] {
-  const { min, max } = getMinMaxDates(tasks);
+  const range = getMinMaxDates(tasks);
+  if (!range) return [];
+  
+  const { min, max } = range;
   let start = addDays(min, -padDays);
   let end = addDays(max, padDays);
   return buildDates(start, diffDays(start, end) + 1);
