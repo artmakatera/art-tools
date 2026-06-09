@@ -21,7 +21,7 @@ export function Gantt({
 }: GanttProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const { gridWidth, onHandleMouseDown } = useGridResize(containerRef, overlayRef);
+  const { gridWidth, onHandleMouseDown } = useGridResize(containerRef, overlayRef, defaultTaskListWidth);
   const showTaskList = columns !== undefined;
 
   return (
