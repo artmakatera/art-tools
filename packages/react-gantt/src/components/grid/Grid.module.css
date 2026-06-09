@@ -1,3 +1,10 @@
+.gridWrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .grid {
   position: relative;
   display: flex;

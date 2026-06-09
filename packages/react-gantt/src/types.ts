@@ -1,3 +1,5 @@
+import type React from "react";
+
 type GanttTaskType = "task" | "milestone" | "project"
 
 export type CalendarUnit = "day" | "week" | "month" | "quarter" | "year";
@@ -26,6 +28,13 @@ export interface GanttTask {
 }
 
 
+export interface ColumnDef<T extends GanttTask = GanttTask> {
+  key: string;
+  header: string;
+  width?: number;
+  render: (task: T) => React.ReactNode;
+}
+
 export interface GanttProps {
   tasks: GanttTask[];
   rowHeight?: number;
@@ -34,6 +43,10 @@ export interface GanttProps {
   padDays?: number;
   onTaskClick?: (task: GanttTask) => void;
   dependencies?: TaskDependency[];
+  columns?: ColumnDef[];
+  defaultTaskListWidth?: number;
+  onDependencyCreate?: (dep: TaskDependency) => void;
+  onDependencyDelete?: (dep: TaskDependency) => void;
 }
 
 

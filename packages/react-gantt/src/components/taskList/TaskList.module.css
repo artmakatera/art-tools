@@ -1,0 +1,128 @@
+.taskList {
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+  background: var(--am-gantt-tasklist-bg, #ffffff);
+  flex-shrink: 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  background: var(--am-gantt-calendar-header-bg, #f8fafc);
+  border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  border-radius: var(--am-gantt-calendar-radius, 6px) var(--am-gantt-calendar-radius, 6px) 0 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  user-select: none;
+}
+
+.headerCell {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--am-gantt-calendar-header-color, #475569);
+  border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.headerCell:last-child {
+  border-right: none;
+}
+
+.body {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  border-top: none;
+  border-radius: 0 0 var(--am-gantt-calendar-radius, 6px) var(--am-gantt-calendar-radius, 6px);
+  background: var(--am-gantt-tasklist-bg, #ffffff);
+  box-sizing: border-box;
+}
+
+.rows {
+  position: relative;
+}
+
+.row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  border-bottom: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  box-sizing: border-box;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--am-gantt-tasklist-color, #334155);
+  border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.cell:last-child {
+  border-right: none;
+}
+
+.nameCell {
+  overflow: hidden;
+}
+
+.nameContent {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.expandBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--am-gantt-tasklist-color, #334155);
+  width: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.expandPlaceholder {
+  display: inline-block;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.divider {
+  width: 4px;
+  cursor: col-resize;
+  background: var(--am-gantt-calendar-border, #e2e8f0);
+  flex-shrink: 0;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.divider:hover {
+  background: var(--am-gantt-dependency-color, #94a3b8);
+}

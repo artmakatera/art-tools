@@ -1,78 +1,69 @@
-import { Gantt} from "@am/react-gantt"
+import { useState } from "react";
+import { Gantt, GanttProvider, TaskList, GanttGrid, type TaskDependency } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { mockTasks, mockDependencies } from "./mock";
 
-
-
-export function App() {
+// Example 1: convenience <Gantt> with built-in TaskList panel
+function GanttWithTaskList() {
+  const [dependencies, setDependencies] = useState<TaskDependency[]>(mockDependencies);
 
   return (
-    <div style ={{ margin: "0 auto", width: "1000px" }}>
-    
-     <Gantt tasks={mockTasks} dependencies={mockDependencies} colWidth={100} rowHeight={40} />
-    </div>
-  )
+    <Gantt
+      tasks={mockTasks}
+      dependencies={dependencies}
+      colWidth={60}
+      rowHeight={40}
+      columns={[]}
+      onDependencyCreate={(dep) => setDependencies((prev) => [...prev, dep])}
+      onDependencyDelete={(dep) =>
+        setDependencies((prev) =>
+          prev.filter((d) => !(d.from === dep.from && d.to === dep.to))
+        )
+      }
+    />
+  );
 }
 
+// Example 2: composable API — TaskList + GanttGrid composed manually
+function ComposableGantt() {
+  const [dependencies, setDependencies] = useState<TaskDependency[]>(mockDependencies);
 
-// import { Gantt, type GanttTask, type Task } from '@am/react-gantt';
-// import { Profiler, useMemo, useRef, useState, type ProfilerOnRenderCallback } from 'react';
-// import { generateTasks } from './fixtures';
+  return (
+    <GanttProvider
+      tasks={mockTasks}
+      dependencies={dependencies}
+      colWidth={60}
+      rowHeight={40}
+      onDependencyCreate={(dep) => setDependencies((prev) => [...prev, dep])}
+      onDependencyDelete={(dep) =>
+        setDependencies((prev) =>
+          prev.filter((d) => !(d.from === dep.from && d.to === dep.to))
+        )
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "row" }}>
+        <TaskList />
+        <GanttGrid />
+      </div>
+    </GanttProvider>
+  );
+}
 
-// const SIZES = [10, 100, 1_000, 5_000, 10_000] as const;
-// type Size = (typeof SIZES)[number];
+export function App() {
+  const [view, setView] = useState<"simple" | "composable">("simple");
 
-// interface ProfileSample {
-//   phase: Parameters<ProfilerOnRenderCallback>[1];
-//   actualDuration: number;
-//   baseDuration: number;
-// }
+  return (
+    <div style={{ margin: "0 auto", maxWidth: "1200px", padding: "16px", fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ marginBottom: 16, display: "flex", gap: 8 }}>
+        <button onClick={() => setView("simple")} style={{ fontWeight: view === "simple" ? "bold" : "normal" }}>
+          Simple (with TaskList)
+        </button>
+        <button onClick={() => setView("composable")} style={{ fontWeight: view === "composable" ? "bold" : "normal" }}>
+          Composable API
+        </button>
+      </div>
 
-// export function App() {
-//   const [size, setSize] = useState<Size>(100);
-//   const [profile, setProfile] = useState<ProfileSample | null>(null);
-//   const seenForSizeRef = useRef<Size | null>(null);
-
-//   const tasks = useMemo<readonly GanttTask[]>(() => generateTasks(size), [size]);
-
-//   const onRender: ProfilerOnRenderCallback = (_id, phase, actualDuration, baseDuration) => {
-//     if (seenForSizeRef.current === size) return;
-//     seenForSizeRef.current = size;
-//     setProfile({ phase, actualDuration, baseDuration });
-//   };
-
-//   return (
-//     <main style={{ fontFamily: 'system-ui, sans-serif', padding: 16 }}>
-//       <header style={{ marginBottom: 16 }}>
-//         <h1 style={{ margin: '0 0 8px' }}>react-gantt playground</h1>
-//         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-//           <label>
-//             tasks:&nbsp;
-//             <select
-//               value={size}
-//               onChange={(e) => {
-//                 seenForSizeRef.current = null;
-//                 setSize(Number(e.target.value) as Size);
-//               }}
-//             >
-//               {SIZES.map((n) => (
-//                 <option key={n} value={n}>
-//                   {n.toLocaleString()}
-//                 </option>
-//               ))}
-//             </select>
-//           </label>
-//           {profile && (
-//             <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, monospace', fontSize: 13 }}>
-//               {profile.phase} · actual {profile.actualDuration.toFixed(2)} ms · base{' '}
-//               {profile.baseDuration.toFixed(2)} ms
-//             </span>
-//           )}
-//         </div>
-//       </header>
-//       <Profiler id="gantt" onRender={onRender}>
-//         <Gantt tasks={tasks} />
-//       </Profiler>
-//     </main>
-//   );
-// }
+      {view === "simple" ? <GanttWithTaskList /> : <ComposableGantt />}
+    </div>
+  );
+}

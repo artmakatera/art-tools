@@ -1,24 +1,49 @@
-import { Grid } from "./components/grid/Grid";
-import type {
-  GanttProps,
+import { GanttProvider } from "./context/GanttContext";
+import { GanttGrid } from "./components/grid/Grid";
+import { TaskList } from "./components/taskList/TaskList";
+import { TaskListDivider } from "./components/taskList/TaskListDivider";
+import { useSidebarResize } from "./hooks/useSidebarResize";
+import type { GanttProps } from "./types";
 
-} from "./types";
-
-import { useTaskList } from "./hooks/useTaskList";
-
-
-
-export function Gantt({ tasks, dependencies, rowHeight = 32, colWidth, onTaskClick }: GanttProps) {
-  const {tasksList, updateTask} =  useTaskList(tasks, dependencies);
+export function Gantt({
+  tasks,
+  dependencies,
+  rowHeight,
+  colWidth,
+  scales,
+  padDays,
+  onTaskClick,
+  columns,
+  defaultTaskListWidth = 280,
+  onDependencyCreate,
+  onDependencyDelete,
+}: GanttProps) {
+  const { width: taskListWidth, onDividerMouseDown } = useSidebarResize(defaultTaskListWidth);
+  const showTaskList = columns !== undefined;
 
   return (
-    <Grid
-      tasks={tasksList}
-      colWidth={colWidth}
-      rowHeight={rowHeight}
-      onUpdateTask={updateTask}
+    <GanttProvider
+      tasks={tasks}
       dependencies={dependencies}
+      rowHeight={rowHeight}
+      colWidth={colWidth}
+      scales={scales}
+      padDays={padDays}
       onTaskClick={onTaskClick}
-    />
+      onDependencyCreate={onDependencyCreate}
+      onDependencyDelete={onDependencyDelete}
+    >
+      <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start" }}>
+        {showTaskList && (
+          <>
+            <div style={{ width: taskListWidth, flexShrink: 0 }}>
+              <TaskList columns={columns} />
+            </div>
+            <TaskListDivider onMouseDown={onDividerMouseDown} />
+          </>
+        )}
+        <GanttGrid />
+      </div>
+    </GanttProvider>
   );
 }
