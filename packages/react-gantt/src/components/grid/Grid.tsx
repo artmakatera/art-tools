@@ -1,64 +1,46 @@
 import { useCallback, useMemo, useState } from "react";
 import { buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
-import type { GanttTask, Id, Scale, TaskDependency, TaskState } from "../../types";
+import type { Id, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import { DependencyLinksProvider } from "../dependency-links/DependencyLinksContext";
 import { DependencyLinks } from "../dependency-links/DependencyLinks";
+import { DependencyPreview } from "../dependency-links/DependencyPreview";
 import styles from "./Grid.module.css";
-import {
+import { getFinestUnit } from "../../core/barUtils";
+import { useGanttContext } from "../../context/GanttContext";
 
-  getFinestUnit,
-  type DatePatch,
-} from "../../core/barUtils";
-import {
-  DEFAULT_COL_WIDTH,
-  DEFAULT_PAD_DAYS,
-  DEFAULT_ROW_HEIGHT,
-} from "../../core/constants";
+export function GanttGrid() {
+  const {
+    visibleTasks,
+    dependencies,
+    colWidth,
+    rowHeight,
+    scales,
+    padDays,
+    updateTask,
+    onTaskClick,
+    onDependencyDelete,
+    gridRef,
+    onGridScroll,
+    gridBodyRef,
+  } = useGanttContext();
 
-type GridProps = {
-  tasks: GanttTask[];
-  dependencies?: TaskDependency[];
-  colWidth?: number;
-  rowHeight?: number;
-  scales?: Scale[];
-  padDays?: number;
-  onUpdateTask: (id: Id, patch: DatePatch) => void
-  onTaskClick?: (task: GanttTask) => void;
-};
-
-
-export function Grid({
-  tasks,
-  dependencies,
-  colWidth = DEFAULT_COL_WIDTH,
-  rowHeight = DEFAULT_ROW_HEIGHT,
-  scales,
-  padDays = DEFAULT_PAD_DAYS,
-  onUpdateTask,
-  onTaskClick,
-}: GridProps) {
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
 
   const handleOverride = useCallback((id: Id, patch: Partial<TaskState> | null) => {
     setOverrides((prev) => {
-      // If patch is null, remove the override for this task
       if (patch === null) {
         const { [id]: _, ...rest } = prev;
         return rest;
       }
-
-      // Otherwise, update or add the override for this task
-      return ({
-      ...prev,
-      [id]: { ...prev[id], ...patch },
-    })});
+      return { ...prev, [id]: { ...prev[id], ...patch } };
+    });
   }, []);
 
   const dates = useMemo(
-    () => buildDatesFromTasks(tasks, padDays),
-    [tasks, padDays],
+    () => buildDatesFromTasks(visibleTasks, padDays),
+    [visibleTasks, padDays],
   );
 
   const origin = dates[0];
@@ -66,62 +48,78 @@ export function Grid({
 
   const snapToDay = getFinestUnit(scales) !== "day";
   const totalWidth = dates.length * colWidth;
-  const bodyHeight = tasks.length * rowHeight;
-
+  const bodyHeight = visibleTasks.length * rowHeight;
 
   return (
-    <div className={styles.grid} style={{ width: totalWidth }}>
-      <Calendar
-        colWidth={colWidth}
-        rowHeight={rowHeight}
-        dates={dates}
-        scales={scales}
-      />
-      <DependencyLinksProvider
-        tasks={tasks}
-        dependencies={dependencies ?? []}
-        origin={origin}
-        colWidth={colWidth}
-        rowHeight={rowHeight}
-        snapToDay={snapToDay}
-        overrides={overrides}
-      >
-        <div
-          className={styles.body}
-          style={{ height: bodyHeight, width: totalWidth }}
+    <div
+      ref={gridRef}
+      className={styles.gridWrapper}
+      onScroll={onGridScroll}
+    >
+      <div className={styles.grid} style={{ width: totalWidth }}>
+        <Calendar
+          colWidth={colWidth}
+          rowHeight={rowHeight}
+          dates={dates}
+          scales={scales}
+        />
+        <DependencyLinksProvider
+          tasks={visibleTasks}
+          dependencies={dependencies}
+          origin={origin}
+          colWidth={colWidth}
+          rowHeight={rowHeight}
+          snapToDay={snapToDay}
+          overrides={overrides}
         >
-          <div className={styles.cols} aria-hidden>
-            {dates.map((date) => (
-              <div
-                key={date.toISOString()}
-                className={
-                  isWeekend(date)
-                    ? `${styles.col} ${styles.colWeekend}`
-                    : styles.col
-                }
-                style={{ width: colWidth, height: bodyHeight }}
+          <div
+            ref={gridBodyRef}
+            className={styles.body}
+            style={{ height: bodyHeight, width: totalWidth }}
+          >
+            <div className={styles.cols} aria-hidden>
+              {dates.map((date) => (
+                <div
+                  key={date.toISOString()}
+                  className={
+                    isWeekend(date)
+                      ? `${styles.col} ${styles.colWeekend}`
+                      : styles.col
+                  }
+                  style={{ width: colWidth, height: bodyHeight }}
+                />
+              ))}
+            </div>
+            <DependencyLinks
+              width={totalWidth}
+              height={bodyHeight}
+              onDependencyDelete={onDependencyDelete}
+            />
+            <DependencyPreview />
+
+            {visibleTasks.map((task, index) => (
+              <Bar
+                key={task.id}
+                task={task}
+                index={index}
+                origin={origin}
+                colWidth={colWidth}
+                rowHeight={rowHeight}
+                snapToDay={snapToDay}
+                onUpdate={updateTask}
+                override={overrides[task.id]}
+                onOverride={handleOverride}
+                onTaskClick={onTaskClick}
               />
             ))}
           </div>
-          <DependencyLinks width={totalWidth} height={bodyHeight} />
-
-          {tasks.map((task, index) => (
-            <Bar
-              key={task.id}
-              task={task}
-              index={index}
-              origin={origin}
-              colWidth={colWidth}
-              rowHeight={rowHeight}
-              snapToDay={snapToDay}
-              onUpdate={onUpdateTask}
-              override={overrides[task.id]}
-              onOverride={handleOverride}
-              onTaskClick={onTaskClick}
-            />
-          ))}
-        </div>
-      </DependencyLinksProvider>
+        </DependencyLinksProvider>
+      </div>
     </div>
   );
+}
+
+/** @deprecated Use GanttGrid instead */
+export function Grid() {
+  return <GanttGrid />;
 }

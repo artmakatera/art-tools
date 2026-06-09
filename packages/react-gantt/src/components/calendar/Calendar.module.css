@@ -13,6 +13,7 @@
 .row {
   display: flex;
   flex-direction: row;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
 }
 

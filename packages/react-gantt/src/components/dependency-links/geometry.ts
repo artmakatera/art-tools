@@ -16,6 +16,17 @@ export interface DependencyLink {
   type: TaskDependencyType;
   /** Orthogonal polyline from the source edge to the target edge. */
   points: Point[];
+  /** The original dependency for callbacks. */
+  dep: TaskDependency;
+}
+
+/** Midpoint of the middle segment of a polyline. */
+export function midpoint(points: Point[]): Point {
+  if (points.length < 2) return points[0] ?? { x: 0, y: 0 };
+  const mid = Math.floor((points.length - 1) / 2);
+  const a = points[mid]!;
+  const b = points[mid + 1]!;
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
 /** Pixel-space bounds of a single bar: its left/right edges and vertical center. */
@@ -173,6 +184,7 @@ export function computeDependencyLinks({
       id: `${dep.from}->${dep.to}`,
       type: dep.type,
       points: routeLink(dep.type, from, to),
+      dep,
     });
   }
 

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import {
   computeTaskPixels,
   type DatePatch,
@@ -9,6 +9,7 @@ import type { GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
 import { TaskBar } from "../taskBar/TaskBar";
+import { ConnectorHandles } from "./ConnectorHandles";
 import styles from "./Bar.module.css";
 
 interface BarProps {
@@ -20,7 +21,7 @@ interface BarProps {
   snapToDay: boolean;
   onUpdate: (id: Id, patch: DatePatch) => void;
   override?: Partial<TaskState>;
-  onOverride: (id:Id, patch: DatePatch | null) => void;
+  onOverride: (id: Id, patch: DatePatch | null) => void;
   onTaskClick?: (task: GanttTask) => void;
 }
 
@@ -46,6 +47,9 @@ export const Bar = memo(function Bar({
   const top = index * rowHeight;
   const visualLeft = left;
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
+  const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
+
+  const [hovered, setHovered] = useState(false);
 
   const moveAt = (newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth),
@@ -71,7 +75,11 @@ export const Bar = memo(function Bar({
       className={styles.row}
       style={{ top, height: rowHeight }}
       onClick={onTaskClick ? () => onTaskClick(task) : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
+      <ConnectorHandles taskId={task.id} barCenterY={barCenterY} show={hovered} />
+
       {task.type === "milestone" && (
         <MilestoneBar
           size={barHeight}
@@ -123,4 +131,4 @@ export const Bar = memo(function Bar({
       ) : null}
     </div>
   );
-})
+});
