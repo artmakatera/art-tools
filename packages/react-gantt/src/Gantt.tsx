@@ -1,8 +1,9 @@
+import { useRef } from "react";
 import { GanttProvider } from "./context/GanttContext";
 import { GanttGrid } from "./components/grid/Grid";
+import { GridResizeHandle } from "./components/grid/GridResizeHandle";
 import { TaskList } from "./components/taskList/TaskList";
-import { TaskListDivider } from "./components/taskList/TaskListDivider";
-import { useSidebarResize } from "./hooks/useSidebarResize";
+import { useGridResize } from "./hooks/useGridResize";
 import type { GanttProps } from "./types";
 
 export function Gantt({
@@ -18,7 +19,9 @@ export function Gantt({
   onDependencyCreate,
   onDependencyDelete,
 }: GanttProps) {
-  const { width: taskListWidth, onDividerMouseDown } = useSidebarResize(defaultTaskListWidth);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const { gridWidth, onHandleMouseDown } = useGridResize(containerRef, overlayRef);
   const showTaskList = columns !== undefined;
 
   return (
@@ -33,17 +36,35 @@ export function Gantt({
       onDependencyCreate={onDependencyCreate}
       onDependencyDelete={onDependencyDelete}
     >
-      <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start" }}>
-        {showTaskList && (
-          <>
-            <div style={{ width: taskListWidth, flexShrink: 0 }}>
-              <TaskList columns={columns} />
+      {showTaskList ? (
+        <div ref={containerRef} style={{ position: "relative" }}>
+          <div style={{ width: defaultTaskListWidth }}>
+            <TaskList columns={columns} />
+          </div>
+          <div
+            ref={overlayRef}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              zIndex: 1,
+              display: "flex",
+              flexDirection: "row",
+              background: "var(--am-gantt-grid-bg, #ffffff)",
+              ...(gridWidth !== undefined
+                ? { width: gridWidth }
+                : { left: defaultTaskListWidth }),
+            }}
+          >
+            <GridResizeHandle onMouseDown={onHandleMouseDown} />
+            <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+              <GanttGrid />
             </div>
-            <TaskListDivider onMouseDown={onDividerMouseDown} />
-          </>
-        )}
+          </div>
+        </div>
+      ) : (
         <GanttGrid />
-      </div>
+      )}
     </GanttProvider>
   );
 }
