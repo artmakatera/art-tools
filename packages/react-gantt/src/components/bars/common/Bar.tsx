@@ -78,7 +78,13 @@ export const Bar = memo(function Bar({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <ConnectorHandles taskId={task.id} barCenterY={barCenterY} show={hovered} />
+      <ConnectorHandles
+        taskId={task.id}
+        barLeft={visualLeft}
+        barWidth={width}
+        barCenterY={barCenterY}
+        show={hovered}
+      />
 
       {task.type === "milestone" && (
         <MilestoneBar

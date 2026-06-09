@@ -1,17 +1,22 @@
 import { useGanttContext, type ConnectorHandle } from "../../../context/GanttContext";
+import { CONNECTOR_HANDLE_SIZE } from "../../../core/constants";
 import type { Id } from "../../../types";
 import styles from "./ConnectorHandles.module.css";
 
+const HANDLE_OFFSET = CONNECTOR_HANDLE_SIZE / 2;
+
 interface ConnectorHandlesProps {
   taskId: Id;
+  barLeft: number;
+  barWidth: number;
   barCenterY: number;
   show: boolean;
 }
 
-export function ConnectorHandles({ taskId, barCenterY, show }: ConnectorHandlesProps) {
+export function ConnectorHandles({ taskId, barLeft, barWidth, barCenterY, show }: ConnectorHandlesProps) {
   const { drag, startDrag, endDrag, gridBodyRef } = useGanttContext();
 
-  const getStartCoords = (e: React.MouseEvent, handle: ConnectorHandle) => {
+  const getStartCoords = (e: React.MouseEvent, _handle: ConnectorHandle) => {
     const rect = gridBodyRef.current?.getBoundingClientRect();
     if (!rect) return { x: 0, y: 0 };
     const handleEl = e.currentTarget as HTMLElement;
@@ -35,18 +40,23 @@ export function ConnectorHandles({ taskId, barCenterY, show }: ConnectorHandlesP
       endDrag(taskId, handle);
     }
   };
+  
 
   return (
     <>
       <div
+        role="button"
+        tabIndex={0}
         className={`${styles.handle} ${show || !!drag ? styles.visible : ""}`}
-        style={{ left: -5, top: barCenterY - 5 }}
+        style={{ left: barLeft - CONNECTOR_HANDLE_SIZE, top: barCenterY - HANDLE_OFFSET }}
         onMouseDown={(e) => onMouseDown(e, "start")}
         onMouseUp={(e) => onMouseUp(e, "start")}
       />
       <div
+        role="button"
+        tabIndex={0}
         className={`${styles.handle} ${show || !!drag ? styles.visible : ""}`}
-        style={{ right: -5, top: barCenterY - 5 }}
+        style={{ left: barLeft + barWidth, top: barCenterY - HANDLE_OFFSET }}
         onMouseDown={(e) => onMouseDown(e, "end")}
         onMouseUp={(e) => onMouseUp(e, "end")}
       />
