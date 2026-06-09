@@ -1,5 +1,6 @@
 .handle {
   position: absolute;
+  /* Keep in sync with CONNECTOR_HANDLE_SIZE in core/constants.ts */
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -11,6 +12,7 @@
   opacity: 0;
   transition: opacity 0.15s;
   pointer-events: auto;
+  box-sizing: border-box;
 }
 
 .visible {
