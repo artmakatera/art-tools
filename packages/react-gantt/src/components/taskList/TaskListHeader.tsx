@@ -37,6 +37,7 @@ export function buildBuiltInColumns(): ColumnDef[] {
       key: "__name",
       header: "Task Name",
       render: (task: GanttTask) => task.name,
+      width: 200,
     },
     {
       key: "__start",
