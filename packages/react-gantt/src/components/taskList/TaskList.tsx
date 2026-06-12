@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useGanttContext } from "../../context/GanttContext";
+import { useGanttConfig, useGanttScroll, useGanttTask } from "../../context/GanttContext";
 import type { ColumnDef, Id } from "../../types";
 import { TaskListHeader, buildBuiltInColumns } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
@@ -10,17 +10,9 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [] }: TaskListProps) {
-  const {
-    visibleTasks,
-    tasksList,
-    rowHeight,
-    scales,
-    expandedIds,
-    parentIds,
-    toggleExpand,
-    taskListRef,
-    onTaskListScroll,
-  } = useGanttContext();
+  const { visibleTasks, tasksList, expandedIds, parentIds, toggleExpand } = useGanttTask();
+  const { rowHeight, scales } = useGanttConfig();
+  const { taskListRef, onTaskListScroll } = useGanttScroll();
 
   const allColumns = useMemo(() => [...buildBuiltInColumns(), ...columns], [columns]);
 

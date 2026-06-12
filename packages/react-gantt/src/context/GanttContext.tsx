@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -28,33 +29,81 @@ export interface DependencyDragState {
   currentY: number;
 }
 
-interface GanttContextValue {
+// --- Config ---------------------------------------------------------------
+
+interface GanttConfigValue {
+  rowHeight: number;
+  colWidth: number;
+  scales?: Scale[];
+  padDays: number;
+}
+
+const GanttConfigContext = createContext<GanttConfigValue | null>(null);
+
+export function useGanttConfig(): GanttConfigValue {
+  const ctx = useContext(GanttConfigContext);
+  if (!ctx) throw new Error("useGanttConfig must be used within a <GanttProvider>");
+  return ctx;
+}
+
+// --- Tasks ----------------------------------------------------------------
+
+interface GanttTaskValue {
   tasksList: GanttTask[];
   visibleTasks: GanttTask[];
   updateTask: (id: Id, patch: DatePatch) => void;
   expandedIds: Set<Id>;
   parentIds: Set<Id>;
   toggleExpand: (id: Id) => void;
-  rowHeight: number;
-  colWidth: number;
-  scales?: Scale[];
-  padDays: number;
-  dependencies: TaskDependency[];
   onTaskClick?: (task: GanttTask) => void;
-  onDependencyCreate?: (dep: TaskDependency) => void;
-  onDependencyDelete?: (dep: TaskDependency) => void;
+}
+
+const GanttTaskContext = createContext<GanttTaskValue | null>(null);
+
+export function useGanttTask(): GanttTaskValue {
+  const ctx = useContext(GanttTaskContext);
+  if (!ctx) throw new Error("useGanttTask must be used within a <GanttProvider>");
+  return ctx;
+}
+
+// --- Scroll ---------------------------------------------------------------
+
+interface GanttScrollValue {
   taskListRef: React.RefObject<HTMLDivElement | null>;
   gridRef: React.RefObject<HTMLDivElement | null>;
   onTaskListScroll: () => void;
   onGridScroll: () => void;
   gridBodyRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const GanttScrollContext = createContext<GanttScrollValue | null>(null);
+
+export function useGanttScroll(): GanttScrollValue {
+  const ctx = useContext(GanttScrollContext);
+  if (!ctx) throw new Error("useGanttScroll must be used within a <GanttProvider>");
+  return ctx;
+}
+
+// --- Dependency -----------------------------------------------------------
+
+interface GanttDependencyValue {
+  dependencies: TaskDependency[];
+  onDependencyCreate?: (dep: TaskDependency) => void;
+  onDependencyDelete?: (dep: TaskDependency) => void;
   drag: DependencyDragState | null;
   startDrag: (state: DependencyDragState) => void;
-  updateDrag: (x: number, y: number) => void;
   endDrag: (toTaskId: Id | null, toHandle?: ConnectorHandle) => void;
 }
 
-const GanttContext = createContext<GanttContextValue | null>(null);
+const GanttDependencyContext = createContext<GanttDependencyValue | null>(null);
+
+export function useGanttDependency(): GanttDependencyValue {
+  const ctx = useContext(GanttDependencyContext);
+  if (!ctx) throw new Error("useGanttDependency must be used within a <GanttProvider>");
+  return ctx;
+}
+
+// --- Provider -------------------------------------------------------------
 
 export interface GanttProviderProps {
   tasks: GanttTask[];
@@ -119,10 +168,6 @@ export function GanttProvider({
     window.addEventListener("mouseup", onMouseUp);
   }, []);
 
-  const updateDrag = useCallback((x: number, y: number) => {
-    setDrag((prev) => (prev ? { ...prev, currentX: x, currentY: y } : null));
-  }, []);
-
   const endDrag = useCallback(
     (toTaskId: Id | null, toHandle?: ConnectorHandle) => {
       setDrag((prev) => {
@@ -141,41 +186,50 @@ export function GanttProvider({
     [onDependencyCreate],
   );
 
-  return (
-    <GanttContext.Provider
-      value={{
-        tasksList,
-        visibleTasks,
-        updateTask,
-        expandedIds,
-        parentIds,
-        toggleExpand,
-        rowHeight,
-        colWidth,
-        scales,
-        padDays,
-        dependencies,
-        onTaskClick,
-        onDependencyCreate,
-        onDependencyDelete,
-        taskListRef,
-        gridRef,
-        onTaskListScroll,
-        onGridScroll,
-        gridBodyRef,
-        drag,
-        startDrag,
-        updateDrag,
-        endDrag,
-      }}
-    >
-      {children}
-    </GanttContext.Provider>
+  const configValue = useMemo<GanttConfigValue>(
+    () => ({ rowHeight, colWidth, scales, padDays }),
+    [rowHeight, colWidth, scales, padDays],
   );
-}
 
-export function useGanttContext(): GanttContextValue {
-  const ctx = useContext(GanttContext);
-  if (!ctx) throw new Error("useGanttContext must be used within a <GanttProvider>");
-  return ctx;
+  const taskValue = useMemo<GanttTaskValue>(
+    () => ({
+      tasksList,
+      visibleTasks,
+      updateTask,
+      expandedIds,
+      parentIds,
+      toggleExpand,
+      onTaskClick,
+    }),
+    [tasksList, visibleTasks, updateTask, expandedIds, parentIds, toggleExpand, onTaskClick],
+  );
+
+  const scrollValue = useMemo<GanttScrollValue>(
+    () => ({ taskListRef, gridRef, onTaskListScroll, onGridScroll, gridBodyRef }),
+    [taskListRef, gridRef, onTaskListScroll, onGridScroll],
+  );
+
+  const dependencyValue = useMemo<GanttDependencyValue>(
+    () => ({
+      dependencies,
+      onDependencyCreate,
+      onDependencyDelete,
+      drag,
+      startDrag,
+      endDrag,
+    }),
+    [dependencies, onDependencyCreate, onDependencyDelete, drag, startDrag, endDrag],
+  );
+
+  return (
+    <GanttConfigContext.Provider value={configValue}>
+      <GanttTaskContext.Provider value={taskValue}>
+        <GanttScrollContext.Provider value={scrollValue}>
+          <GanttDependencyContext.Provider value={dependencyValue}>
+            {children}
+          </GanttDependencyContext.Provider>
+        </GanttScrollContext.Provider>
+      </GanttTaskContext.Provider>
+    </GanttConfigContext.Provider>
+  );
 }
