@@ -4,7 +4,6 @@ import { GRID_MIN_WIDTH } from "../core/constants";
 export function useGridResize(
   containerRef: React.RefObject<HTMLDivElement | null>,
   overlayRef: React.RefObject<HTMLDivElement | null>,
-  tableWidth: number,
 ) {
   const [gridWidth, setGridWidth] = useState<number | undefined>(undefined);
   const startRef = useRef<{ mouseX: number; width: number; containerW: number } | null>(null);
@@ -24,11 +23,8 @@ export function useGridResize(
       const onMove = (ev: MouseEvent) => {
         if (!startRef.current) return;
         const { mouseX, width, containerW } = startRef.current;
-        // Grid can't shrink past the table's right edge (no empty gap); fall back
-        // to a small minimum only when the table is wider than the container.
-        const min = tableWidth < containerW ? containerW - tableWidth : GRID_MIN_WIDTH;
         // Handle is on the grid's left edge: dragging left increases the width.
-        const next = Math.min(containerW, Math.max(min, width + (mouseX - ev.clientX)));
+        const next = Math.min(containerW, Math.max(GRID_MIN_WIDTH, width + (mouseX - ev.clientX)));
         setGridWidth(next);
       };
 
@@ -41,7 +37,7 @@ export function useGridResize(
       window.addEventListener("mousemove", onMove);
       window.addEventListener("mouseup", onUp);
     },
-    [containerRef, overlayRef, tableWidth],
+    [containerRef, overlayRef],
   );
 
   return { gridWidth, onHandleMouseDown };
