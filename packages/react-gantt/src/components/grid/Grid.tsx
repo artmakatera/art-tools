@@ -8,23 +8,18 @@ import { DependencyLinks } from "../dependency-links/DependencyLinks";
 import { DependencyPreview } from "../dependency-links/DependencyPreview";
 import styles from "./Grid.module.css";
 import { getFinestUnit } from "../../core/barUtils";
-import { useGanttContext } from "../../context/GanttContext";
+import {
+  useGanttConfig,
+  useGanttDependency,
+  useGanttScroll,
+  useGanttTask,
+} from "../../context/GanttContext";
 
 export function GanttGrid() {
-  const {
-    visibleTasks,
-    dependencies,
-    colWidth,
-    rowHeight,
-    scales,
-    padDays,
-    updateTask,
-    onTaskClick,
-    onDependencyDelete,
-    gridRef,
-    onGridScroll,
-    gridBodyRef,
-  } = useGanttContext();
+  const { visibleTasks, updateTask, onTaskClick } = useGanttTask();
+  const { colWidth, rowHeight, scales, padDays } = useGanttConfig();
+  const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
+  const { dependencies, onDependencyDelete } = useGanttDependency();
 
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
 

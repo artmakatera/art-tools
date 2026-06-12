@@ -1,4 +1,8 @@
-import { useGanttContext, type ConnectorHandle } from "../../../context/GanttContext";
+import {
+  useGanttDependency,
+  useGanttScroll,
+  type ConnectorHandle,
+} from "../../../context/GanttContext";
 import { CONNECTOR_HANDLE_SIZE } from "../../../core/constants";
 import type { Id } from "../../../types";
 import styles from "./ConnectorHandles.module.css";
@@ -14,7 +18,8 @@ interface ConnectorHandlesProps {
 }
 
 export function ConnectorHandles({ taskId, barLeft, barWidth, barCenterY, show }: ConnectorHandlesProps) {
-  const { drag, startDrag, endDrag, gridBodyRef } = useGanttContext();
+  const { drag, startDrag, endDrag } = useGanttDependency();
+  const { gridBodyRef } = useGanttScroll();
 
   const getStartCoords = (e: React.MouseEvent, _handle: ConnectorHandle) => {
     const rect = gridBodyRef.current?.getBoundingClientRect();
