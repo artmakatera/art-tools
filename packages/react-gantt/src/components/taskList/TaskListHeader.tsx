@@ -31,31 +31,29 @@ export function TaskListHeader({ columns, rowHeight, scales = DEFAULT_SCALES }: 
   );
 }
 
-export function buildBuiltInColumns(): ColumnDef[] {
-  return [
-    {
-      key: "__name",
-      header: "Task Name",
-      render: (task: GanttTask) => task.name,
-      width: 200,
-    },
-    {
-      key: "__start",
-      header: "Start",
-      width: 90,
-      render: (task: GanttTask) => task.startDate.toLocaleDateString(),
-    },
-    {
-      key: "__end",
-      header: "End",
-      width: 90,
-      render: (task: GanttTask) => task.endDate?.toLocaleDateString() ?? "—",
-    },
-    {
-      key: "__progress",
-      header: "%",
-      width: 50,
-      render: (task: GanttTask) => `${task.progress ?? 0}%`,
-    },
-  ];
-}
+export const DEFAULT_COLUMNS: ColumnDef[] = [
+  {
+    key: "__name",
+    header: "Task Name",
+    render: (task: GanttTask) => task.name,
+    width: 200,
+  },
+  {
+    key: "__start",
+    header: "Start",
+    width: 90,
+    render: (task: GanttTask) => task.startDate.toLocaleDateString(),
+  },
+  {
+    key: "__end",
+    header: "End",
+    width: 90,
+    render: (task: GanttTask) => task.endDate?.toLocaleDateString() ?? "—",
+  },
+  {
+    key: "__progress",
+    header: "%",
+    width: 50,
+    render: (task: GanttTask) => `${task.progress ?? 0}%`,
+  },
+];
