@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useGanttConfig, useGanttScroll, useGanttTask } from "../../context/GanttContext";
 import type { ColumnDef, Id } from "../../types";
-import { TaskListHeader, buildBuiltInColumns } from "./TaskListHeader";
+import { TaskListHeader, DEFAULT_COLUMNS } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
 import styles from "./TaskList.module.css";
 
@@ -14,7 +14,7 @@ export function TaskList({ columns = [] }: TaskListProps) {
   const { rowHeight, scales } = useGanttConfig();
   const { taskListRef, onTaskListScroll } = useGanttScroll();
 
-  const allColumns = useMemo(() => [...buildBuiltInColumns(), ...columns], [columns]);
+  const allColumns = useMemo(() => columns.length > 0 ?  columns : DEFAULT_COLUMNS, [columns]);
 
   // Depth map: how many levels deep each task is
   const depthMap = useMemo(() => {
