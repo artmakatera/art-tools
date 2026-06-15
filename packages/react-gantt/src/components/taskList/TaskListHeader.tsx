@@ -52,8 +52,8 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
   },
   {
     key: "__progress",
-    header: "%",
-    width: 50,
+    header: "Progress, %",
+    width: 90,
     render: (task: GanttTask) => `${task.progress ?? 0}%`,
   },
 ];

@@ -38,9 +38,7 @@ export function Gantt({
     >
       {showTaskList ? (
         <div ref={containerRef} style={{ position: "relative" }}>
-          <div style={{ width: defaultTaskListWidth }}>
             <TaskList columns={columns} />
-          </div>
           <div
             ref={overlayRef}
             style={{
