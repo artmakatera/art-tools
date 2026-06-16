@@ -32,44 +32,52 @@ export const useTaskList = (
     [dependencies],
   );
 
-  const tasksList = useMemo(
-    () => getTaskList(tasks, log),
+  // Replay the log exactly once per change. Both the display list and the
+  // edit base derive from this single resolved map — no second replay.
+  const resolvedById = useMemo(
+    () => resolveCommittedTasks(tasks, log),
     [tasks, log],
   );
 
+  // Mirror the latest resolved map so event handlers (updateTask) can read the
+  // current effective state without replaying. Updated every render, so at the
+  // time a handler fires it matches the committed `log` (= `prev`).
+  const resolvedRef = useRef(resolvedById);
+  resolvedRef.current = resolvedById;
+
+  const tasksList = useMemo(
+    () => getTaskList(resolvedById),
+    [resolvedById],
+  );
 
   const updateTask = useCallback((id: Id, patch: DatePatch) => {
-    setLog((prev) => {
-      // Resolve the current effective state so the edit builds on the latest
-      // committed task (including any prior create/update).
-      const current = new Map<Id, GanttTask>(
-        resolveCommittedTasks(tasks, prev).map((t) => [t.id, t]),
-      );
-      const base = current.get(id);
-      if (!base) return prev;
+    // Build on the latest committed task (pre-roll-up) from the resolved map.
+    const base = resolvedRef.current.get(id);
+    if (!base) return;
 
-      const nextTask: GanttTask = { ...base };
-      if (patch.startDate) nextTask.startDate = patch.startDate;
-      if (patch.endDate) nextTask.endDate = patch.endDate;
-      if (patch.progress !== undefined) nextTask.progress = patch.progress;
+    const nextTask: GanttTask = { ...base };
+    if (patch.startDate) nextTask.startDate = patch.startDate;
+    if (patch.endDate) nextTask.endDate = patch.endDate;
+    if (patch.progress !== undefined) nextTask.progress = patch.progress;
 
-      const commands: TaskCommand[] = [{ type: "update", task: nextTask }];
+    const commands: TaskCommand[] = [{ type: "update", task: nextTask }];
 
-      // Automatic forward scheduling: when a task moves, realign its dependents
-      // so each dependency relationship stays satisfied, then cascade onward.
-      // All reschedules join the same transaction → one undo step.
-      const moved = patch.startDate !== undefined || patch.endDate !== undefined;
-      if (moved && dependencyGraph.size > 0) {
-        current.set(id, nextTask);
-        const rescheduled = scheduleDependents(current, dependencyGraph, id);
-        for (const task of rescheduled.values()) {
-          commands.push({ type: "update", task });
-        }
+    // Automatic forward scheduling: when a task moves, realign its dependents
+    // so each dependency relationship stays satisfied, then cascade onward.
+    // All reschedules join the same transaction → one undo step.
+    const moved = patch.startDate !== undefined || patch.endDate !== undefined;
+    if (moved && dependencyGraph.size > 0) {
+      // Clone so scheduling doesn't mutate the shared resolved map.
+      const current = new Map(resolvedRef.current);
+      current.set(id, nextTask);
+      const rescheduled = scheduleDependents(current, dependencyGraph, id);
+      for (const task of rescheduled.values()) {
+        commands.push({ type: "update", task });
       }
+    }
 
-      return appendTransaction(prev, commands);
-    });
-  }, [tasks, dependencyGraph]);
+    setLog((prev) => appendTransaction(prev, commands));
+  }, [dependencyGraph]);
 
   const createTask = useCallback((task: GanttTask, afterId?: Id | null) => {
     setLog((prev) => appendTransaction(prev, [{ type: "create", task, afterId }]));

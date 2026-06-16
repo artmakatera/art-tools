@@ -3,14 +3,14 @@ import { getEndDate } from "./dateUtils";
 
 type TaskRecordsByParentId = Map<Id | null, GanttTask[]>;
 
-const EMPTY_LOG: ChangeLog = { transactions: [], cursor: 0 };
-
-export function getTaskList(
-  tasks: GanttTask[],
-  log: ChangeLog = EMPTY_LOG,
-): GanttTask[] {
-  const resolved = resolveCommittedTasks(tasks, log);
-  const taskByParentId = groupTaskByParentId(resolved);
+/**
+ * Group an already-resolved, ordered task map into the flattened display list
+ * (parents rolled up from their children). Takes the resolved map rather than
+ * `(tasks, log)` so callers that already hold the resolved state don't pay for
+ * a second replay.
+ */
+export function getTaskList(resolvedById: Map<Id, GanttTask>): GanttTask[] {
+  const taskByParentId = groupTaskByParentId(resolvedById.values());
   const roots = taskByParentId.get(null) ?? [];
   return roots.flatMap(
     (root) => buildSubtree(root, taskByParentId).flattened,
@@ -19,14 +19,15 @@ export function getTaskList(
 
 /**
  * Replay the applied slice of the change log (`transactions[0..cursor]`) over
- * the seed tasks. An explicit `order` array preserves positional create/delete;
- * a `byId` map keeps state lookups O(1). Only create/delete touch `order`, so
- * the common case (updates) stays cheap.
+ * the seed tasks, returning the effective tasks keyed by id in display order.
+ * An explicit `order` array preserves positional create/delete; the returned
+ * insertion-ordered `Map` keeps lookups O(1) and carries the display order.
+ * Only create/delete touch `order`, so the common case (updates) stays cheap.
  */
 export function resolveCommittedTasks(
   tasks: GanttTask[],
   log: ChangeLog,
-): GanttTask[] {
+): Map<Id, GanttTask> {
   const order: Id[] = tasks.map((t) => t.id);
   const byId = new Map<Id, GanttTask>(tasks.map((t) => [t.id, t]));
 
@@ -56,12 +57,12 @@ export function resolveCommittedTasks(
     }
   }
 
-  const result: GanttTask[] = [];
+  const resolvedById = new Map<Id, GanttTask>();
   for (const id of order) {
     const task = byId.get(id);
-    if (task) result.push(task);
+    if (task) resolvedById.set(id, task);
   }
-  return result;
+  return resolvedById;
 }
 
 interface Subtree {
@@ -125,13 +126,13 @@ export function getParentTaskData(
   };
 }
 
-function groupTaskByParentId(tasks: GanttTask[]): TaskRecordsByParentId {
-  return tasks.reduce<TaskRecordsByParentId>((acc, task) => {
+function groupTaskByParentId(tasks: Iterable<GanttTask>): TaskRecordsByParentId {
+  const acc: TaskRecordsByParentId = new Map();
+  for (const task of tasks) {
     const parentId = task.parentId ?? null;
     const siblings = acc.get(parentId) ?? [];
     siblings.push(task);
     acc.set(parentId, siblings);
-
-    return acc;
-  }, new Map());
+  }
+  return acc;
 }
