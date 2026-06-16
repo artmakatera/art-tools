@@ -35,6 +35,14 @@ export interface ColumnDef<T extends GanttTask = GanttTask> {
   render: (task: T) => React.ReactNode;
 }
 
+/** Imperative API exposed via `<Gantt apiRef={ref} />` for create/delete/undo/redo. */
+export interface GanttHandle {
+  createTask: (task: GanttTask, afterId?: Id | null) => void;
+  deleteTask: (id: Id) => void;
+  undo: () => void;
+  redo: () => void;
+}
+
 export interface GanttProps {
   tasks: GanttTask[];
   rowHeight?: number;
@@ -47,6 +55,12 @@ export interface GanttProps {
   defaultTaskListWidth?: number;
   onDependencyCreate?: (dep: TaskDependency) => void;
   onDependencyDelete?: (dep: TaskDependency) => void;
+  onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
+  onTaskDelete?: (id: Id) => void;
+  /** Fired with the resolved task list whenever it changes (after create/delete/edit/undo/redo). */
+  onTasksChange?: (tasks: GanttTask[]) => void;
+  /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
+  apiRef?: React.Ref<GanttHandle>;
 }
 
 
@@ -60,13 +74,21 @@ export interface TaskState {
 
 export type Overrides = Record<Id, Partial<TaskState>>;
 
-type CommandType = "create" | "update" | "delete";
-export type TaskCommand = {
-  type: CommandType;
-  task: GanttTask;
-};
+export type TaskCommand =
+  | { type: "create"; task: GanttTask; afterId?: Id | null } // null/undefined = append at end
+  | { type: "update"; task: GanttTask }
+  | { type: "delete"; id: Id };
 
-export type CommittedOverrides = Record<Id, TaskCommand[]>;
+/**
+ * Globally-ordered change history. Each user action is one transaction
+ * (an array of commands), so a drag plus its cascaded reschedules undo as a
+ * single step. `cursor` is how many transactions are currently applied —
+ * undo decrements it, redo increments it.
+ */
+export interface ChangeLog {
+  transactions: TaskCommand[][];
+  cursor: number;
+}
 
 
 export type TaskDependencyType = "FS" | "FF" | "SS" | "SF";

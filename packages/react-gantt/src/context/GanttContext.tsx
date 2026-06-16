@@ -2,12 +2,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
   type ReactNode,
+  type Ref,
 } from "react";
-import type { GanttTask, Id, Scale, TaskDependency } from "../types";
+import type { GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
 import { useTaskList } from "../hooks/useTaskList";
 import { useExpand } from "../hooks/useExpand";
 import { useScrollSync } from "../hooks/useScrollSync";
@@ -52,6 +54,14 @@ interface GanttTaskValue {
   tasksList: GanttTask[];
   visibleTasks: GanttTask[];
   updateTask: (id: Id, patch: DatePatch) => void;
+  createTask: (task: GanttTask, afterId?: Id | null) => void;
+  deleteTask: (id: Id) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  selectedId: Id | null;
+  setSelectedId: (id: Id | null) => void;
   expandedIds: Set<Id>;
   parentIds: Set<Id>;
   toggleExpand: (id: Id) => void;
@@ -115,6 +125,10 @@ export interface GanttProviderProps {
   onTaskClick?: (task: GanttTask) => void;
   onDependencyCreate?: (dep: TaskDependency) => void;
   onDependencyDelete?: (dep: TaskDependency) => void;
+  onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
+  onTaskDelete?: (id: Id) => void;
+  onTasksChange?: (tasks: GanttTask[]) => void;
+  apiRef?: Ref<GanttHandle>;
   children: ReactNode;
 }
 
@@ -133,13 +147,25 @@ export function GanttProvider({
   onTaskClick,
   onDependencyCreate,
   onDependencyDelete,
+  onTaskCreate,
+  onTaskDelete,
+  onTasksChange,
+  apiRef,
   children,
 }: GanttProviderProps) {
-  const { tasksList, updateTask } = useTaskList(tasks, dependencies);
+  const { tasksList, updateTask, createTask, deleteTask, undo, redo, canUndo, canRedo } =
+    useTaskList(tasks, dependencies, { onTaskCreate, onTaskDelete, onTasksChange });
+
+  useImperativeHandle(
+    apiRef,
+    () => ({ createTask, deleteTask, undo, redo }),
+    [createTask, deleteTask, undo, redo],
+  );
   const { visibleTasks, expandedIds, parentIds, toggleExpand } = useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
+  const [selectedId, setSelectedId] = useState<Id | null>(null);
   const [drag, setDrag] = useState<DependencyDragState | null>(null);
   const dragListenersRef = useRef<{ move: (e: MouseEvent) => void; up: (e: MouseEvent) => void } | null>(null);
 
@@ -196,12 +222,35 @@ export function GanttProvider({
       tasksList,
       visibleTasks,
       updateTask,
+      createTask,
+      deleteTask,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
+      selectedId,
+      setSelectedId,
       expandedIds,
       parentIds,
       toggleExpand,
       onTaskClick,
     }),
-    [tasksList, visibleTasks, updateTask, expandedIds, parentIds, toggleExpand, onTaskClick],
+    [
+      tasksList,
+      visibleTasks,
+      updateTask,
+      createTask,
+      deleteTask,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
+      selectedId,
+      expandedIds,
+      parentIds,
+      toggleExpand,
+      onTaskClick,
+    ],
   );
 
   const scrollValue = useMemo<GanttScrollValue>(

@@ -9,7 +9,9 @@ interface TaskListRowProps {
   depth: number;
   isParent: boolean;
   isExpanded: boolean;
+  isSelected: boolean;
   onToggleExpand: (id: Id) => void;
+  onSelect: (id: Id) => void;
   columns: ColumnDef[];
 }
 
@@ -22,13 +24,16 @@ export const TaskListRow = memo(function TaskListRow({
   depth,
   isParent,
   isExpanded,
+  isSelected,
   onToggleExpand,
+  onSelect,
   columns,
 }: TaskListRowProps) {
   return (
     <div
-      className={styles.row}
+      className={`${styles.row} ${isSelected ? styles.selected : ""}`}
       style={{ top: index * rowHeight, height: rowHeight }}
+      onClick={() => onSelect(task.id)}
     >
       {columns.map((col) => {
         const isName = col.key === "__name";
@@ -46,7 +51,10 @@ export const TaskListRow = memo(function TaskListRow({
                 {isParent ? (
                   <button
                     className={styles.expandBtn}
-                    onClick={() => onToggleExpand(task.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleExpand(task.id);
+                    }}
                     aria-label={isExpanded ? "Collapse" : "Expand"}
                   >
                     {isExpanded ? "▾" : "▸"}
