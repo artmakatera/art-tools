@@ -18,6 +18,10 @@ export function Gantt({
   defaultTaskListWidth = 280,
   onDependencyCreate,
   onDependencyDelete,
+  onTaskCreate,
+  onTaskDelete,
+  onTasksChange,
+  apiRef,
 }: GanttProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -35,6 +39,10 @@ export function Gantt({
       onTaskClick={onTaskClick}
       onDependencyCreate={onDependencyCreate}
       onDependencyDelete={onDependencyDelete}
+      onTaskCreate={onTaskCreate}
+      onTaskDelete={onTaskDelete}
+      onTasksChange={onTasksChange}
+      apiRef={apiRef}
     >
       {showTaskList ? (
         <div ref={containerRef} style={{ position: "relative" }}>

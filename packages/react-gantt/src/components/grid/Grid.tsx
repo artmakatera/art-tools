@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
-import type { Id, TaskState } from "../../types";
+import type { GanttTask, Id, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import { DependencyLinksProvider } from "../dependency-links/DependencyLinksContext";
@@ -16,12 +16,17 @@ import {
 } from "../../context/GanttContext";
 
 export function GanttGrid() {
-  const { visibleTasks, updateTask, onTaskClick } = useGanttTask();
+  const { visibleTasks, updateTask, onTaskClick, setSelectedId } = useGanttTask();
   const { colWidth, rowHeight, scales, padDays } = useGanttConfig();
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
   const { dependencies, onDependencyDelete } = useGanttDependency();
 
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
+
+  const handleSelect = useCallback((task: GanttTask) => {
+    setSelectedId(task.id);
+    onTaskClick?.(task);
+  }, [setSelectedId, onTaskClick]);
 
   const handleOverride = useCallback((id: Id, patch: Partial<TaskState> | null) => {
     setOverrides((prev) => {
@@ -104,7 +109,7 @@ export function GanttGrid() {
                 onUpdate={updateTask}
                 override={overrides[task.id]}
                 onOverride={handleOverride}
-                onTaskClick={onTaskClick}
+                onTaskClick={handleSelect}
               />
             ))}
           </div>

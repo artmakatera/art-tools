@@ -66,6 +66,10 @@
   border-bottom: none;
 }
 
+.row.selected {
+  background: var(--am-gantt-row-selected-bg, #e0f2fe);
+}
+
 .cell {
   display: flex;
   align-items: center;

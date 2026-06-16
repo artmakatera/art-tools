@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useGanttConfig, useGanttScroll, useGanttTask } from "../../context/GanttContext";
 import type { ColumnDef, Id } from "../../types";
 import { TaskListHeader, DEFAULT_COLUMNS } from "./TaskListHeader";
@@ -10,11 +10,19 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [] }: TaskListProps) {
-  const { visibleTasks, tasksList, expandedIds, parentIds, toggleExpand } = useGanttTask();
+  const { visibleTasks, tasksList, expandedIds, parentIds, toggleExpand, selectedId, setSelectedId, onTaskClick } = useGanttTask();
   const { rowHeight, scales } = useGanttConfig();
   const { taskListRef, onTaskListScroll } = useGanttScroll();
 
   const allColumns = useMemo(() => columns.length > 0 ?  columns : DEFAULT_COLUMNS, [columns]);
+
+  // Selecting a row drives both the built-in highlight and the consumer's
+  // onTaskClick, so external selection state (e.g. a "Delete selected" toolbar) stays in sync.
+  const handleSelect = useCallback((id: Id) => {
+    setSelectedId(id);
+    const task = tasksList.find((t) => t.id === id);
+    if (task) onTaskClick?.(task);
+  }, [setSelectedId, tasksList, onTaskClick]);
 
   // Depth map: how many levels deep each task is
   const depthMap = useMemo(() => {
@@ -47,7 +55,9 @@ export function TaskList({ columns = [] }: TaskListProps) {
               depth={depthMap.get(task.id) ?? 0}
               isParent={parentIds.has(task.id)}
               isExpanded={expandedIds.has(task.id)}
+              isSelected={selectedId === task.id}
               onToggleExpand={toggleExpand}
+              onSelect={handleSelect}
               columns={allColumns}
             />
           ))}
