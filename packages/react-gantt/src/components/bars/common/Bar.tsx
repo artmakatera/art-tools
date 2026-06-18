@@ -138,3 +138,5 @@ export const Bar = memo(function Bar({
     </div>
   );
 });
+
+Bar.displayName = "Bar";

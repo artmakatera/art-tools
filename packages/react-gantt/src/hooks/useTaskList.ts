@@ -11,6 +11,24 @@ function appendTransaction(log: ChangeLog, commands: TaskCommand[]): ChangeLog {
   return { transactions: [...kept, commands], cursor: kept.length + 1 };
 }
 
+/** Field-agnostic value equality; `Date`s compare by instant, not reference. */
+function valuesEqual(a: unknown, b: unknown): boolean {
+  if (a instanceof Date && b instanceof Date) { 
+    return a.getTime() === b.getTime(); 
+  }
+  return Object.is(a, b);
+}
+
+/** True when two tasks are equal across every field (Date-aware). */
+function sameTask(a: GanttTask, b: GanttTask): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of keys) {
+
+    if (!valuesEqual(a[key as keyof GanttTask], b[key as keyof GanttTask])) return false;
+  }
+  return true;
+}
+
 export interface UseTaskListOptions {
   onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
   onTaskDelete?: (id: Id) => void;
@@ -59,6 +77,9 @@ export const useTaskList = (
     if (patch.startDate) nextTask.startDate = patch.startDate;
     if (patch.endDate) nextTask.endDate = patch.endDate;
     if (patch.progress !== undefined) nextTask.progress = patch.progress;
+
+    // Nothing actually changed → skip the empty undo step (and any reschedule).
+    if (sameTask(nextTask, base)) return;
 
     const commands: TaskCommand[] = [{ type: "update", task: nextTask }];
 

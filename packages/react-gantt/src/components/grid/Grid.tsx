@@ -43,7 +43,15 @@ export function GanttGrid() {
     [visibleTasks, padDays],
   );
 
-  const origin = dates[0];
+  // `dates` rebuilds on every task change, so `dates[0]` is a fresh Date each
+  // time. Key a stable Date off its timestamp so the `origin` prop only changes
+  // identity when the earliest day actually moves — otherwise memoized Bars
+  // would all re-render on any unrelated update.
+  const originMs = dates[0]?.getTime();
+  const origin = useMemo(
+    () => (originMs == null ? undefined : new Date(originMs)),
+    [originMs],
+  );
   if (!origin) return null;
 
   const snapToDay = getFinestUnit(scales) !== "day";
@@ -119,7 +127,5 @@ export function GanttGrid() {
   );
 }
 
-/** @deprecated Use GanttGrid instead */
-export function Grid() {
-  return <GanttGrid />;
-}
+GanttGrid.displayName = "GanttGrid";
+

@@ -73,3 +73,5 @@ export const TaskListRow = memo(function TaskListRow({
     </div>
   );
 });
+
+TaskListRow.displayName = "TaskListRow";
