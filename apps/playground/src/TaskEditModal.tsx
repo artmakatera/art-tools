@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { GanttTask, TaskPatch } from "@am/react-gantt";
 
 interface TaskEditModalProps {
@@ -16,8 +16,9 @@ function toInputValue(date: Date | undefined): string {
   return `${y}-${m}-${d}`;
 }
 
-function fromInputValue(value: string): Date | undefined {
+function fromInputValue(value: string | Date): Date | undefined {
   if (!value) return undefined;
+  if (value instanceof Date) return value;
   const [y, m, d] = value.split("-").map(Number) as [number, number, number];
   return new Date(y, m - 1, d); // local midnight
 }
@@ -28,7 +29,7 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
   const [endDate, setEndDate] = useState(toInputValue(task.endDate));
   const [progress, setProgress] = useState(task.progress ?? 0);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const patch: TaskPatch = {};
     if (name !== task.name) patch.name = name;
 
@@ -45,11 +46,32 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
     if (progress !== (task.progress ?? 0)) patch.progress = progress;
 
     onSave(patch);
-  };
+  }, [name, startDate, endDate, progress, task, onSave]);
+
+  const handleNameChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value),
+    [],
+  );
+  const handleStartChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value),
+    [],
+  );
+  const handleEndChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value),
+    [],
+  );
+  const handleProgressChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setProgress(Number(e.target.value)),
+    [],
+  );
+  const stopPropagation = useCallback(
+    (e: React.MouseEvent) => e.stopPropagation(),
+    [],
+  );
 
   return (
     <div style={overlayStyle} onClick={onClose}>
-      <div style={cardStyle} onClick={(e) => e.stopPropagation()}>
+      <div style={cardStyle} onClick={stopPropagation}>
         <h3 style={{ margin: "0 0 12px" }}>Edit task</h3>
 
         <label style={fieldStyle}>
@@ -57,7 +79,7 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
           <input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={handleNameChange}
             style={inputStyle}
           />
         </label>
@@ -67,7 +89,7 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
           <input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={handleStartChange}
             style={inputStyle}
           />
         </label>
@@ -77,7 +99,7 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
           <input
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={handleEndChange}
             style={inputStyle}
           />
         </label>
@@ -89,7 +111,7 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
             min={0}
             max={100}
             value={progress}
-            onChange={(e) => setProgress(Number(e.target.value))}
+            onChange={handleProgressChange}
           />
         </label>
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { GanttTask, Id } from "../types";
 
 export function useExpand(tasksList: GanttTask[]) {
@@ -12,14 +12,14 @@ export function useExpand(tasksList: GanttTask[]) {
 
   const [collapsedIds, setCollapsedIds] = useState<Set<Id>>(new Set());
 
-  const toggleExpand = (id: Id) => {
+  const toggleExpand = useCallback((id: Id) => {
     setCollapsedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  }, []);
 
   const expandedIds = useMemo(() => {
     const expanded = new Set<Id>();

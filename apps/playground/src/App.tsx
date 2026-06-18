@@ -1,8 +1,11 @@
-import { useRef, useState } from "react";
-import { Gantt, type GanttHandle, type GanttTask, type TaskDependency } from "@am/react-gantt"
+import { useCallback, useRef, useState } from "react";
+import { Gantt, type ColumnDef, type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { mockTasks, mockDependencies } from "./mock";
 import { TaskEditModal } from "./TaskEditModal";
+
+// Stable empty reference so the Gantt's `columns` prop doesn't change identity.
+const NO_COLUMNS: ColumnDef[] = [];
 
 // Example 1: convenience <Gantt> with built-in TaskList panel.
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
@@ -13,7 +16,7 @@ function GanttWithTaskList() {
   const [selected, setSelected] = useState<GanttTask | null>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
 
-  const addTask = () => {
+  const addTask = useCallback(() => {
     // Start from the selected task (fall back to a default); span exactly one
     // day (endDate inclusive), progress 0. Populate every GanttTask field.
     const start = selected ? new Date(selected.startDate) : new Date("2022-01-12");
@@ -32,7 +35,46 @@ function GanttWithTaskList() {
     ganttRef.current?.createTask(task, selected?.id ?? undefined);
     // Immediately open the edit dialog on the just-created task.
     setEditing(task);
-  };
+  }, [selected]);
+
+  const editSelected = useCallback(() => {
+    if (selected) setEditing(selected);
+  }, [selected]);
+
+  const deleteSelected = useCallback(() => {
+    if (selected) ganttRef.current?.deleteTask(selected.id);
+  }, [selected]);
+
+  const undo = useCallback(() => ganttRef.current?.undo(), []);
+  const redo = useCallback(() => ganttRef.current?.redo(), []);
+
+  const handleTaskClick = useCallback((task: GanttTask) => setSelected(task), []);
+  const clearSelection = useCallback(() => setSelected(null), []);
+  const handleTasksChange = useCallback(
+    (next: GanttTask[]) => console.log("tasks changed:", next.length),
+    [],
+  );
+
+  const handleDependencyCreate = useCallback(
+    (dep: TaskDependency) => setDependencies((prev) => [...prev, dep]),
+    [],
+  );
+  const handleDependencyDelete = useCallback(
+    (dep: TaskDependency) =>
+      setDependencies((prev) =>
+        prev.filter((d) => !(d.from === dep.from && d.to === dep.to))
+      ),
+    [],
+  );
+
+  const closeEdit = useCallback(() => setEditing(null), []);
+  const saveEdit = useCallback(
+    (patch: TaskPatch) => {
+      if (editing) ganttRef.current?.updateTask(editing.id, patch);
+      setEditing(null);
+    },
+    [editing],
+  );
 
   return (
     <>
@@ -40,14 +82,14 @@ function GanttWithTaskList() {
         <button onClick={addTask}>
           Add task {selected ? "after selected" : "at end"}
         </button>
-        <button disabled={!selected} onClick={() => selected && setEditing(selected)}>
+        <button disabled={!selected} onClick={editSelected}>
           Edit selected
         </button>
-        <button onClick={() => selected && ganttRef.current?.deleteTask(selected.id)}>
+        <button onClick={deleteSelected}>
           Delete selected
         </button>
-        <button onClick={() => ganttRef.current?.undo()}>Undo</button>
-        <button onClick={() => ganttRef.current?.redo()}>Redo</button>
+        <button onClick={undo}>Undo</button>
+        <button onClick={redo}>Redo</button>
       </div>
       <Gantt
         apiRef={ganttRef}
@@ -55,25 +97,18 @@ function GanttWithTaskList() {
         dependencies={dependencies}
         colWidth={60}
         rowHeight={40}
-        columns={[]}
-        onTaskClick={(task) => setSelected(task)}
-        onTaskDelete={() => setSelected(null)}
-        onTasksChange={(next) => console.log("tasks changed:", next.length)}
-        onDependencyCreate={(dep) => setDependencies((prev) => [...prev, dep])}
-        onDependencyDelete={(dep) =>
-          setDependencies((prev) =>
-            prev.filter((d) => !(d.from === dep.from && d.to === dep.to))
-          )
-        }
+        columns={NO_COLUMNS}
+        onTaskClick={handleTaskClick}
+        onTaskDelete={clearSelection}
+        onTasksChange={handleTasksChange}
+        onDependencyCreate={handleDependencyCreate}
+        onDependencyDelete={handleDependencyDelete}
       />
       {editing && (
         <TaskEditModal
           task={editing}
-          onClose={() => setEditing(null)}
-          onSave={(patch) => {
-            ganttRef.current?.updateTask(editing.id, patch);
-            setEditing(null);
-          }}
+          onClose={closeEdit}
+          onSave={saveEdit}
         />
       )}
     </>
