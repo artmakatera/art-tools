@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeLog, GanttTask, Id, TaskCommand, TaskDependency } from "../types";
-import { type DatePatch } from "../core/barUtils";
+import type { ChangeLog, GanttTask, Id, TaskCommand, TaskDependency, TaskPatch } from "../types";
 import { getTaskList, resolveCommittedTasks } from "../core/prepareData";
 import { buildDependencyGraph, scheduleDependents } from "../core/scheduling";
 
@@ -50,12 +49,13 @@ export const useTaskList = (
     [resolvedById],
   );
 
-  const updateTask = useCallback((id: Id, patch: DatePatch) => {
+  const updateTask = useCallback((id: Id, patch: TaskPatch) => {
     // Build on the latest committed task (pre-roll-up) from the resolved map.
     const base = resolvedRef.current.get(id);
     if (!base) return;
 
     const nextTask: GanttTask = { ...base };
+    if (patch.name !== undefined) nextTask.name = patch.name;
     if (patch.startDate) nextTask.startDate = patch.startDate;
     if (patch.endDate) nextTask.endDate = patch.endDate;
     if (patch.progress !== undefined) nextTask.progress = patch.progress;

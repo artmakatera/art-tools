@@ -35,9 +35,18 @@ export interface ColumnDef<T extends GanttTask = GanttTask> {
   render: (task: T) => React.ReactNode;
 }
 
-/** Imperative API exposed via `<Gantt apiRef={ref} />` for create/delete/undo/redo. */
+/** Patch passed to the imperative `updateTask`; only the provided fields change. */
+export interface TaskPatch {
+  name?: string;
+  startDate?: Date;
+  endDate?: Date;
+  progress?: number;
+}
+
+/** Imperative API exposed via `<Gantt apiRef={ref} />` for create/update/delete/undo/redo. */
 export interface GanttHandle {
   createTask: (task: GanttTask, afterId?: Id | null) => void;
+  updateTask: (id: Id, patch: TaskPatch) => void;
   deleteTask: (id: Id) => void;
   undo: () => void;
   redo: () => void;

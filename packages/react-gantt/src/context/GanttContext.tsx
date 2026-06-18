@@ -158,8 +158,8 @@ export function GanttProvider({
 
   useImperativeHandle(
     apiRef,
-    () => ({ createTask, deleteTask, undo, redo }),
-    [createTask, deleteTask, undo, redo],
+    () => ({ createTask, updateTask, deleteTask, undo, redo }),
+    [createTask, updateTask, deleteTask, undo, redo],
   );
   const { visibleTasks, expandedIds, parentIds, toggleExpand } = useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll } = useScrollSync();

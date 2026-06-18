@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Gantt, type GanttHandle, type GanttTask, type TaskDependency } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { mockTasks, mockDependencies } from "./mock";
+import { TaskEditModal } from "./TaskEditModal";
 
 // Example 1: convenience <Gantt> with built-in TaskList panel.
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
@@ -10,6 +11,7 @@ function GanttWithTaskList() {
   const [dependencies, setDependencies] = useState<TaskDependency[]>(mockDependencies);
   const ganttRef = useRef<GanttHandle>(null);
   const [selected, setSelected] = useState<GanttTask | null>(null);
+  const [editing, setEditing] = useState<GanttTask | null>(null);
 
   const addTask = () => {
     // Start from the selected task (fall back to a default); span exactly one
@@ -28,6 +30,8 @@ function GanttWithTaskList() {
     };
     // afterId omitted → appended at end; pass the selection to insert after it.
     ganttRef.current?.createTask(task, selected?.id ?? undefined);
+    // Immediately open the edit dialog on the just-created task.
+    setEditing(task);
   };
 
   return (
@@ -35,6 +39,9 @@ function GanttWithTaskList() {
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button onClick={addTask}>
           Add task {selected ? "after selected" : "at end"}
+        </button>
+        <button disabled={!selected} onClick={() => selected && setEditing(selected)}>
+          Edit selected
         </button>
         <button onClick={() => selected && ganttRef.current?.deleteTask(selected.id)}>
           Delete selected
@@ -59,6 +66,16 @@ function GanttWithTaskList() {
           )
         }
       />
+      {editing && (
+        <TaskEditModal
+          task={editing}
+          onClose={() => setEditing(null)}
+          onSave={(patch) => {
+            ganttRef.current?.updateTask(editing.id, patch);
+            setEditing(null);
+          }}
+        />
+      )}
     </>
   );
 }
