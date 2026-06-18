@@ -3,6 +3,8 @@
   overflow-y: auto;
   flex: 1 1 auto;
   min-width: 0;
+  /* No rubber-band bounce / scroll chaining to the page (macOS, iOS). */
+  overscroll-behavior: none;
 }
 
 .grid {

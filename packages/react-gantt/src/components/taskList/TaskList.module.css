@@ -40,6 +40,8 @@
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
+  /* No rubber-band bounce / scroll chaining to the page (macOS, iOS). */
+  overscroll-behavior: none;
   border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
   border-top: none;
   border-radius: 0 0 var(--am-gantt-calendar-radius, 6px) var(--am-gantt-calendar-radius, 6px);

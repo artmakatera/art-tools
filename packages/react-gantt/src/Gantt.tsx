@@ -11,6 +11,7 @@ export function Gantt({
   dependencies,
   rowHeight,
   colWidth,
+  height,
   scales,
   padDays,
   onTaskClick,
@@ -34,6 +35,7 @@ export function Gantt({
       dependencies={dependencies}
       rowHeight={rowHeight}
       colWidth={colWidth}
+      height={height}
       scales={scales}
       padDays={padDays}
       onTaskClick={onTaskClick}

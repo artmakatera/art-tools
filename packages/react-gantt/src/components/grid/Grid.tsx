@@ -17,7 +17,7 @@ import {
 
 export function GanttGrid() {
   const { visibleTasks, updateTask, onTaskClick, setSelectedId } = useGanttTask();
-  const { colWidth, rowHeight, scales, padDays } = useGanttConfig();
+  const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
   const { dependencies, onDependencyDelete } = useGanttDependency();
 
@@ -62,6 +62,7 @@ export function GanttGrid() {
     <div
       ref={gridRef}
       className={styles.gridWrapper}
+      style={height !== undefined ? { height } : undefined}
       onScroll={onGridScroll}
     >
       <div className={styles.grid} style={{ width: totalWidth }}>

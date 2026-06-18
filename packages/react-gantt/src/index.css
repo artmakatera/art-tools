@@ -35,4 +35,7 @@
 
   --am-gantt-links-z-index: 2;
   --am-gantt-task-bar-z-index: 3;
+  /* Pinned calendar header sits above bars, dependency links, and the drag
+     preview (z 20) so scrolling rows never paint over it. */
+  --am-gantt-calendar-z-index: 30;
 }

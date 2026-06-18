@@ -97,6 +97,7 @@ function GanttWithTaskList() {
         dependencies={dependencies}
         colWidth={60}
         rowHeight={40}
+        height={400}
         columns={NO_COLUMNS}
         onTaskClick={handleTaskClick}
         onTaskDelete={clearSelection}
