@@ -38,6 +38,8 @@ interface GanttConfigValue {
   colWidth: number;
   scales?: Scale[];
   padDays: number;
+  /** Total component height in px; undefined = grow with content. */
+  height?: number;
 }
 
 const GanttConfigContext = createContext<GanttConfigValue | null>(null);
@@ -119,6 +121,7 @@ export interface GanttProviderProps {
   tasks: GanttTask[];
   rowHeight?: number;
   colWidth?: number;
+  height?: number;
   scales?: Scale[];
   padDays?: number;
   dependencies?: TaskDependency[];
@@ -141,6 +144,7 @@ export function GanttProvider({
   tasks,
   rowHeight = DEFAULT_ROW_HEIGHT,
   colWidth = DEFAULT_COL_WIDTH,
+  height,
   scales,
   padDays = DEFAULT_PAD_DAYS,
   dependencies = [],
@@ -213,8 +217,8 @@ export function GanttProvider({
   );
 
   const configValue = useMemo<GanttConfigValue>(
-    () => ({ rowHeight, colWidth, scales, padDays }),
-    [rowHeight, colWidth, scales, padDays],
+    () => ({ rowHeight, colWidth, scales, padDays, height }),
+    [rowHeight, colWidth, scales, padDays, height],
   );
 
   const taskValue = useMemo<GanttTaskValue>(

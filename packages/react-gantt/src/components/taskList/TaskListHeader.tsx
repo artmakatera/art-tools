@@ -1,10 +1,6 @@
 import type { ColumnDef, GanttTask, Scale } from "../../types";
 import styles from "./TaskList.module.css";
-
-const DEFAULT_SCALES: Scale[] = [
-  { unit: "month", step: 1, format: () => "" },
-  { unit: "day", step: 1, format: () => "" },
-];
+import { DEFAULT_SCALES } from "../../core/scales";
 
 interface TaskListHeaderProps {
   columns: ColumnDef[];
@@ -13,11 +9,12 @@ interface TaskListHeaderProps {
 }
 
 export function TaskListHeader({ columns, rowHeight, scales = DEFAULT_SCALES }: TaskListHeaderProps) {
-  // +2 matches Calendar's 1px top + 1px bottom border around its rows
+  // Height tracks the calendar: one row per scale, +2 for its 1px top/bottom
+  // borders. Both default to the shared DEFAULT_SCALES so the counts can't drift.
   const headerHeight = scales.length * rowHeight + 2;
 
   return (
-    <div className={styles.header} style={{ height: headerHeight }}>
+    <div className={styles.header} style={{ minHeight: headerHeight, height: headerHeight }}>
       {columns.map((col) => (
         <div
           key={col.key}

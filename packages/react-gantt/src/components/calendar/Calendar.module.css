@@ -8,6 +8,12 @@
   background: var(--am-gantt-calendar-bg, #ffffff);
   font-family: inherit;
   user-select: none;
+  /* Stay pinned to the top while rows scroll under it when a height is set.
+     Horizontal scroll still moves it (sticky only pins the vertical axis here),
+     keeping the date columns aligned with the bars. */
+  position: sticky;
+  top: 0;
+  z-index: var(--am-gantt-calendar-z-index, 30);
 }
 
 .row {

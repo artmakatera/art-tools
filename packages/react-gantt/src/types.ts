@@ -56,6 +56,9 @@ export interface GanttProps {
   tasks: GanttTask[];
   rowHeight?: number;
   colWidth?: number;
+  /** Total component height in px. When set, rows scroll vertically within it
+   *  (calendar/header stay pinned); omit to grow with content. */
+  height?: number;
   scales?: Scale[];
   padDays?: number;
   onTaskClick?: (task: GanttTask) => void;
