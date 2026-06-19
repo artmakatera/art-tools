@@ -1,0 +1,88 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--am-gantt-links-z-index, 2);
+  pointer-events: none;
+}
+
+.hitArea {
+  position: absolute;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.segment {
+  position: absolute;
+  background: var(--am-gantt-dependency-color, #94a3b8);
+  pointer-events: none;
+}
+
+.segmentSelected {
+  background: #ef4444;
+}
+
+.arrowRight,
+.arrowLeft {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  pointer-events: none;
+}
+
+.arrowRight {
+  border-left: 8px solid var(--am-gantt-dependency-color, #94a3b8);
+}
+
+.arrowLeft {
+  border-right: 8px solid var(--am-gantt-dependency-color, #94a3b8);
+}
+
+.arrowSelected.arrowRight {
+  border-left-color: #ef4444;
+}
+
+.arrowSelected.arrowLeft {
+  border-right-color: #ef4444;
+}
+
+.lagLabel {
+  position: absolute;
+  background: var(--am-gantt-grid-bg, #ffffff);
+  border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+  border-radius: 3px;
+  font-size: 11px;
+  padding: 1px 4px;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  color: var(--am-gantt-dependency-color, #94a3b8);
+  line-height: 1.4;
+}
+
+.deleteBtn {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #ef4444;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  padding: 0;
+}
+
+.deleteBtn:hover {
+  background: #ef4444;
+  color: #fff;
+}

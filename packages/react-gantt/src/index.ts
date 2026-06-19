@@ -1,8 +1,10 @@
 import './index.css';
 export { Gantt } from './Gantt';
+export { GanttProvider } from './context/GanttContext';
+export { GanttGrid } from './components/grid/Grid';
+export { TaskList } from './components/taskList/TaskList';
 export { TaskBar } from './components/bars/taskBar/TaskBar';
 export { ProjectBar } from './components/bars/projectBar/ProjectBar';
 export { MilestoneBar } from './components/bars/milestoneBar/MilestoneBar';
 export { Calendar } from './components/calendar/Calendar';
-export { Grid } from './components/grid/Grid';
-export type { GanttProps, GanttTask } from './types';
+export type { GanttProps, GanttHandle, GanttTask, TaskPatch, Id, TaskDependency, TaskDependencyType, ColumnDef } from './types';
