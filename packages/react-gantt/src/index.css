@@ -17,9 +17,9 @@
   --am-gantt-task-color: #fff;
   --am-gantt-task-border-radius: 4px;
 
-  --am-gantt-project-bg: #1e293b;
-  --am-gantt-project-bg-progress: rgba(148, 163, 184, 0.45);
-  --am-gantt-project-color: #f1f5f9;
+  --am-gantt-project-bg: #16a34a;
+  --am-gantt-project-bg-progress: rgba(134, 239, 172, 0.45);
+  --am-gantt-project-color: #f0fdf4;
 
   --am-gantt-milestone-bg: #f59e0b;
 
@@ -32,4 +32,10 @@
   --am-gantt-calendar-header-color: #0f172a;
   --am-gantt-calendar-weekend-bg: #f1f5f9;
   --am-gantt-calendar-weekend-color: #64748b;
+
+  --am-gantt-links-z-index: 2;
+  --am-gantt-task-bar-z-index: 3;
+  /* Pinned calendar header sits above bars, dependency links, and the drag
+     preview (z 20) so scrolling rows never paint over it. */
+  --am-gantt-calendar-z-index: 30;
 }

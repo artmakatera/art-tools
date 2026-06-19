@@ -1,0 +1,14 @@
+.preview {
+  position: absolute;
+  height: 2px;
+  background: repeating-linear-gradient(
+    to right,
+    #3b82f6 0px,
+    #3b82f6 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: 20;
+}

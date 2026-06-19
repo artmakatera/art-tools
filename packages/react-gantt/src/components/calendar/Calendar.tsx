@@ -1,6 +1,7 @@
 import type { Scale } from "../../types";
 import styles from "./Calendar.module.css";
 import { CalendarRow,  } from "./CalendarRow";
+import { DEFAULT_SCALES } from "../../core/scales";
 
 type CalendarProps = {
   colWidth: number;
@@ -8,20 +9,6 @@ type CalendarProps = {
   scales?: Scale[];
   dates: Date[];
 };
-
-const DEFAULT_SCALES: Scale[] = [
-  {
-    unit: "month",
-    step: 1,
-    format: (d: Date) =>
-      d.toLocaleString(undefined, { month: "long", year: "numeric" }),
-  },
-  {
-    unit: "day",
-    step: 1,
-    format: (d: Date) => String(d.getDate()),
-  },
-];
 
 export function Calendar({
   colWidth,

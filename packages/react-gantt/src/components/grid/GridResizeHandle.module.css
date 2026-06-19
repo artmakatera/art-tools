@@ -1,0 +1,13 @@
+.handle {
+  width: 4px;
+  align-self: stretch;
+  cursor: col-resize;
+  background: var(--am-gantt-calendar-border, #e2e8f0);
+  flex-shrink: 0;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.handle:hover {
+  background: var(--am-gantt-dependency-color, #94a3b8);
+}

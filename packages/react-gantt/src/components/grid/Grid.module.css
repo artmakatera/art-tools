@@ -1,3 +1,12 @@
+.gridWrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* No rubber-band bounce / scroll chaining to the page (macOS, iOS). */
+  overscroll-behavior: none;
+}
+
 .grid {
   position: relative;
   display: flex;
@@ -26,6 +35,7 @@
 
 .col {
   box-sizing: border-box;
+  flex-shrink: 0;
   border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
 }
 

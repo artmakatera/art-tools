@@ -1,43 +1,68 @@
-import type { CommittedOverrides, GanttTask, Id } from "../types";
+import type { ChangeLog, GanttTask, Id } from "../types";
 import { getEndDate } from "./dateUtils";
 
 type TaskRecordsByParentId = Map<Id | null, GanttTask[]>;
 
-export function getTaskList(
-  tasks: GanttTask[],
-  committedChanges: CommittedOverrides = {},
-): GanttTask[] {
-  const resolved = resolveCommittedTasks(tasks, committedChanges);
-  const taskByParentId = groupTaskByParentId(resolved);
+/**
+ * Group an already-resolved, ordered task map into the flattened display list
+ * (parents rolled up from their children). Takes the resolved map rather than
+ * `(tasks, log)` so callers that already hold the resolved state don't pay for
+ * a second replay.
+ */
+export function getTaskList(resolvedById: Map<Id, GanttTask>): GanttTask[] {
+  const taskByParentId = groupTaskByParentId(resolvedById.values());
   const roots = taskByParentId.get(null) ?? [];
   return roots.flatMap(
     (root) => buildSubtree(root, taskByParentId).flattened,
   );
 }
 
-function resolveCommittedTasks(
+/**
+ * Replay the applied slice of the change log (`transactions[0..cursor]`) over
+ * the seed tasks, returning the effective tasks keyed by id in display order.
+ * An explicit `order` array preserves positional create/delete; the returned
+ * insertion-ordered `Map` keeps lookups O(1) and carries the display order.
+ * Only create/delete touch `order`, so the common case (updates) stays cheap.
+ */
+export function resolveCommittedTasks(
   tasks: GanttTask[],
-  committedChanges: CommittedOverrides,
-): GanttTask[] {
-  const result: GanttTask[] = [];
-  const seenIds = new Set<Id>();
+  log: ChangeLog,
+): Map<Id, GanttTask> {
+  const order: Id[] = tasks.map((t) => t.id);
+  const byId = new Map<Id, GanttTask>(tasks.map((t) => [t.id, t]));
 
-  for (const task of tasks) {
-    seenIds.add(task.id);
-    const commands = committedChanges[task.id];
-    const latest = commands?.[commands.length - 1];
-    if (latest?.type === "delete") continue;
-    result.push(latest?.task ?? task);
-  }
-
-  for (const commands of Object.values(committedChanges)) {
-    const latest = commands[commands.length - 1];
-    if (latest?.type === "create" && !seenIds.has(latest.task.id)) {
-      result.push(latest.task);
+  const applied = log.transactions.slice(0, log.cursor);
+  for (const transaction of applied) {
+    for (const cmd of transaction) {
+      switch (cmd.type) {
+        case "update":
+          if (byId.has(cmd.task.id)) byId.set(cmd.task.id, cmd.task);
+          break;
+        case "create": {
+          byId.set(cmd.task.id, cmd.task);
+          const at =
+            cmd.afterId == null
+              ? order.length
+              : order.indexOf(cmd.afterId) + 1;
+          order.splice(at, 0, cmd.task.id);
+          break;
+        }
+        case "delete": {
+          byId.delete(cmd.id);
+          const i = order.indexOf(cmd.id);
+          if (i !== -1) order.splice(i, 1);
+          break;
+        }
+      }
     }
   }
 
-  return result;
+  const resolvedById = new Map<Id, GanttTask>();
+  for (const id of order) {
+    const task = byId.get(id);
+    if (task) resolvedById.set(id, task);
+  }
+  return resolvedById;
 }
 
 interface Subtree {
@@ -101,13 +126,13 @@ export function getParentTaskData(
   };
 }
 
-function groupTaskByParentId(tasks: GanttTask[]): TaskRecordsByParentId {
-  return tasks.reduce<TaskRecordsByParentId>((acc, task) => {
+function groupTaskByParentId(tasks: Iterable<GanttTask>): TaskRecordsByParentId {
+  const acc: TaskRecordsByParentId = new Map();
+  for (const task of tasks) {
     const parentId = task.parentId ?? null;
     const siblings = acc.get(parentId) ?? [];
     siblings.push(task);
     acc.set(parentId, siblings);
-
-    return acc;
-  }, new Map());
+  }
+  return acc;
 }

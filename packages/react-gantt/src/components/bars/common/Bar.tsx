@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
-  applyPatch,
   computeTaskPixels,
   type DatePatch,
   pxToDate,
@@ -10,6 +9,7 @@ import type { GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
 import { TaskBar } from "../taskBar/TaskBar";
+import { ConnectorHandles } from "./ConnectorHandles";
 import styles from "./Bar.module.css";
 
 interface BarProps {
@@ -20,22 +20,26 @@ interface BarProps {
   rowHeight: number;
   snapToDay: boolean;
   onUpdate: (id: Id, patch: DatePatch) => void;
+  override?: Partial<TaskState>;
+  onOverride: (id: Id, patch: DatePatch | null) => void;
+  onTaskClick?: (task: GanttTask) => void;
 }
 
-export function Bar({
+export const Bar = memo(function Bar({
   task,
   index,
   origin,
   colWidth,
   rowHeight,
   snapToDay,
+  override,
+  onOverride,
   onUpdate,
+  onTaskClick,
 }: BarProps) {
-  const [override, setOverride] = useState<Partial<TaskState>>({});
-
   const { left, width, progress } = computeTaskPixels(
     task,
-    override,
+    override || {},
     origin,
     colWidth,
     { snapToDay },
@@ -43,6 +47,9 @@ export function Bar({
   const top = index * rowHeight;
   const visualLeft = left;
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
+  const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
+
+  const [hovered, setHovered] = useState(false);
 
   const moveAt = (newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth),
@@ -55,18 +62,30 @@ export function Bar({
   });
 
   const handleOverride = (patch: DatePatch) => {
-    setOverride((prev) => {
-      return { ...prev, ...applyPatch(task, prev, patch) };
-    });
+    onOverride(task.id, patch);
   };
 
   const handleUpdate = (id: Id, patch: DatePatch) => {
     onUpdate(id, patch);
-    setOverride({});
+    onOverride(id, null);
   };
 
   return (
-    <div className={styles.row} style={{ top, height: rowHeight }}>
+    <div
+      className={styles.row}
+      style={{ top, height: rowHeight }}
+      onClick={onTaskClick ? () => onTaskClick(task) : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <ConnectorHandles
+        taskId={task.id}
+        barLeft={visualLeft}
+        barWidth={width}
+        barCenterY={barCenterY}
+        show={hovered}
+      />
+
       {task.type === "milestone" && (
         <MilestoneBar
           size={barHeight}
@@ -118,4 +137,6 @@ export function Bar({
       ) : null}
     </div>
   );
-}
+});
+
+Bar.displayName = "Bar";
