@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Gantt, type ColumnDef, type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
-import { mockTasks, mockDependencies } from "./mock";
+import { generateMockData } from "./mockGenerator";
 import { TaskEditModal } from "./TaskEditModal";
 
 // Stable empty reference so the Gantt's `columns` prop doesn't change identity.
@@ -11,7 +11,18 @@ const NO_COLUMNS: ColumnDef[] = [];
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
 // internal change log, so we never feed the resolved list back into `tasks`.
 function GanttWithTaskList() {
-  const [dependencies, setDependencies] = useState<TaskDependency[]>(mockDependencies);
+  // How many tasks to generate, and a bump counter to reshuffle with a new seed.
+  const [count, setCount] = useState(50);
+  const [seed, setSeed] = useState(1);
+  const { tasks, dependencies: seededDeps } = useMemo(
+    () => generateMockData(count, { seed }),
+    [count, seed],
+  );
+
+  const [dependencies, setDependencies] = useState<TaskDependency[]>(seededDeps);
+  // When the generated dataset changes, reset the live dependency state to match.
+  useEffect(() => setDependencies(seededDeps), [seededDeps]);
+
   const ganttRef = useRef<GanttHandle>(null);
   const [selected, setSelected] = useState<GanttTask | null>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
@@ -78,7 +89,23 @@ function GanttWithTaskList() {
 
   return (
     <>
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+        <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          Tasks:
+          <input
+            type="number"
+            min={1}
+            max={1000}
+            value={count}
+            onChange={(e) => setCount(Math.min(1000, Math.max(1, Number(e.target.value) || 1)))}
+            style={{ width: 72 }}
+          />
+        </label>
+        <button onClick={() => setSeed((s) => s + 1)}>Regenerate</button>
+        <span style={{ color: "#666" }}>
+          {tasks.length} tasks · {dependencies.length} links
+        </span>
+        <span style={{ width: 1, height: 20, background: "#ddd" }} />
         <button onClick={addTask}>
           Add task {selected ? "after selected" : "at end"}
         </button>
@@ -92,8 +119,9 @@ function GanttWithTaskList() {
         <button onClick={redo}>Redo</button>
       </div>
       <Gantt
+        key={`${count}-${seed}`}
         apiRef={ganttRef}
-        tasks={mockTasks}
+        tasks={tasks}
         dependencies={dependencies}
         colWidth={60}
         rowHeight={40}
