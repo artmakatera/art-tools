@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { ColumnDef, GanttTask, Id } from "../../types";
+import { useGanttTask } from "../../context/GanttContext";
 import styles from "./TaskList.module.css";
 
 interface TaskListRowProps {
@@ -29,6 +30,7 @@ export const TaskListRow = memo(function TaskListRow({
   onSelect,
   columns,
 }: TaskListRowProps) {
+  const { columnApi } = useGanttTask();
   return (
     <div
       className={`${styles.row} ${isSelected ? styles.selected : ""}`}
@@ -62,10 +64,10 @@ export const TaskListRow = memo(function TaskListRow({
                 ) : (
                   <span className={styles.expandPlaceholder} />
                 )}
-                {col.render(task)}
+                {col.render(task, columnApi)}
               </span>
             ) : (
-              col.render(task)
+              col.render(task, columnApi)
             )}
           </div>
         );
