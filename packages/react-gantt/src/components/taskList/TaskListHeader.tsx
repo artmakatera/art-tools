@@ -1,3 +1,4 @@
+import type React from "react";
 import type { ColumnDef, GanttTask, Scale } from "../../types";
 import styles from "./TaskList.module.css";
 import { DEFAULT_SCALES } from "../../core/scales";
@@ -6,9 +7,10 @@ interface TaskListHeaderProps {
   columns: ColumnDef[];
   rowHeight: number;
   scales?: Scale[];
+  onResizeStart: (key: string, startWidth: number, e: React.MouseEvent) => void;
 }
 
-export function TaskListHeader({ columns, rowHeight, scales = DEFAULT_SCALES }: TaskListHeaderProps) {
+export function TaskListHeader({ columns, rowHeight, scales = DEFAULT_SCALES, onResizeStart }: TaskListHeaderProps) {
   // Height tracks the calendar: one row per scale, +2 for its 1px top/bottom
   // borders. Both default to the shared DEFAULT_SCALES so the counts can't drift.
   const headerHeight = scales.length * rowHeight + 2;
@@ -22,6 +24,15 @@ export function TaskListHeader({ columns, rowHeight, scales = DEFAULT_SCALES }: 
           style={col.width ? { width: col.width, flexShrink: 0 } : { flex: "1 1 auto", minWidth: 100 }}
         >
           {col.header}
+          <div
+            className={styles.divider}
+            onMouseDown={(e) => {
+              // Read the rendered width from the DOM so flex (no explicit width)
+              // columns snap cleanly to a fixed width on first drag.
+              const cell = e.currentTarget.parentElement as HTMLElement;
+              onResizeStart(col.key, cell.offsetWidth, e);
+            }}
+          />
         </div>
       ))}
     </div>

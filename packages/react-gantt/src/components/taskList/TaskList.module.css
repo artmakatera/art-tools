@@ -4,6 +4,7 @@
   font-family: inherit;
   background: var(--am-gantt-tasklist-bg, #ffffff);
   flex-shrink: 0;
+  width: max-content;
 }
 
 .header {
@@ -19,6 +20,7 @@
 }
 
 .headerCell {
+  position: relative;
   display: flex;
   align-items: center;
   padding: 0 8px;
@@ -121,12 +123,13 @@
 }
 
 .divider {
-  width: 4px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
   cursor: col-resize;
-  background: var(--am-gantt-calendar-border, #e2e8f0);
-  flex-shrink: 0;
   user-select: none;
-  transition: background 0.15s;
 }
 
 .divider:hover {
