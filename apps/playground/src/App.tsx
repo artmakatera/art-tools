@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Gantt, type ColumnDef, type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
+import { Gantt, type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { generateMockData } from "./mockGenerator";
 import { TaskEditModal } from "./TaskEditModal";
 
 // Stable empty reference so the Gantt's `columns` prop doesn't change identity.
-const NO_COLUMNS: ColumnDef[] = [];
 
 // Example 1: convenience <Gantt> with built-in TaskList panel.
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
@@ -24,13 +23,12 @@ function GanttWithTaskList() {
   useEffect(() => setDependencies(seededDeps), [seededDeps]);
 
   const ganttRef = useRef<GanttHandle>(null);
-  const [selected, setSelected] = useState<GanttTask | null>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
 
   const addTask = useCallback(() => {
     // Start from the selected task (fall back to a default); span exactly one
     // day (endDate inclusive), progress 0. Populate every GanttTask field.
-    const start = selected ? new Date(selected.startDate) : new Date("2022-01-12");
+    const start =  new Date("2022-01-12");
     const end = new Date(start); // 1 day: endDate is the inclusive last day
     const task: GanttTask = {
       id: `new-${Date.now()}`,
@@ -40,27 +38,18 @@ function GanttWithTaskList() {
       duration: 1,
       progress: 0,
       type: "task",
-      parentId: selected?.parentId ?? null,
+      parentId: null,
     };
     // afterId omitted → appended at end; pass the selection to insert after it.
-    ganttRef.current?.createTask(task, selected?.id ?? undefined);
+    ganttRef.current?.createTask(task);
     // Immediately open the edit dialog on the just-created task.
     setEditing(task);
-  }, [selected]);
+  }, []);
 
-  const editSelected = useCallback(() => {
-    if (selected) setEditing(selected);
-  }, [selected]);
-
-  const deleteSelected = useCallback(() => {
-    if (selected) ganttRef.current?.deleteTask(selected.id);
-  }, [selected]);
 
   const undo = useCallback(() => ganttRef.current?.undo(), []);
   const redo = useCallback(() => ganttRef.current?.redo(), []);
 
-  const handleTaskClick = useCallback((task: GanttTask) => setSelected(task), []);
-  const clearSelection = useCallback(() => setSelected(null), []);
   const handleTasksChange = useCallback(
     (next: GanttTask[]) => console.log("tasks changed:", next.length),
     [],
@@ -107,13 +96,7 @@ function GanttWithTaskList() {
         </span>
         <span style={{ width: 1, height: 20, background: "#ddd" }} />
         <button onClick={addTask}>
-          Add task {selected ? "after selected" : "at end"}
-        </button>
-        <button disabled={!selected} onClick={editSelected}>
-          Edit selected
-        </button>
-        <button onClick={deleteSelected}>
-          Delete selected
+          Add task 
         </button>
         <button onClick={undo}>Undo</button>
         <button onClick={redo}>Redo</button>
@@ -126,9 +109,7 @@ function GanttWithTaskList() {
         colWidth={60}
         rowHeight={40}
         height={400}
-        columns={NO_COLUMNS}
-        onTaskClick={handleTaskClick}
-        onTaskDelete={clearSelection}
+        onTaskEdit={setEditing}
         onTasksChange={handleTasksChange}
         onDependencyCreate={handleDependencyCreate}
         onDependencyDelete={handleDependencyDelete}

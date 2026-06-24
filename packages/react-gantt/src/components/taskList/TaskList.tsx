@@ -5,7 +5,7 @@ import {
   useGanttTask,
 } from "../../context/GanttContext";
 import type { ColumnDef, GanttTask, Id } from "../../types";
-import { TaskListHeader, DEFAULT_COLUMNS } from "./TaskListHeader";
+import { TaskListHeader } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
 import { addDays, getMinMaxDates } from "../../core/dateUtils";
 import { computeTaskPixels, getFinestUnit } from "../../core/barUtils";
@@ -33,19 +33,14 @@ export function TaskList({ columns = [] }: TaskListProps) {
 
   const { widths, onResizeStart } = useColumnWidths();
 
-  const allColumns = useMemo(
-    () => (columns.length > 0 ? columns : DEFAULT_COLUMNS),
-    [columns],
-  );
-
   // Overlay the session-local resize widths onto the incoming columns. Both the
   // header and rows render this same array, so they stay aligned by construction.
   const resolvedColumns = useMemo(
     () =>
-      allColumns.map((col) =>
+      columns.map((col) =>
         widths[col.key] != null ? { ...col, width: widths[col.key] } : col,
       ),
-    [allColumns, widths],
+    [columns, widths],
   );
 
   const scrollToTask = useCallback(

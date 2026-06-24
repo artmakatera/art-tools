@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
-import type { GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
+import type { ColumnApi, GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
 import { useTaskList } from "../hooks/useTaskList";
 import { useExpand } from "../hooks/useExpand";
 import { useScrollSync } from "../hooks/useScrollSync";
@@ -62,6 +62,8 @@ interface GanttTaskValue {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  /** API handed to `ColumnDef.render` so columns can mutate/edit tasks. */
+  columnApi: ColumnApi;
   selectedId: Id | null;
   setSelectedId: (id: Id | null) => void;
   expandedIds: Set<Id>;
@@ -130,6 +132,7 @@ export interface GanttProviderProps {
   onDependencyDelete?: (dep: TaskDependency) => void;
   onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
   onTaskDelete?: (id: Id) => void;
+  onTaskEdit?: (task: GanttTask) => void;
   onTasksChange?: (tasks: GanttTask[]) => void;
   apiRef?: Ref<GanttHandle>;
   children: ReactNode;
@@ -153,6 +156,7 @@ export function GanttProvider({
   onDependencyDelete,
   onTaskCreate,
   onTaskDelete,
+  onTaskEdit,
   onTasksChange,
   apiRef,
   children,
@@ -164,6 +168,18 @@ export function GanttProvider({
     apiRef,
     () => ({ createTask, updateTask, deleteTask, undo, redo }),
     [createTask, updateTask, deleteTask, undo, redo],
+  );
+
+  const columnApi = useMemo<ColumnApi>(
+    () => ({
+      createTask,
+      updateTask,
+      deleteTask,
+      undo,
+      redo,
+      editTask: (task) => onTaskEdit?.(task),
+    }),
+    [createTask, updateTask, deleteTask, undo, redo, onTaskEdit],
   );
   const { visibleTasks, expandedIds, parentIds, toggleExpand } = useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll } = useScrollSync();
@@ -232,6 +248,7 @@ export function GanttProvider({
       redo,
       canUndo,
       canRedo,
+      columnApi,
       selectedId,
       setSelectedId,
       expandedIds,
@@ -249,6 +266,7 @@ export function GanttProvider({
       redo,
       canUndo,
       canRedo,
+      columnApi,
       selectedId,
       expandedIds,
       parentIds,

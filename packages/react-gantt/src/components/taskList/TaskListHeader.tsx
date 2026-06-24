@@ -2,6 +2,7 @@ import type React from "react";
 import type { ColumnDef, GanttTask, Scale } from "../../types";
 import styles from "./TaskList.module.css";
 import { DEFAULT_SCALES } from "../../core/scales";
+import { addDays } from "../../core/dateUtils";
 
 interface TaskListHeaderProps {
   columns: ColumnDef[];
@@ -39,7 +40,62 @@ export function TaskListHeader({ columns, rowHeight, scales = DEFAULT_SCALES, on
   );
 }
 
+/** Builds the task inserted by the actions-column "add after" button: a blank
+ *  one-day task starting the day after the clicked row, under the same parent. */
+function buildActionTask(task: GanttTask): GanttTask {
+  const start = addDays(task.startDate, 1);
+  return {
+    id: `task-${Date.now()}`,
+    name: "New task",
+    startDate: start,
+    endDate: start,
+    duration: 1,
+    progress: 0,
+    type: "task",
+    parentId: task.parentId ?? null,
+  };
+}
+
 export const DEFAULT_COLUMNS: ColumnDef[] = [
+    {
+    key: "__action",
+    header: "  ",
+    width: 120,
+    render: (task, api) => {
+      return  <div style={{ display: "flex", gap: "8px"}}>
+        <button
+          title="Edit"
+          onClick={(e) => {
+            e.stopPropagation();
+            api.editTask(task);
+          }}
+        >
+          &#9998;
+        </button>
+        <button
+          title="Add after"
+          onClick={(e) => {
+            e.stopPropagation();
+            const created = buildActionTask(task);
+            api.createTask(created, task.id);
+            api.editTask(created);
+          }}
+        >
+          &#10133;
+        </button>
+        <button
+          title="Delete"
+          style={{ fontSize: 9 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            api.deleteTask(task.id);
+          }}
+        >
+          &#10060;
+        </button>
+      </div>
+    }
+  },
   {
     key: "__name",
     header: "Task Name",
@@ -64,4 +120,5 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
     width: 90,
     render: (task: GanttTask) => `${task.progress ?? 0}%`,
   },
+
 ];
