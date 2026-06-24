@@ -10,6 +10,7 @@ import { TaskListRow } from "./TaskListRow";
 import { addDays, getMinMaxDates } from "../../core/dateUtils";
 import { computeTaskPixels, getFinestUnit } from "../../core/barUtils";
 import { scrollOffsetToReveal } from "../../core/scroll";
+import { useColumnWidths } from "../../hooks/useColumnWidths";
 import styles from "./TaskList.module.css";
 
 interface TaskListProps {
@@ -30,9 +31,21 @@ export function TaskList({ columns = [] }: TaskListProps) {
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
   const { taskListRef, onTaskListScroll, gridRef } = useGanttScroll();
 
+  const { widths, onResizeStart } = useColumnWidths();
+
   const allColumns = useMemo(
     () => (columns.length > 0 ? columns : DEFAULT_COLUMNS),
     [columns],
+  );
+
+  // Overlay the session-local resize widths onto the incoming columns. Both the
+  // header and rows render this same array, so they stay aligned by construction.
+  const resolvedColumns = useMemo(
+    () =>
+      allColumns.map((col) =>
+        widths[col.key] != null ? { ...col, width: widths[col.key] } : col,
+      ),
+    [allColumns, widths],
   );
 
   const scrollToTask = useCallback(
@@ -100,9 +113,10 @@ export function TaskList({ columns = [] }: TaskListProps) {
       style={height !== undefined ? { height } : undefined}
     >
       <TaskListHeader
-        columns={allColumns}
+        columns={resolvedColumns}
         rowHeight={rowHeight}
         scales={scales}
+        onResizeStart={onResizeStart}
       />
       <div
         ref={taskListRef}
@@ -126,7 +140,7 @@ export function TaskList({ columns = [] }: TaskListProps) {
               isSelected={selectedId === task.id}
               onToggleExpand={toggleExpand}
               onSelect={handleSelect}
-              columns={allColumns}
+              columns={resolvedColumns}
             />
           ))}
         </div>

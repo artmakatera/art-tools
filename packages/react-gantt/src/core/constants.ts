@@ -11,3 +11,6 @@ export const DIVIDER_WIDTH = 4;
 
 /** Minimum visible width of the grid overlay in px. */
 export const GRID_MIN_WIDTH = 10;
+
+/** Minimum width of a task-list column when drag-resizing, in px. */
+export const COLUMN_MIN_WIDTH = 60;
