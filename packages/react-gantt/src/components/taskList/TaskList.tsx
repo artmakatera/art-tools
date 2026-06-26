@@ -10,6 +10,8 @@ import { TaskListRow } from "./TaskListRow";
 import { addDays, getMinMaxDates } from "../../core/dateUtils";
 import { computeTaskPixels, getFinestUnit } from "../../core/barUtils";
 import { scrollOffsetToReveal } from "../../core/scroll";
+import { rangeFromOffset } from "../../core/virtualize";
+import { ROW_OVERSCAN } from "../../core/constants";
 import { useColumnWidths } from "../../hooks/useColumnWidths";
 import styles from "./TaskList.module.css";
 
@@ -29,7 +31,13 @@ export function TaskList({ columns = [] }: TaskListProps) {
     onTaskClick,
   } = useGanttTask();
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
-  const { taskListRef, onTaskListScroll, gridRef } = useGanttScroll();
+  const {
+    taskListRef,
+    onTaskListScroll,
+    gridRef,
+    viewport,
+    scrollToTask: scrollRowIntoView,
+  } = useGanttScroll();
 
   const { widths, onResizeStart } = useColumnWidths();
 
@@ -78,10 +86,11 @@ export function TaskList({ columns = [] }: TaskListProps) {
       const task = visibleTasks.find((t) => t.id === id);
       if (task) {
         onTaskClick?.(task);
-        scrollToTask(task);
+        scrollToTask(task); // existing horizontal grid reveal — unchanged
+        scrollRowIntoView(id); // new vertical list reveal (+ auto-expand)
       }
     },
-    [setSelectedId, visibleTasks, onTaskClick, scrollToTask],
+    [setSelectedId, visibleTasks, onTaskClick, scrollToTask, scrollRowIntoView],
   );
 
   // Depth map: how many levels deep each task is
@@ -93,6 +102,19 @@ export function TaskList({ columns = [] }: TaskListProps) {
     }
     return map;
   }, [visibleTasks]);
+
+  // Render only the rows intersecting the viewport (plus overscan). Reuses the
+  // grid's viewport: scrollTop is synced between the panes, and its clientHeight
+  // is slightly larger (it spans the calendar header) so we over-render a few
+  // rows at the bottom — never under-render. The `.rows` height stays full so the
+  // scrollbar extent is unaffected.
+  const rowRange = rangeFromOffset(
+    viewport.scrollTop,
+    viewport.clientHeight,
+    rowHeight,
+    visibleTasks.length,
+    ROW_OVERSCAN,
+  );
 
   // No fixed height → the body grows to fit every row. With a height, the body
   // flexes to fill the space left by the header and scrolls (synced to the grid).
@@ -123,21 +145,24 @@ export function TaskList({ columns = [] }: TaskListProps) {
           className={styles.rows}
           style={{ height: visibleTasks.length * rowHeight }}
         >
-          {visibleTasks.map((task, index) => (
-            <TaskListRow
-              key={task.id}
-              task={task}
-              index={index}
-              rowHeight={rowHeight}
-              depth={depthMap.get(task.id) ?? 0}
-              isParent={parentIds.has(task.id)}
-              isExpanded={expandedIds.has(task.id)}
-              isSelected={selectedId === task.id}
-              onToggleExpand={toggleExpand}
-              onSelect={handleSelect}
-              columns={resolvedColumns}
-            />
-          ))}
+          {visibleTasks.slice(rowRange.start, rowRange.end).map((task, i) => {
+            const index = rowRange.start + i;
+            return (
+              <TaskListRow
+                key={task.id}
+                task={task}
+                index={index}
+                rowHeight={rowHeight}
+                depth={depthMap.get(task.id) ?? 0}
+                isParent={parentIds.has(task.id)}
+                isExpanded={expandedIds.has(task.id)}
+                isSelected={selectedId === task.id}
+                onToggleExpand={toggleExpand}
+                onSelect={handleSelect}
+                columns={resolvedColumns}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
