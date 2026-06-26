@@ -1,0 +1,16 @@
+.cols {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.col {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
+}
+
+.colWeekend {
+  background: var(--am-gantt-calendar-weekend-bg, #f1f5f9);
+}

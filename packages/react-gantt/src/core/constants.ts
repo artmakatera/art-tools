@@ -14,3 +14,9 @@ export const GRID_MIN_WIDTH = 10;
 
 /** Minimum width of a task-list column when drag-resizing, in px. */
 export const COLUMN_MIN_WIDTH = 60;
+
+/** Extra task rows rendered above/below the viewport so fast vertical scrolls stay covered. */
+export const ROW_OVERSCAN = 6;
+
+/** Extra date columns rendered left/right of the viewport so fast horizontal scrolls stay covered. */
+export const COL_OVERSCAN = 4;
