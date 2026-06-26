@@ -50,6 +50,9 @@ export interface GanttHandle {
   deleteTask: (id: Id) => void;
   undo: () => void;
   redo: () => void;
+  /** Scroll the task list vertically to reveal a task, auto-expanding any
+   *  collapsed ancestors first. No-op for an unknown id. */
+  scrollToTask: (id: Id) => void;
 }
 
 /** API passed as the 2nd arg to `ColumnDef.render`, for building actionable columns. */

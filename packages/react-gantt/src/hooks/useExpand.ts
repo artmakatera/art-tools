@@ -21,6 +21,38 @@ export function useExpand(tasksList: GanttTask[]) {
     });
   }, []);
 
+  const taskById = useMemo(() => {
+    const map = new Map<Id, GanttTask>();
+    for (const t of tasksList) {
+      map.set(t.id, t);
+    }
+    return map;
+  }, [tasksList]);
+
+  // Expand every collapsed ancestor of `id` so the task becomes visible. Walks
+  // the parentId chain and removes those ids from the collapsed set. Returns the
+  // previous set unchanged when nothing was collapsed, to avoid needless renders.
+  const revealAncestors = useCallback(
+    (id: Id) => {
+      setCollapsedIds((prev) => {
+        if (prev.size === 0) {
+          return prev;
+        }
+        const next = new Set(prev);
+        let changed = false;
+        let cur = taskById.get(id);
+        while (cur && cur.parentId != null) {
+          if (next.delete(cur.parentId)) {
+            changed = true;
+          }
+          cur = taskById.get(cur.parentId);
+        }
+        return changed ? next : prev;
+      });
+    },
+    [taskById],
+  );
+
   const expandedIds = useMemo(() => {
     const expanded = new Set<Id>();
     for (const id of parentIds) {
@@ -43,5 +75,5 @@ export function useExpand(tasksList: GanttTask[]) {
     return result;
   }, [tasksList, collapsedIds]);
 
-  return { visibleTasks, expandedIds, parentIds, toggleExpand };
+  return { visibleTasks, expandedIds, parentIds, toggleExpand, revealAncestors };
 }
