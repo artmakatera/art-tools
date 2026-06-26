@@ -14,7 +14,7 @@ function GanttWithTaskList() {
   const [count, setCount] = useState(50);
   const [seed, setSeed] = useState(1);
   const { tasks, dependencies: seededDeps } = useMemo(
-    () => generateMockData(count, { seed }),
+    () => generateMockData(count, { seed, startDate: new Date("2010-01-23") }),
     [count, seed],
   );
 

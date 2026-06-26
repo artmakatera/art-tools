@@ -12,7 +12,7 @@ import {
 import type { ColumnApi, GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
 import { useTaskList } from "../hooks/useTaskList";
 import { useExpand } from "../hooks/useExpand";
-import { useScrollSync } from "../hooks/useScrollSync";
+import { useScrollSync, type ViewportMetrics } from "../hooks/useScrollSync";
 import type { DatePatch } from "../core/barUtils";
 import {
   DEFAULT_COL_WIDTH,
@@ -88,6 +88,8 @@ interface GanttScrollValue {
   onTaskListScroll: () => void;
   onGridScroll: () => void;
   gridBodyRef: React.RefObject<HTMLDivElement | null>;
+  /** Scroll offset + client size of the grid viewport, for virtualization. */
+  viewport: ViewportMetrics;
 }
 
 const GanttScrollContext = createContext<GanttScrollValue | null>(null);
@@ -182,7 +184,7 @@ export function GanttProvider({
     [createTask, updateTask, deleteTask, undo, redo, onTaskEdit],
   );
   const { visibleTasks, expandedIds, parentIds, toggleExpand } = useExpand(tasksList);
-  const { taskListRef, gridRef, onTaskListScroll, onGridScroll } = useScrollSync();
+  const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
   const [selectedId, setSelectedId] = useState<Id | null>(null);
@@ -276,8 +278,8 @@ export function GanttProvider({
   );
 
   const scrollValue = useMemo<GanttScrollValue>(
-    () => ({ taskListRef, gridRef, onTaskListScroll, onGridScroll, gridBodyRef }),
-    [taskListRef, gridRef, onTaskListScroll, onGridScroll],
+    () => ({ taskListRef, gridRef, onTaskListScroll, onGridScroll, gridBodyRef, viewport }),
+    [taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport],
   );
 
   const dependencyValue = useMemo<GanttDependencyValue>(

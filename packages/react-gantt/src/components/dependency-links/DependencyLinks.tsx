@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 import { useDependencyLinks } from "./DependencyLinksContext";
-import { midpoint, type Point } from "./geometry";
+import { linkBounds, midpoint, type Bounds, type Point } from "./geometry";
 import type { TaskDependency } from "../../types";
 import styles from "./DependencyLinks.module.css";
 
@@ -15,6 +15,22 @@ interface DependencyLinksProps {
   width: number;
   height: number;
   onDependencyDelete?: (dep: TaskDependency) => void;
+  /** Overscan-padded visible pixel rect; links outside it are not rendered. */
+  visibleRect?: Bounds;
+}
+
+/** True when a link's bounding box overlaps the visible rect (or no rect set). */
+function linkInView(points: Point[], rect: Bounds | undefined): boolean {
+  if (!rect) {
+    return true;
+  }
+  const b = linkBounds(points);
+  return (
+    b.minX <= rect.maxX &&
+    b.maxX >= rect.minX &&
+    b.minY <= rect.maxY &&
+    b.maxY >= rect.minY
+  );
 }
 
 /** One straight segment as an absolutely-positioned box. */
@@ -74,7 +90,7 @@ function arrow(points: Point[]) {
   };
 }
 
-export function DependencyLinks({ width, height, onDependencyDelete }: DependencyLinksProps) {
+export function DependencyLinks({ width, height, onDependencyDelete, visibleRect }: DependencyLinksProps) {
   const links = useDependencyLinks();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deletePos, setDeletePos] = useState<{ x: number; y: number } | null>(null);
@@ -124,8 +140,12 @@ export function DependencyLinks({ width, height, onDependencyDelete }: Dependenc
       onClick={() => { setSelectedId(null); setDeletePos(null); }}
     >
       {links.map((link) => {
-        const head = arrow(link.points);
         const isSelected = link.id === selectedId;
+        // Cull links outside the viewport, but keep the selected one rendered.
+        if (!isSelected && !linkInView(link.points, visibleRect)) {
+          return null;
+        }
+        const head = arrow(link.points);
         const segs = segments(link.points);
         const mid = link.dep.lag ? midpoint(link.points) : null;
 
