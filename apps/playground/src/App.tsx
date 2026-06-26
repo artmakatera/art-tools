@@ -1,26 +1,36 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Gantt, type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
+import { Suspense, lazy, useCallback, useRef, useState } from "react";
+import { type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { generateMockData } from "./mockGenerator";
 import { TaskEditModal } from "./TaskEditModal";
+
+// Code-split the Gantt into its own async chunk so the page shell paints
+// immediately and the <Suspense> boundary below shows a fallback while it loads.
+const Gantt = lazy(() =>
+  import("@am/react-gantt").then((m) => ({ default: m.Gantt })),
+);
 
 // Stable empty reference so the Gantt's `columns` prop doesn't change identity.
 
 // Example 1: convenience <Gantt> with built-in TaskList panel.
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
 // internal change log, so we never feed the resolved list back into `tasks`.
+
+const count = 100;
+const seed = 1;
+
+const mockData = generateMockData(count, { seed, startDate: new Date("2010-01-23") });
 function GanttWithTaskList() {
   // How many tasks to generate, and a bump counter to reshuffle with a new seed.
-  const [count, setCount] = useState(50);
-  const [seed, setSeed] = useState(1);
-  const { tasks, dependencies: seededDeps } = useMemo(
-    () => generateMockData(count, { seed, startDate: new Date("2010-01-23") }),
-    [count, seed],
-  );
+
+  // The number input updates `count` on every keystroke, but regenerating the
+  // dataset and remounting <Gantt> (its `key` resets the edit log) is expensive.
+  // Defer that work so the input stays responsive and rapid keystrokes coalesce
+  // into one rebuild instead of one per digit.
+  const { tasks, dependencies: seededDeps } = mockData
 
   const [dependencies, setDependencies] = useState<TaskDependency[]>(seededDeps);
-  // When the generated dataset changes, reset the live dependency state to match.
-  useEffect(() => setDependencies(seededDeps), [seededDeps]);
+
 
   const ganttRef = useRef<GanttHandle>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
@@ -79,18 +89,6 @@ function GanttWithTaskList() {
   return (
     <>
       <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-        <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          Tasks:
-          <input
-            type="number"
-            min={1}
-            max={1000}
-            value={count}
-            onChange={(e) => setCount(Math.min(1000, Math.max(1, Number(e.target.value) || 1)))}
-            style={{ width: 72 }}
-          />
-        </label>
-        <button onClick={() => setSeed((s) => s + 1)}>Regenerate</button>
         <span style={{ color: "#666" }}>
           {tasks.length} tasks · {dependencies.length} links
         </span>
@@ -101,19 +99,24 @@ function GanttWithTaskList() {
         <button onClick={undo}>Undo</button>
         <button onClick={redo}>Redo</button>
       </div>
-      <Gantt
-        key={`${count}-${seed}`}
-        apiRef={ganttRef}
-        tasks={tasks}
-        dependencies={dependencies}
-        colWidth={60}
-        rowHeight={40}
-        height={400}
-        onTaskEdit={setEditing}
-        onTasksChange={handleTasksChange}
-        onDependencyCreate={handleDependencyCreate}
-        onDependencyDelete={handleDependencyDelete}
-      />
+      <Suspense
+        fallback={
+          <div style={{ padding: 16, color: "#666" }}>Loading Gantt…</div>
+        }
+      >
+        <Gantt
+          apiRef={ganttRef}
+          tasks={tasks}
+          dependencies={dependencies}
+          colWidth={60}
+          rowHeight={40}
+          height={1000}
+          onTaskEdit={setEditing}
+          onTasksChange={handleTasksChange}
+          onDependencyCreate={handleDependencyCreate}
+          onDependencyDelete={handleDependencyDelete}
+        />
+      </Suspense>
       {editing && (
         <TaskEditModal
           task={editing}
