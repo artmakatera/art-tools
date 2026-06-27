@@ -84,6 +84,7 @@ export interface GanttProps {
   onTasksChange?: (tasks: GanttTask[]) => void;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
+  hideTaskList?: boolean;
 }
 
 
