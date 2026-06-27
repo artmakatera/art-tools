@@ -1,4 +1,11 @@
-import { useCallback, useMemo } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   useGanttConfig,
   useGanttScroll,
@@ -35,7 +42,6 @@ export function TaskList({ columns = [] }: TaskListProps) {
     taskListRef,
     onTaskListScroll,
     gridRef,
-    viewport,
     scrollToTask: scrollRowIntoView,
   } = useGanttScroll();
 
@@ -103,14 +109,72 @@ export function TaskList({ columns = [] }: TaskListProps) {
     return map;
   }, [visibleTasks]);
 
-  // Render only the rows intersecting the viewport (plus overscan). Reuses the
-  // grid's viewport: scrollTop is synced between the panes, and its clientHeight
-  // is slightly larger (it spans the calendar header) so we over-render a few
-  // rows at the bottom — never under-render. The `.rows` height stays full so the
-  // scrollbar extent is unaffected.
+  // Measure this pane's own scroll viewport for row windowing. We can't reuse
+  // the grid's viewport: the grid may not be mounted (e.g. task-list-only mode),
+  // in which case its metrics never get measured and we'd render every row. The
+  // list body's scrollTop stays in sync with the grid when both are present, so
+  // self-measuring is correct either way. Coalesce bursts into one rAF update.
+  const [listViewport, setListViewport] = useState({
+    scrollTop: 0,
+    clientHeight: 0,
+  });
+  const measureFrameRef = useRef<number | null>(null);
+
+  const measureViewport = useCallback(() => {
+    if (measureFrameRef.current !== null) {
+      return;
+    }
+    measureFrameRef.current = requestAnimationFrame(() => {
+      measureFrameRef.current = null;
+      const el = taskListRef.current;
+      if (!el) {
+        return;
+      }
+      setListViewport((prev) =>
+        prev.scrollTop === el.scrollTop && prev.clientHeight === el.clientHeight
+          ? prev
+          : { scrollTop: el.scrollTop, clientHeight: el.clientHeight },
+      );
+    });
+  }, [taskListRef]);
+
+  // Measure synchronously before first paint so the initial window is correct.
+  useLayoutEffect(() => {
+    const el = taskListRef.current;
+    if (!el) {
+      return;
+    }
+    setListViewport({ scrollTop: el.scrollTop, clientHeight: el.clientHeight });
+  }, [taskListRef]);
+
+  // Keep clientHeight in sync with container resizes.
+  useEffect(() => {
+    const el = taskListRef.current;
+    if (!el || typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver(measureViewport);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (measureFrameRef.current !== null) {
+        cancelAnimationFrame(measureFrameRef.current);
+        measureFrameRef.current = null;
+      }
+    };
+  }, [taskListRef, measureViewport]);
+
+  // Re-measure on scroll (after syncing the grid), then window the rows.
+  const handleScroll = useCallback(() => {
+    onTaskListScroll();
+    measureViewport();
+  }, [onTaskListScroll, measureViewport]);
+
+  // Render only the rows intersecting the viewport (plus overscan). The `.rows`
+  // height stays full (via the spacers) so the scrollbar extent is unaffected.
   const rowRange = rangeFromOffset(
-    viewport.scrollTop,
-    viewport.clientHeight,
+    listViewport.scrollTop,
+    listViewport.clientHeight,
     rowHeight,
     visibleTasks.length,
     ROW_OVERSCAN,
@@ -139,19 +203,19 @@ export function TaskList({ columns = [] }: TaskListProps) {
         ref={taskListRef}
         className={styles.body}
         style={bodyStyle}
-        onScroll={onTaskListScroll}
+        onScroll={handleScroll}
       >
-        <div
-          className={styles.rows}
-          style={{ height: visibleTasks.length * rowHeight }}
-        >
-          {visibleTasks.slice(rowRange.start, rowRange.end).map((task, i) => {
+        <div className={styles.rows}>
+          {/* Spacer for the rows above the viewport, so the visible rows sit at
+              the right scroll offset without absolute positioning. */}
+          <div style={{ height: rowRange.start * rowHeight }} />
+          {Array.from({ length: rowRange.end - rowRange.start }, (_, i) => {
             const index = rowRange.start + i;
+            const task = visibleTasks[index]!;
             return (
               <TaskListRow
                 key={task.id}
                 task={task}
-                index={index}
                 rowHeight={rowHeight}
                 depth={depthMap.get(task.id) ?? 0}
                 isParent={parentIds.has(task.id)}
@@ -163,6 +227,13 @@ export function TaskList({ columns = [] }: TaskListProps) {
               />
             );
           })}
+          {/* Spacer for the rows below the viewport, keeping the scroll extent
+              equal to the full list height. */}
+          <div
+            style={{
+              height: (visibleTasks.length - rowRange.end) * rowHeight,
+            }}
+          />
         </div>
       </div>
     </div>

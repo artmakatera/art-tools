@@ -5,7 +5,6 @@ import styles from "./TaskList.module.css";
 
 interface TaskListRowProps {
   task: GanttTask;
-  index: number;
   rowHeight: number;
   depth: number;
   isParent: boolean;
@@ -20,7 +19,6 @@ const INDENT_PX = 16;
 
 export const TaskListRow = memo(function TaskListRow({
   task,
-  index,
   rowHeight,
   depth,
   isParent,
@@ -34,7 +32,7 @@ export const TaskListRow = memo(function TaskListRow({
   return (
     <div
       className={`${styles.row} ${isSelected ? styles.selected : ""}`}
-      style={{ top: index * rowHeight, height: rowHeight }}
+      style={{ height: rowHeight }}
       onClick={() => onSelect(task.id)}
     >
       {columns.map((col) => {

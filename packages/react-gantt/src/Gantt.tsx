@@ -52,7 +52,7 @@ export function Gantt({
       {showTaskList ? (
         <div ref={containerRef} style={{ position: "relative" }}>
             <TaskList columns={columns} />
-          <div
+          {/* <div
             ref={overlayRef}
             style={{
               position: "absolute",
@@ -71,7 +71,7 @@ export function Gantt({
             <div style={{ flex: "1 1 auto", minWidth: 0 }}>
               <GanttGrid />
             </div>
-          </div>
+          </div> */}
         </div>
       ) : (
         <GanttGrid />
