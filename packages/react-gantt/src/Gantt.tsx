@@ -25,11 +25,12 @@ export function Gantt({
   onTaskEdit,
   onTasksChange,
   apiRef,
+  hideTaskList
 }: GanttProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const { gridWidth, onHandleMouseDown } = useGridResize(containerRef, overlayRef);
-  const showTaskList = columns !== undefined;
+  const showTaskList = columns !== undefined && !hideTaskList;
 
   return (
     <GanttProvider
@@ -52,7 +53,7 @@ export function Gantt({
       {showTaskList ? (
         <div ref={containerRef} style={{ position: "relative" }}>
             <TaskList columns={columns} />
-          {/* <div
+          <div
             ref={overlayRef}
             style={{
               position: "absolute",
@@ -71,7 +72,7 @@ export function Gantt({
             <div style={{ flex: "1 1 auto", minWidth: 0 }}>
               <GanttGrid />
             </div>
-          </div> */}
+          </div>
         </div>
       ) : (
         <GanttGrid />
