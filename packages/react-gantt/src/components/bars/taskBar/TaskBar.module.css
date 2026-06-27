@@ -2,7 +2,7 @@
   position: absolute;
   box-sizing: border-box;
   background-color: var(--am-gantt-task-bg);
-  border-radius: 4px;
+  border-radius: var(--am-gantt-task-border-radius);
   cursor: move;
   --am-gantt-bar-progress-bg: var(--am-gantt-task-bg-progress);
 }
@@ -13,12 +13,10 @@
   height: 100%;
 }
 
-
-
 .taskContent {
   vertical-align: middle;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--am-gantt-task-font-size);
   color: var(--am-gantt-task-color);
   position: relative;
   z-index: 1;
@@ -27,13 +25,32 @@
 .resizer {
   position: absolute;
   top: 0;
-  width: 1px;
+  width: var(--am-gantt-resizer-width);
   height: 100%;
   cursor: ew-resize;
-  background-color: black;
+  background-color: transparent;
   z-index: 10;
   padding: 0;
   border: none;
+}
+
+.resizer::after {
+  opacity: 0;
+  content: "";
+  width: var(--am-gantt-resizer-handle-width);
+  inset: var(--am-gantt-resizer-handle-inset)
+  height: calc(100% - (var(--am-gantt-resizer-handle-inset) * 2));
+  border-radius: var(--am-gantt-resizer-handle-radius);
+  background-color: var(--am-gantt-calendar-border);
+  position: absolute;
+}
+
+.task:hover .resizer::after {
+  opacity: 0.8;
+}
+
+.task:hover .resizer:hover .resizer::after {
+  opacity: 1;
 }
 
 .startResizer {

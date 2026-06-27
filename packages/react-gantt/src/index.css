@@ -16,13 +16,13 @@
   --am-gantt-task-bg-progress: rgba(0, 0, 0, 0.12);
   --am-gantt-task-color: #fff;
   --am-gantt-task-border-radius: 4px;
+  --am-gantt-task-font-size: 14px;
 
   --am-gantt-project-bg: #16a34a;
   --am-gantt-project-bg-progress: rgba(134, 239, 172, 0.45);
   --am-gantt-project-color: #f0fdf4;
 
   --am-gantt-milestone-bg: #f59e0b;
-
 
   --am-gantt-calendar-bg: #ffffff;
   --am-gantt-calendar-border: #e2e8f0;
@@ -32,6 +32,11 @@
   --am-gantt-calendar-header-color: #0f172a;
   --am-gantt-calendar-weekend-bg: #f1f5f9;
   --am-gantt-calendar-weekend-color: #64748b;
+
+  --am-gantt-resizer-width: 11px;
+  --am-gantt-resizer-handle-width: 3px;
+  --am-gantt-resizer-handle-radius: 1.5px;
+  --am-gantt-resizer-handle-inset: 4px;
 
   --am-gantt-links-z-index: 2;
   --am-gantt-task-bar-z-index: 3;
