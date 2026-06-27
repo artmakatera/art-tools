@@ -52,7 +52,7 @@ export function TaskBar({
           progress={progress}
           onProgressChange={onProgressChange}
         />
-        <div className={styles.taskContent}>{title}</div>
+        <div className={styles.taskContent} title={title}>{title}</div>
         <TaskResizer
           width={width}
           left={left}

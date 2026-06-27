@@ -18,8 +18,12 @@
   text-align: center;
   font-size: var(--am-gantt-task-font-size);
   color: var(--am-gantt-task-color);
+  padding-inline: 8px;
   position: relative;
   z-index: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .resizer {
@@ -38,7 +42,7 @@
   opacity: 0;
   content: "";
   width: var(--am-gantt-resizer-handle-width);
-  inset: var(--am-gantt-resizer-handle-inset)
+  inset: var(--am-gantt-resizer-handle-inset);
   height: calc(100% - (var(--am-gantt-resizer-handle-inset) * 2));
   border-radius: var(--am-gantt-resizer-handle-radius);
   background-color: var(--am-gantt-calendar-border);
