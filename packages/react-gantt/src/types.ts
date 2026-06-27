@@ -32,7 +32,7 @@ export interface ColumnDef<T extends GanttTask = GanttTask> {
   key: string;
   header: string;
   width?: number;
-  render: (task: T) => React.ReactNode;
+  render: (task: T, api: ColumnApi) => React.ReactNode;
 }
 
 /** Patch passed to the imperative `updateTask`; only the provided fields change. */
@@ -50,6 +50,15 @@ export interface GanttHandle {
   deleteTask: (id: Id) => void;
   undo: () => void;
   redo: () => void;
+  /** Scroll the task list vertically to reveal a task, auto-expanding any
+   *  collapsed ancestors first. No-op for an unknown id. */
+  scrollToTask: (id: Id) => void;
+}
+
+/** API passed as the 2nd arg to `ColumnDef.render`, for building actionable columns. */
+export interface ColumnApi extends GanttHandle {
+  /** Fires the consumer's `onTaskEdit` callback for this task. */
+  editTask: (task: GanttTask) => void;
 }
 
 export interface GanttProps {
@@ -69,10 +78,13 @@ export interface GanttProps {
   onDependencyDelete?: (dep: TaskDependency) => void;
   onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
   onTaskDelete?: (id: Id) => void;
+  /** Fired when a column's edit action is invoked (e.g. the actions-column pencil button). */
+  onTaskEdit?: (task: GanttTask) => void;
   /** Fired with the resolved task list whenever it changes (after create/delete/edit/undo/redo). */
   onTasksChange?: (tasks: GanttTask[]) => void;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
+  hideTaskList?: boolean;
 }
 
 

@@ -20,6 +20,37 @@ export interface DependencyLink {
   dep: TaskDependency;
 }
 
+/** Axis-aligned pixel bounds. */
+export interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/** Bounding box of a polyline, for viewport culling. */
+export function linkBounds(points: Point[]): Bounds {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of points) {
+    if (p.x < minX) {
+      minX = p.x;
+    }
+    if (p.x > maxX) {
+      maxX = p.x;
+    }
+    if (p.y < minY) {
+      minY = p.y;
+    }
+    if (p.y > maxY) {
+      maxY = p.y;
+    }
+  }
+  return { minX, minY, maxX, maxY };
+}
+
 /** Midpoint of the middle segment of a polyline. */
 export function midpoint(points: Point[]): Point {
   if (points.length < 2) return points[0] ?? { x: 0, y: 0 };

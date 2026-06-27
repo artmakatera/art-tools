@@ -41,7 +41,6 @@ export function DraggableBar({
   });
 
   return (
-    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={className}
       style={{ left, top, width, height, ...style }}
