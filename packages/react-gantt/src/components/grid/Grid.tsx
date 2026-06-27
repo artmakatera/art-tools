@@ -1,13 +1,16 @@
 import { useCallback, useMemo, useState } from "react";
-import { buildDatesFromTasks, isWeekend } from "../../core/dateUtils";
+import { buildDatesFromTasks } from "../../core/dateUtils";
 import type { GanttTask, Id, TaskState } from "../../types";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import { DependencyLinksProvider } from "../dependency-links/DependencyLinksContext";
 import { DependencyLinks } from "../dependency-links/DependencyLinks";
 import { DependencyPreview } from "../dependency-links/DependencyPreview";
+import { GridColumns } from "./GridColumns";
 import styles from "./Grid.module.css";
 import { getFinestUnit } from "../../core/barUtils";
+import { rangeFromOffset } from "../../core/virtualize";
+import { COL_OVERSCAN, ROW_OVERSCAN } from "../../core/constants";
 import {
   useGanttConfig,
   useGanttDependency,
@@ -18,7 +21,7 @@ import {
 export function GanttGrid() {
   const { visibleTasks, updateTask, onTaskClick, setSelectedId } = useGanttTask();
   const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
-  const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
+  const { gridRef, onGridScroll, gridBodyRef, viewport } = useGanttScroll();
   const { dependencies, onDependencyDelete } = useGanttDependency();
 
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
@@ -58,6 +61,33 @@ export function GanttGrid() {
   const totalWidth = dates.length * colWidth;
   const bodyHeight = visibleTasks.length * rowHeight;
 
+  // Virtualization windows: render only the rows/columns intersecting the
+  // viewport (plus overscan). Container sizes above stay full so scrollbars
+  // and scroll-into-view are unaffected.
+  const rowRange = rangeFromOffset(
+    viewport.scrollTop,
+    viewport.clientHeight,
+    rowHeight,
+    visibleTasks.length,
+    ROW_OVERSCAN,
+  );
+  const colRange = rangeFromOffset(
+    viewport.scrollLeft,
+    viewport.clientWidth,
+    colWidth,
+    dates.length,
+    COL_OVERSCAN,
+  );
+
+  // Overscan-padded visible pixel rect, reused to cull dependency links. The
+  // ranges already include overscan and are clamped to the content bounds.
+  const visibleRect = {
+    minX: colRange.start * colWidth,
+    maxX: colRange.end * colWidth,
+    minY: rowRange.start * rowHeight,
+    maxY: rowRange.end * rowHeight,
+  };
+
   return (
     <div
       ref={gridRef}
@@ -71,6 +101,7 @@ export function GanttGrid() {
           rowHeight={rowHeight}
           dates={dates}
           scales={scales}
+          colRange={colRange}
         />
         <DependencyLinksProvider
           tasks={visibleTasks}
@@ -86,41 +117,38 @@ export function GanttGrid() {
             className={styles.body}
             style={{ height: bodyHeight, width: totalWidth }}
           >
-            <div className={styles.cols} aria-hidden>
-              {dates.map((date) => (
-                <div
-                  key={date.toISOString()}
-                  className={
-                    isWeekend(date)
-                      ? `${styles.col} ${styles.colWeekend}`
-                      : styles.col
-                  }
-                  style={{ width: colWidth, height: bodyHeight }}
-                />
-              ))}
-            </div>
+            <GridColumns
+              dates={dates}
+              colWidth={colWidth}
+              bodyHeight={bodyHeight}
+              colRange={colRange}
+            />
             <DependencyLinks
               width={totalWidth}
               height={bodyHeight}
               onDependencyDelete={onDependencyDelete}
+              visibleRect={visibleRect}
             />
             <DependencyPreview />
 
-            {visibleTasks.map((task, index) => (
-              <Bar
-                key={task.id}
-                task={task}
-                index={index}
-                origin={origin}
-                colWidth={colWidth}
-                rowHeight={rowHeight}
-                snapToDay={snapToDay}
-                onUpdate={updateTask}
-                override={overrides[task.id]}
-                onOverride={handleOverride}
-                onTaskClick={handleSelect}
-              />
-            ))}
+            {visibleTasks.slice(rowRange.start, rowRange.end).map((task, i) => {
+              const index = rowRange.start + i;
+              return (
+                <Bar
+                  key={task.id}
+                  task={task}
+                  index={index}
+                  origin={origin}
+                  colWidth={colWidth}
+                  rowHeight={rowHeight}
+                  snapToDay={snapToDay}
+                  onUpdate={updateTask}
+                  override={overrides[task.id]}
+                  onOverride={handleOverride}
+                  onTaskClick={handleSelect}
+                />
+              );
+            })}
           </div>
         </DependencyLinksProvider>
       </div>

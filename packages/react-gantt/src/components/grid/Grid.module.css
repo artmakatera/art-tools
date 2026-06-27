@@ -24,25 +24,3 @@
   overflow: hidden;
   box-sizing: border-box;
 }
-
-.cols {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: row;
-  pointer-events: none;
-}
-
-.col {
-  box-sizing: border-box;
-  flex-shrink: 0;
-  border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
-}
-
-.col:last-child {
-  border-right: none;
-}
-
-.colWeekend {
-  background: var(--am-gantt-calendar-weekend-bg, #f1f5f9);
-}

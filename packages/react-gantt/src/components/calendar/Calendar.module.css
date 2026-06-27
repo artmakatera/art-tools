@@ -17,8 +17,7 @@
 }
 
 .row {
-  display: flex;
-  flex-direction: row;
+  position: relative;
   box-sizing: border-box;
   border-bottom: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
 }
@@ -34,11 +33,13 @@
 }
 
 .cell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  flex-shrink: 0;
   padding: 0 8px;
   border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
   font-size: 13px;

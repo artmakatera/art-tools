@@ -3,16 +3,18 @@ import {
   useCallback,
   useContext,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
   type Ref,
 } from "react";
-import type { GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
+import type { ColumnApi, GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
 import { useTaskList } from "../hooks/useTaskList";
 import { useExpand } from "../hooks/useExpand";
-import { useScrollSync } from "../hooks/useScrollSync";
+import { useScrollSync, type ViewportMetrics } from "../hooks/useScrollSync";
+import { scrollOffsetToReveal } from "../core/scroll";
 import type { DatePatch } from "../core/barUtils";
 import {
   DEFAULT_COL_WIDTH,
@@ -62,6 +64,8 @@ interface GanttTaskValue {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  /** API handed to `ColumnDef.render` so columns can mutate/edit tasks. */
+  columnApi: ColumnApi;
   selectedId: Id | null;
   setSelectedId: (id: Id | null) => void;
   expandedIds: Set<Id>;
@@ -86,6 +90,10 @@ interface GanttScrollValue {
   onTaskListScroll: () => void;
   onGridScroll: () => void;
   gridBodyRef: React.RefObject<HTMLDivElement | null>;
+  /** Scroll offset + client size of the grid viewport, for virtualization. */
+  viewport: ViewportMetrics;
+  /** Scroll the task list vertically to reveal a task (auto-expanding ancestors). */
+  scrollToTask: (id: Id) => void;
 }
 
 const GanttScrollContext = createContext<GanttScrollValue | null>(null);
@@ -130,6 +138,7 @@ export interface GanttProviderProps {
   onDependencyDelete?: (dep: TaskDependency) => void;
   onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
   onTaskDelete?: (id: Id) => void;
+  onTaskEdit?: (task: GanttTask) => void;
   onTasksChange?: (tasks: GanttTask[]) => void;
   apiRef?: Ref<GanttHandle>;
   children: ReactNode;
@@ -153,6 +162,7 @@ export function GanttProvider({
   onDependencyDelete,
   onTaskCreate,
   onTaskDelete,
+  onTaskEdit,
   onTasksChange,
   apiRef,
   children,
@@ -160,16 +170,76 @@ export function GanttProvider({
   const { tasksList, updateTask, createTask, deleteTask, undo, redo, canUndo, canRedo } =
     useTaskList(tasks, dependencies, { onTaskCreate, onTaskDelete, onTasksChange });
 
-  useImperativeHandle(
-    apiRef,
-    () => ({ createTask, updateTask, deleteTask, undo, redo }),
-    [createTask, updateTask, deleteTask, undo, redo],
-  );
-  const { visibleTasks, expandedIds, parentIds, toggleExpand } = useExpand(tasksList);
-  const { taskListRef, gridRef, onTaskListScroll, onGridScroll } = useScrollSync();
+  const { visibleTasks, expandedIds, parentIds, toggleExpand, revealAncestors } =
+    useExpand(tasksList);
+  const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
   const [selectedId, setSelectedId] = useState<Id | null>(null);
+
+  // Vertical scroll-to-task. The trigger expands collapsed ancestors and bumps a
+  // nonce'd target; the layout effect then reveals the row. The nonce guarantees
+  // the effect re-fires even when the target was already visible (no expansion).
+  const scrollNonce = useRef(0);
+  const [scrollTarget, setScrollTarget] = useState<{ id: Id; nonce: number } | null>(null);
+
+  const scrollToTask = useCallback(
+    (id: Id) => {
+      revealAncestors(id);
+      scrollNonce.current += 1;
+      setScrollTarget({ id, nonce: scrollNonce.current });
+    },
+    [revealAncestors],
+  );
+
+  // Runs after the expand-driven re-render commits, so visibleTasks (and the
+  // target's row index) are current. Writing scrollTop fires the pane's onScroll,
+  // which syncs the other pane and re-windows both. Deps are [scrollTarget] only
+  // on purpose: re-running on unrelated visibleTasks changes (e.g. the user
+  // collapsing another node) would yank scroll back to a stale target.
+  useLayoutEffect(() => {
+    if (!scrollTarget) {
+      return;
+    }
+    const el = taskListRef.current ?? gridRef.current;
+    if (!el) {
+      return;
+    }
+    const index = visibleTasks.findIndex((t) => t.id === scrollTarget.id);
+    if (index < 0) {
+      return;
+    }
+    const next = scrollOffsetToReveal(
+      index * rowHeight,
+      rowHeight,
+      el.scrollTop,
+      el.clientHeight,
+      rowHeight,
+    );
+    if (next !== el.scrollTop) {
+      el.scrollTop = next;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollTarget]);
+
+  useImperativeHandle(
+    apiRef,
+    () => ({ createTask, updateTask, deleteTask, undo, redo, scrollToTask }),
+    [createTask, updateTask, deleteTask, undo, redo, scrollToTask],
+  );
+
+  const columnApi = useMemo<ColumnApi>(
+    () => ({
+      createTask,
+      updateTask,
+      deleteTask,
+      undo,
+      redo,
+      scrollToTask,
+      editTask: (task) => onTaskEdit?.(task),
+    }),
+    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, onTaskEdit],
+  );
   const [drag, setDrag] = useState<DependencyDragState | null>(null);
   const dragListenersRef = useRef<{ move: (e: MouseEvent) => void; up: (e: MouseEvent) => void } | null>(null);
 
@@ -232,6 +302,7 @@ export function GanttProvider({
       redo,
       canUndo,
       canRedo,
+      columnApi,
       selectedId,
       setSelectedId,
       expandedIds,
@@ -249,6 +320,7 @@ export function GanttProvider({
       redo,
       canUndo,
       canRedo,
+      columnApi,
       selectedId,
       expandedIds,
       parentIds,
@@ -258,8 +330,16 @@ export function GanttProvider({
   );
 
   const scrollValue = useMemo<GanttScrollValue>(
-    () => ({ taskListRef, gridRef, onTaskListScroll, onGridScroll, gridBodyRef }),
-    [taskListRef, gridRef, onTaskListScroll, onGridScroll],
+    () => ({
+      taskListRef,
+      gridRef,
+      onTaskListScroll,
+      onGridScroll,
+      gridBodyRef,
+      viewport,
+      scrollToTask,
+    }),
+    [taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport, scrollToTask],
   );
 
   const dependencyValue = useMemo<GanttDependencyValue>(

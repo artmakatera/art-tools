@@ -1,25 +1,44 @@
-import { useCallback, useRef, useState } from "react";
-import { Gantt, type ColumnDef, type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
+import { Suspense, lazy, useCallback, useRef, useState } from "react";
+import { type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
-import { mockTasks, mockDependencies } from "./mock";
+import { generateMockData } from "./mockGenerator";
 import { TaskEditModal } from "./TaskEditModal";
 
+// Code-split the Gantt into its own async chunk so the page shell paints
+// immediately and the <Suspense> boundary below shows a fallback while it loads.
+const Gantt = lazy(() =>
+  import("@am/react-gantt").then((m) => ({ default: m.Gantt })),
+);
+
 // Stable empty reference so the Gantt's `columns` prop doesn't change identity.
-const NO_COLUMNS: ColumnDef[] = [];
 
 // Example 1: convenience <Gantt> with built-in TaskList panel.
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
 // internal change log, so we never feed the resolved list back into `tasks`.
+
+const count = 1000;
+const seed = 1;
+
+const mockData = generateMockData(count, { seed, startDate: new Date("2010-01-23") });
 function GanttWithTaskList() {
-  const [dependencies, setDependencies] = useState<TaskDependency[]>(mockDependencies);
+  // How many tasks to generate, and a bump counter to reshuffle with a new seed.
+
+  // The number input updates `count` on every keystroke, but regenerating the
+  // dataset and remounting <Gantt> (its `key` resets the edit log) is expensive.
+  // Defer that work so the input stays responsive and rapid keystrokes coalesce
+  // into one rebuild instead of one per digit.
+  const { tasks, dependencies: seededDeps } = mockData
+
+  const [dependencies, setDependencies] = useState<TaskDependency[]>(seededDeps);
+
+
   const ganttRef = useRef<GanttHandle>(null);
-  const [selected, setSelected] = useState<GanttTask | null>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
 
   const addTask = useCallback(() => {
     // Start from the selected task (fall back to a default); span exactly one
     // day (endDate inclusive), progress 0. Populate every GanttTask field.
-    const start = selected ? new Date(selected.startDate) : new Date("2022-01-12");
+    const start =  new Date("2022-01-12");
     const end = new Date(start); // 1 day: endDate is the inclusive last day
     const task: GanttTask = {
       id: `new-${Date.now()}`,
@@ -29,27 +48,18 @@ function GanttWithTaskList() {
       duration: 1,
       progress: 0,
       type: "task",
-      parentId: selected?.parentId ?? null,
+      parentId: null,
     };
     // afterId omitted → appended at end; pass the selection to insert after it.
-    ganttRef.current?.createTask(task, selected?.id ?? undefined);
+    ganttRef.current?.createTask(task);
     // Immediately open the edit dialog on the just-created task.
     setEditing(task);
-  }, [selected]);
+  }, []);
 
-  const editSelected = useCallback(() => {
-    if (selected) setEditing(selected);
-  }, [selected]);
-
-  const deleteSelected = useCallback(() => {
-    if (selected) ganttRef.current?.deleteTask(selected.id);
-  }, [selected]);
 
   const undo = useCallback(() => ganttRef.current?.undo(), []);
   const redo = useCallback(() => ganttRef.current?.redo(), []);
 
-  const handleTaskClick = useCallback((task: GanttTask) => setSelected(task), []);
-  const clearSelection = useCallback(() => setSelected(null), []);
   const handleTasksChange = useCallback(
     (next: GanttTask[]) => console.log("tasks changed:", next.length),
     [],
@@ -78,33 +88,35 @@ function GanttWithTaskList() {
 
   return (
     <>
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+        <span style={{ color: "#666" }}>
+          {tasks.length} tasks · {dependencies.length} links
+        </span>
+        <span style={{ width: 1, height: 20, background: "#ddd" }} />
         <button onClick={addTask}>
-          Add task {selected ? "after selected" : "at end"}
-        </button>
-        <button disabled={!selected} onClick={editSelected}>
-          Edit selected
-        </button>
-        <button onClick={deleteSelected}>
-          Delete selected
+          Add task 
         </button>
         <button onClick={undo}>Undo</button>
         <button onClick={redo}>Redo</button>
       </div>
-      <Gantt
-        apiRef={ganttRef}
-        tasks={mockTasks}
-        dependencies={dependencies}
-        colWidth={60}
-        rowHeight={40}
-        height={400}
-        columns={NO_COLUMNS}
-        onTaskClick={handleTaskClick}
-        onTaskDelete={clearSelection}
-        onTasksChange={handleTasksChange}
-        onDependencyCreate={handleDependencyCreate}
-        onDependencyDelete={handleDependencyDelete}
-      />
+      <Suspense
+        fallback={
+          <div style={{ padding: 16, color: "#666" }}>Loading Gantt…</div>
+        }
+      >
+        <Gantt
+          apiRef={ganttRef}
+          tasks={tasks}
+          dependencies={dependencies}
+          colWidth={60}
+          rowHeight={40}
+          height={1000}
+          onTaskEdit={setEditing}
+          onTasksChange={handleTasksChange}
+          onDependencyCreate={handleDependencyCreate}
+          onDependencyDelete={handleDependencyDelete}
+        />
+      </Suspense>
       {editing && (
         <TaskEditModal
           task={editing}

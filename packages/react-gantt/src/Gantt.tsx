@@ -5,6 +5,7 @@ import { GridResizeHandle } from "./components/grid/GridResizeHandle";
 import { TaskList } from "./components/taskList/TaskList";
 import { useGridResize } from "./hooks/useGridResize";
 import type { GanttProps } from "./types";
+import { DEFAULT_COLUMNS } from "./components/taskList/TaskListHeader";
 
 export function Gantt({
   tasks,
@@ -15,19 +16,21 @@ export function Gantt({
   scales,
   padDays,
   onTaskClick,
-  columns,
+  columns = DEFAULT_COLUMNS,
   defaultTaskListWidth = 280,
   onDependencyCreate,
   onDependencyDelete,
   onTaskCreate,
   onTaskDelete,
+  onTaskEdit,
   onTasksChange,
   apiRef,
+  hideTaskList
 }: GanttProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const { gridWidth, onHandleMouseDown } = useGridResize(containerRef, overlayRef);
-  const showTaskList = columns !== undefined;
+  const showTaskList = columns !== undefined && !hideTaskList;
 
   return (
     <GanttProvider
@@ -43,6 +46,7 @@ export function Gantt({
       onDependencyDelete={onDependencyDelete}
       onTaskCreate={onTaskCreate}
       onTaskDelete={onTaskDelete}
+      onTaskEdit={onTaskEdit}
       onTasksChange={onTasksChange}
       apiRef={apiRef}
     >
