@@ -22,7 +22,7 @@ export function BarProgressResizeHandle({
   });
 
   return (
-    <progress
+    <div
       className={styles.barProgressResizeHandle}
       onMouseDown={onMouseDown}
     />
