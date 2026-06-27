@@ -19,6 +19,7 @@
 }
 
 .barProgressResizeHandle:after {
+ cursor: ew-resize;
   content: "";
   position: absolute;
   top: 100%;
