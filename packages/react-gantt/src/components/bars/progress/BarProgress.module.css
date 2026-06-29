@@ -16,6 +16,12 @@
   cursor: ew-resize;
   background-color: transparent;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+:global(.am-gantt-bar-row):hover .barProgressResizeHandle {
+  opacity: 1;
 }
 
 .barProgressResizeHandle:after {
