@@ -72,7 +72,7 @@ export const Bar = memo(function Bar({
 
   return (
     <div
-      className={styles.row}
+      className={`${styles.row} am-gantt-bar-row`}
       style={{ top, height: rowHeight }}
       onClick={onTaskClick ? () => onTaskClick(task) : undefined}
       onMouseEnter={() => setHovered(true)}
