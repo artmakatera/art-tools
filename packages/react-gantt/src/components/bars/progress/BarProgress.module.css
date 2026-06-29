@@ -9,7 +9,7 @@
 
 .barProgressResizeHandle {
   position: absolute;
-  top: 100%;
+  bottom: 0;
   right: 0;
   width: 1px;
   height: 10px;
@@ -20,7 +20,7 @@
   transition: opacity 0.15s ease;
 }
 
-:global(.am-gantt-bar-row):hover .barProgressResizeHandle {
+:global(.am-gantt-bar-task):hover .barProgressResizeHandle {
   opacity: 1;
 }
 
@@ -31,7 +31,9 @@
   left: -5px;
   width: 10px;
   height: 10px;
-  background-color: black;
+  background-color: var(--am-gantt-calendar-border);
   /* triangle rotate */
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
 }
+
+

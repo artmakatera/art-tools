@@ -40,7 +40,7 @@ export function TaskBar({
       height={height}
       colWidth={colWidth}
       dragAnchor={left}
-      className={styles.task}
+      className={`${styles.task} am-gantt-bar-task`}
       style={{ lineHeight: `${height}px` }}
       onMove={onMove}
       onMoveEnd={onMoveEnd}
