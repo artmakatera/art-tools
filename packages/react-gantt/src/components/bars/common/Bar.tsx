@@ -107,6 +107,7 @@ export const Bar = memo(function Bar({
           title={task.name}
           progress={progress}
           onProgressChange={(p) => handleOverride({ progress: p })}
+          onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
           onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
           onMoveEnd={(newVisualLeft) =>
             handleUpdate(task.id, moveAt(newVisualLeft))
@@ -122,7 +123,8 @@ export const Bar = memo(function Bar({
           colWidth={colWidth}
           title={task.name}
           progress={progress}
-          onProgressChange={(p) => handleUpdate(task.id, { progress: p })}
+          onProgressChange={(p) => handleOverride({ progress: p })}
+          onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
           onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
           onMoveEnd={(newVisualLeft) =>
             handleUpdate(task.id, moveAt(newVisualLeft))

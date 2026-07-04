@@ -11,6 +11,7 @@ interface ProjectBarProps {
   title: string;
   progress: number;
   onProgressChange: (newProgress: number) => void;
+  onProgressEnd: (newProgress: number) => void;
   onMove: (newLeft: number) => void;
   onMoveEnd: (newLeft: number) => void;
 }
@@ -24,6 +25,7 @@ export function ProjectBar({
   title,
   progress,
   onProgressChange,
+  onProgressEnd,
   onMove,
   onMoveEnd,
 }: ProjectBarProps) {
@@ -46,6 +48,7 @@ export function ProjectBar({
           height={height}
           progress={progress}
           onProgressChange={onProgressChange}
+          onProgressEnd={onProgressEnd}
         />
         <div className={styles.projectContent}>{title}</div>
       </div>
