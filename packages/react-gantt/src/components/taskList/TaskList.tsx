@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +21,7 @@ import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
 import { useColumnWidths } from "../../hooks/useColumnWidths";
+import { useIsomorphicLayoutEffect } from "../../hooks/useIsomorphicLayoutEffect";
 import styles from "./TaskList.module.css";
 
 interface TaskListProps {
@@ -132,7 +132,8 @@ export function TaskList({ columns = [] }: TaskListProps) {
   }, [taskListRef]);
 
   // Measure synchronously before first paint so the initial window is correct.
-  useLayoutEffect(() => {
+  // (Isomorphic: plain useEffect during SSR to avoid React 18's server warning.)
+  useIsomorphicLayoutEffect(() => {
     const el = taskListRef.current;
     if (!el) {
       return;
