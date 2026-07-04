@@ -178,4 +178,43 @@ describe("getTaskList", () => {
     expect(parent!.endDate).toEqual(new Date("2026-01-20"));
     expect(parent!.progress).toBe(60);
   });
+
+  it("excludes milestone progress from the parent roll-up", () => {
+    const resolved = resolveCommittedTasks(
+      [
+        task("p"),
+        task("c1", { parentId: "p", progress: 90 }),
+        task("c2", { parentId: "p", progress: 94 }),
+        task("m", { parentId: "p", type: "milestone", progress: 100 }),
+      ],
+      log([]),
+    );
+    const [parent] = getTaskList(resolved);
+    // Previously (90 + 94 + 100) / 2 = 142%: milestones inflated the sum
+    // while being excluded from the count.
+    expect(parent!.progress).toBe(92);
+  });
+
+  it("treats children without progress as 0% in the roll-up", () => {
+    const resolved = resolveCommittedTasks(
+      [task("p"), task("c1", { parentId: "p", progress: 50 }), task("c2", { parentId: "p" })],
+      log([]),
+    );
+    const [parent] = getTaskList(resolved);
+    expect(parent!.progress).toBe(25);
+  });
+
+  it("reports 0% for a parent whose children are all milestones", () => {
+    const resolved = resolveCommittedTasks(
+      [
+        task("p"),
+        task("m1", { parentId: "p", type: "milestone", progress: 100 }),
+        task("m2", { parentId: "p", type: "milestone" }),
+      ],
+      log([]),
+    );
+    const [parent] = getTaskList(resolved);
+    // Previously progressSum / 0 = Infinity.
+    expect(parent!.progress).toBe(0);
+  });
 });

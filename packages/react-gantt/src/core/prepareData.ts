@@ -225,19 +225,25 @@ export function getParentTaskData(
   let notMilestoneCount = 0;
 
   for (const child of children) {
-    if (child.startDate < startDate) startDate = child.startDate;
-    if (child.progress !== undefined) progressSum += child.progress;
+    if (child.startDate < startDate) {
+      startDate = child.startDate;
+    }
 
-      if (child.endDate && (!endDate || child.endDate > endDate)) {
-        endDate = child.endDate;
-      }
+    if (child.endDate && (!endDate || child.endDate > endDate)) {
+      endDate = child.endDate;
+    }
 
-      if (child.type !== "milestone") {
-        notMilestoneCount++;
-      }
+    // Milestones are moments, not work: they contribute neither progress nor
+    // weight to the roll-up. A non-milestone child without progress still
+    // counts as 0% so unstarted work drags the average down.
+    if (child.type !== "milestone") {
+      notMilestoneCount++;
+      progressSum += child.progress ?? 0;
+    }
   }
 
-  const progress = Math.round(progressSum /notMilestoneCount) || 0;
+  const progress =
+    notMilestoneCount === 0 ? 0 : Math.round(progressSum / notMilestoneCount);
 
   return {
     ...task,

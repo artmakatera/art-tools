@@ -19,7 +19,7 @@ const Gantt = lazy(() =>
 const count = 100000;
 const seed = 1;
 
-const mockData = generateMockData(count, { seed, yearsRange: [2023, 2025] });
+const mockData = generateMockData(count, { seed, yearsRange: [2012, 2025] });
 function GanttWithTaskList() {
   // How many tasks to generate, and a bump counter to reshuffle with a new seed.
 
