@@ -1,7 +1,16 @@
-import type { ChangeLog, GanttTask, Id } from "../types";
+import type { ChangeLog, GanttTask, Id, TaskCommand } from "../types";
 import { getEndDate } from "./dateUtils";
+import { LRUCache } from "./lruCache";
 
 type TaskRecordsByParentId = Map<Id | null, GanttTask[]>;
+
+/**
+ * The resolved task state is a single insertion-ordered Map: the Map IS the
+ * display order. `set` on an existing key keeps its position (updates),
+ * `delete` is O(1) and order-preserving, so only positional creates need a
+ * one-pass rebuild — no parallel `order` array with indexOf/splice.
+ */
+export type ResolvedTaskMap = Map<Id, GanttTask>;
 
 /**
  * Group an already-resolved, ordered task map into the flattened display list
@@ -9,86 +18,198 @@ type TaskRecordsByParentId = Map<Id | null, GanttTask[]>;
  * `(tasks, log)` so callers that already hold the resolved state don't pay for
  * a second replay.
  */
-export function getTaskList(resolvedById: Map<Id, GanttTask>): GanttTask[] {
+export function getTaskList(resolvedById: ResolvedTaskMap): GanttTask[] {
   const taskByParentId = groupTaskByParentId(resolvedById.values());
   const roots = taskByParentId.get(null) ?? [];
-  return roots.flatMap(
-    (root) => buildSubtree(root, taskByParentId).flattened,
-  );
+  const flattened: GanttTask[] = [];
+  for (const root of roots) {
+    appendSubtree(root, taskByParentId, flattened);
+  }
+  return flattened;
+}
+
+/** Seed resolved state from the tasks prop: id → task, in display order. */
+export function seedResolvedTasks(tasks: GanttTask[]): ResolvedTaskMap {
+  const byId: ResolvedTaskMap = new Map();
+  for (const task of tasks) {
+    byId.set(task.id, task);
+  }
+  return byId;
 }
 
 /**
  * Replay the applied slice of the change log (`transactions[0..cursor]`) over
  * the seed tasks, returning the effective tasks keyed by id in display order.
- * An explicit `order` array preserves positional create/delete; the returned
- * insertion-ordered `Map` keeps lookups O(1) and carries the display order.
- * Only create/delete touch `order`, so the common case (updates) stays cheap.
+ * Pure full replay — prefer `resolveCommittedTasksCached` in render paths.
  */
 export function resolveCommittedTasks(
   tasks: GanttTask[],
   log: ChangeLog,
-): Map<Id, GanttTask> {
-  const order: Id[] = tasks.map((t) => t.id);
-  const byId = new Map<Id, GanttTask>(tasks.map((t) => [t.id, t]));
+): ResolvedTaskMap {
+  let resolved = seedResolvedTasks(tasks);
+  for (let k = 0; k < log.cursor; k++) {
+    resolved = applyCommands(resolved, log.transactions[k]!);
+  }
+  return resolved;
+}
 
-  const applied = log.transactions.slice(0, log.cursor);
-  for (const transaction of applied) {
-    for (const cmd of transaction) {
-      switch (cmd.type) {
-        case "update":
-          if (byId.has(cmd.task.id)) byId.set(cmd.task.id, cmd.task);
-          break;
-        case "create": {
-          byId.set(cmd.task.id, cmd.task);
-          const at =
-            cmd.afterId == null
-              ? order.length
-              : order.indexOf(cmd.afterId) + 1;
-          order.splice(at, 0, cmd.task.id);
-          break;
+/**
+ * Apply one transaction immutably: returns a new map, structurally sharing
+ * every untouched task. O(n) for the clone plus O(1) per update/delete.
+ */
+export function applyTransaction(
+  resolved: ResolvedTaskMap,
+  commands: TaskCommand[],
+): ResolvedTaskMap {
+  return applyCommands(new Map(resolved), commands);
+}
+
+/**
+ * Apply commands to a map the caller owns. Mutates `map` where possible and
+ * returns the map to use afterwards (positional creates rebuild).
+ */
+function applyCommands(map: ResolvedTaskMap, commands: TaskCommand[]): ResolvedTaskMap {
+  for (const cmd of commands) {
+    switch (cmd.type) {
+      case "update":
+        // set() on an existing key keeps its insertion position.
+        if (map.has(cmd.task.id)) {
+          map.set(cmd.task.id, cmd.task);
         }
-        case "delete": {
-          byId.delete(cmd.id);
-          const i = order.indexOf(cmd.id);
-          if (i !== -1) order.splice(i, 1);
-          break;
-        }
-      }
+        break;
+      case "delete":
+        map.delete(cmd.id);
+        break;
+      case "create":
+        map = insertTask(map, cmd.task, cmd.afterId);
+        break;
+    }
+  }
+  return map;
+}
+
+/**
+ * Insert `task` after `afterId`. Matches the historical replay semantics:
+ * `afterId == null` appends; a given-but-missing `afterId` prepends.
+ */
+function insertTask(
+  map: ResolvedTaskMap,
+  task: GanttTask,
+  afterId: Id | null | undefined,
+): ResolvedTaskMap {
+  if (afterId == null) {
+    map.set(task.id, task);
+    return map;
+  }
+  const next: ResolvedTaskMap = new Map();
+  if (!map.has(afterId)) {
+    next.set(task.id, task);
+  }
+  for (const [id, existing] of map) {
+    next.set(id, existing);
+    if (id === afterId) {
+      next.set(task.id, task);
+    }
+  }
+  return next;
+}
+
+// --- Cached incremental resolution -----------------------------------------
+
+interface ResolveSnapshot {
+  /** The transaction whose application produced this snapshot; null = seed. */
+  producedBy: TaskCommand[] | null;
+  map: ResolvedTaskMap;
+}
+
+/**
+ * Snapshots of the resolved state keyed by cursor position. A transaction
+ * array element is created exactly once at one log position with one fixed
+ * prefix (appends preserve the kept prefix; dropped redo branches never
+ * return), so `producedBy === log.transactions[k - 1]` proves the whole
+ * prefix matches and the snapshot at `k` is valid.
+ */
+export interface ResolveCache {
+  seedTasks: GanttTask[] | null;
+  snapshots: LRUCache<number, ResolveSnapshot>;
+}
+
+const RESOLVE_SNAPSHOT_CAPACITY = 32;
+
+export function createResolveCache(): ResolveCache {
+  return { seedTasks: null, snapshots: new LRUCache(RESOLVE_SNAPSHOT_CAPACITY) };
+}
+
+/**
+ * Like `resolveCommittedTasks`, but incremental: reuses the deepest valid
+ * snapshot at or below the cursor and only applies the transactions past it.
+ * A new edit costs one O(n) clone instead of a full log replay; undo/redo to
+ * a recently seen cursor returns the cached map with no work at all.
+ */
+export function resolveCommittedTasksCached(
+  cache: ResolveCache,
+  tasks: GanttTask[],
+  log: ChangeLog,
+): ResolvedTaskMap {
+  if (cache.seedTasks !== tasks) {
+    cache.seedTasks = tasks;
+    cache.snapshots = new LRUCache(RESOLVE_SNAPSHOT_CAPACITY);
+  }
+
+  let base = 0;
+  let resolved: ResolvedTaskMap | null = null;
+  for (let k = log.cursor; k >= 1; k--) {
+    const snapshot = cache.snapshots.get(k);
+    if (snapshot && snapshot.producedBy === log.transactions[k - 1]) {
+      base = k;
+      resolved = snapshot.map;
+      break;
+    }
+  }
+  if (!resolved) {
+    const seed = cache.snapshots.get(0);
+    resolved = seed ? seed.map : seedResolvedTasks(tasks);
+    if (!seed) {
+      cache.snapshots.put(0, { producedBy: null, map: resolved });
     }
   }
 
-  const resolvedById = new Map<Id, GanttTask>();
-  for (const id of order) {
-    const task = byId.get(id);
-    if (task) resolvedById.set(id, task);
+  for (let k = base; k < log.cursor; k++) {
+    const transaction = log.transactions[k]!;
+    resolved = applyTransaction(resolved, transaction);
+    cache.snapshots.put(k + 1, { producedBy: transaction, map: resolved });
   }
-  return resolvedById;
+  return resolved;
 }
 
-interface Subtree {
-  effective: GanttTask;
-  flattened: GanttTask[];
-}
+// --- Tree flattening --------------------------------------------------------
 
-function buildSubtree(
+/**
+ * Emit `task`'s subtree depth-first into `out` and return the task's
+ * effective (rolled-up) version. The parent is emitted as a placeholder
+ * before its children, then patched in place once their roll-up is known —
+ * one shared output array, no per-level flatMap/concat copying.
+ */
+function appendSubtree(
   task: GanttTask,
   taskByParentId: TaskRecordsByParentId,
-): Subtree {
-  const direct = taskByParentId.get(task.id) ?? [];
-
-  if (direct.length === 0) {
-    return { effective: task, flattened: [task] };
+  out: GanttTask[],
+): GanttTask {
+  const children = taskByParentId.get(task.id);
+  if (!children || children.length === 0) {
+    out.push(task);
+    return task;
   }
 
-  const subtrees = direct.map((c) => buildSubtree(c, taskByParentId));
-  const effectiveDirect = subtrees.map((s) => s.effective);
-  const flattenedDescendants = subtrees.flatMap((s) => s.flattened);
-  const parentEffective = getParentTaskData(task, effectiveDirect);
-
-  return {
-    effective: parentEffective,
-    flattened: [parentEffective].concat(flattenedDescendants),
-  };
+  const slot = out.length;
+  out.push(task);
+  const effectiveChildren: GanttTask[] = [];
+  for (const child of children) {
+    effectiveChildren.push(appendSubtree(child, taskByParentId, out));
+  }
+  const effective = getParentTaskData(task, effectiveChildren);
+  out[slot] = effective;
+  return effective;
 }
 
 export function getParentTaskData(
