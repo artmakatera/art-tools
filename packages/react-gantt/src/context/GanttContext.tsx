@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -15,7 +14,13 @@ import { useTaskList, EMPTY_DEPENDENCIES } from "../hooks/useTaskList";
 import { useExpand } from "../hooks/useExpand";
 import { useScrollSync, type ViewportMetrics } from "../hooks/useScrollSync";
 import { useEventCallback } from "../hooks/useEventCallback";
-import { scrollOffsetToReveal } from "../core/scroll";
+import { useLatestRef } from "../hooks/useLatestRef";
+import { useScrollToTask } from "../hooks/useScrollToTask";
+import {
+  useDependencyDrag,
+  type ConnectorHandle,
+  type DependencyDragState,
+} from "../hooks/useDependencyDrag";
 import type { DatePatch } from "../core/barUtils";
 import {
   DEFAULT_COL_WIDTH,
@@ -23,16 +28,7 @@ import {
   DEFAULT_ROW_HEIGHT,
 } from "../core/constants";
 
-export type ConnectorHandle = "start" | "end";
-
-export interface DependencyDragState {
-  fromTaskId: Id;
-  handle: ConnectorHandle;
-  startX: number;
-  startY: number;
-  currentX: number;
-  currentY: number;
-}
+export type { ConnectorHandle, DependencyDragState } from "../hooks/useDependencyDrag";
 
 // Contexts are split by update frequency so high-frequency state (drag
 // position, viewport, selection) never invalidates consumers that only need
@@ -218,11 +214,6 @@ export interface GanttProviderProps {
   children: ReactNode;
 }
 
-const HANDLE_TO_TYPE: Record<ConnectorHandle, Record<ConnectorHandle, TaskDependency["type"]>> = {
-  end: { start: "FS", end: "FF" },
-  start: { start: "SS", end: "SF" },
-};
-
 export function GanttProvider({
   tasks,
   rowHeight = DEFAULT_ROW_HEIGHT,
@@ -242,67 +233,50 @@ export function GanttProvider({
   children,
 }: GanttProviderProps) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);
-  const scrollImplRef = useRef<(id: Id) => void>(() => {});
-  const scrollToTask = useCallback((id: Id) => scrollImplRef.current(id), []);
 
   // Latest-refs for consumer callbacks used internally at a single call site,
   // so the handlers that wrap them keep a stable identity even when the
   // consumer passes inline functions.
-  const onTaskEditRef = useRef(onTaskEdit);
-  onTaskEditRef.current = onTaskEdit;
-  const onDependencyCreateRef = useRef(onDependencyCreate);
-  onDependencyCreateRef.current = onDependencyCreate;
+  const onTaskEditRef = useLatestRef(onTaskEdit);
 
   // Callbacks handed to consumers through context: presence-preserving stable
   // wrappers, so context values only churn when the callback's presence flips.
   const onTaskClickStable = useEventCallback(onTaskClick);
   const onDependencyDeleteStable = useEventCallback(onDependencyDelete);
 
-  const onTaskCreate = useCallback(
-    (task: GanttTask, afterId?: Id | null) => {
-      onTaskCreateProp?.(task, afterId);
-      setSelectedId(task.id);
-      scrollToTask(task.id);
-    },
-    [onTaskCreateProp, scrollToTask],
-  );
-
-  const { tasksList, updateTask, createTask, deleteTask, undo, redo, canUndo, canRedo } =
-    useTaskList(tasks, dependencies, { onTaskCreate, onTaskDelete, onTasksChange });
+  const {
+    tasksList,
+    updateTask,
+    createTask: commitCreateTask,
+    deleteTask,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useTaskList(tasks, dependencies, {
+    onTaskCreate: onTaskCreateProp,
+    onTaskDelete,
+    onTasksChange,
+  });
 
   const { visibleTasks, expandedIds, parentIds, toggleExpand } =
     useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
-  // Latest visible list, read at scroll time so the stable `scrollToTask` never
-  // captures a stale snapshot.
-  const visibleTasksRef = useRef(visibleTasks);
-  visibleTasksRef.current = visibleTasks;
+  const scrollToTask = useScrollToTask({ taskListRef, gridRef, visibleTasks, rowHeight });
 
-  // Reveal the target row by writing scrollTop on whichever pane is mounted;
-  // that fires the pane's onScroll, which syncs the other pane and re-windows
-  // both. Reassigned every render so it closes over the current rowHeight/refs.
-  scrollImplRef.current = (id: Id) => {
-    const el = taskListRef.current ?? gridRef.current;
-    if (!el) {
-      return;
-    }
-    const index = visibleTasksRef.current.findIndex((t) => t.id === id);
-    if (index < 0) {
-      return;
-    }
-    const next = scrollOffsetToReveal(
-      index * rowHeight,
-      rowHeight,
-      el.scrollTop,
-      el.clientHeight,
-      rowHeight,
-    );
-    if (next !== el.scrollTop) {
-      el.scrollTop = next;
-    }
-  };
+  // Commit (flushSync inside, so the consumer's onTaskCreate fires first),
+  // then select and reveal the new task. `scrollToTask` sees the fresh list:
+  // flushSync re-rendered this provider before returning.
+  const createTask = useCallback(
+    (task: GanttTask, afterId?: Id | null) => {
+      commitCreateTask(task, afterId);
+      setSelectedId(task.id);
+      scrollToTask(task.id);
+    },
+    [commitCreateTask, scrollToTask],
+  );
 
   useImperativeHandle(
     apiRef,
@@ -320,84 +294,12 @@ export function GanttProvider({
       scrollToTask,
       editTask: (task) => onTaskEditRef.current?.(task),
     }),
-    [createTask, updateTask, deleteTask, undo, redo, scrollToTask],
+    // onTaskEditRef is identity-stable (useLatestRef); listed only to satisfy
+    // exhaustive-deps.
+    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, onTaskEditRef],
   );
 
-  // --- Dependency drag state ---
-  const [drag, setDrag] = useState<DependencyDragState | null>(null);
-  // Mirror for handlers (endDrag) so they can read the current drag without
-  // subscribing to it; drag is committed at mousedown, well before any mouseup.
-  const dragRef = useRef(drag);
-  dragRef.current = drag;
-  const dragListenersRef = useRef<{ move: (e: MouseEvent) => void; up: (e: MouseEvent) => void } | null>(null);
-  const dragFrameRef = useRef<number | null>(null);
-  const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
-
-  // Idempotent: safe to call from mouseup, endDrag, and unmount in any order.
-  const clearDragListeners = useCallback(() => {
-    if (dragListenersRef.current) {
-      window.removeEventListener("mousemove", dragListenersRef.current.move);
-      window.removeEventListener("mouseup", dragListenersRef.current.up);
-      dragListenersRef.current = null;
-    }
-    if (dragFrameRef.current !== null) {
-      cancelAnimationFrame(dragFrameRef.current);
-      dragFrameRef.current = null;
-    }
-  }, []);
-
-  // The window listeners would leak if the provider unmounted mid-drag.
-  useEffect(() => clearDragListeners, [clearDragListeners]);
-
-  const startDrag = useCallback((state: DependencyDragState) => {
-    setDrag(state);
-
-    // Coalesce mousemove bursts into one state update per frame. The rect is
-    // re-read inside the frame: the body's viewport-relative position shifts
-    // while the grid scrolls under the cursor.
-    const onMouseMove = (e: MouseEvent) => {
-      lastMouseRef.current = { x: e.clientX, y: e.clientY };
-      if (dragFrameRef.current !== null) {
-        return;
-      }
-      dragFrameRef.current = requestAnimationFrame(() => {
-        dragFrameRef.current = null;
-        const body = gridBodyRef.current;
-        const last = lastMouseRef.current;
-        if (!body || !last) {
-          return;
-        }
-        const rect = body.getBoundingClientRect();
-        setDrag((prev) =>
-          prev
-            ? { ...prev, currentX: last.x - rect.left, currentY: last.y - rect.top }
-            : null,
-        );
-      });
-    };
-
-    const onMouseUp = () => {
-      setDrag(null);
-      clearDragListeners();
-    };
-
-    dragListenersRef.current = { move: onMouseMove, up: onMouseUp };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  }, [clearDragListeners]);
-
-  const endDrag = useCallback(
-    (toTaskId: Id | null, toHandle?: ConnectorHandle) => {
-      const current = dragRef.current;
-      if (current && toTaskId !== null && toHandle && toTaskId !== current.fromTaskId) {
-        const type = HANDLE_TO_TYPE[current.handle][toHandle];
-        onDependencyCreateRef.current?.({ from: current.fromTaskId, to: toTaskId, type });
-      }
-      setDrag(null);
-      clearDragListeners();
-    },
-    [clearDragListeners],
-  );
+  const { drag, startDrag, endDrag } = useDependencyDrag({ gridBodyRef, onDependencyCreate });
 
   // --- Context values ---
   const configValue = useMemo<GanttConfigValue>(
