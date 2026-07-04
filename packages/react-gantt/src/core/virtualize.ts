@@ -8,10 +8,18 @@
  * columns: scrollLeft/clientWidth/colWidth). Pure — no DOM or framework
  * dependency. Mirrors the shape of `scrollOffsetToReveal` in `scroll.ts`.
  *
- * When `viewSize <= 0` the viewport hasn't been measured yet (first paint), so
- * we render everything rather than nothing — this avoids a blank initial frame
- * and a flash of empty content. `itemSize <= 0` is treated the same way.
+ * When `viewSize <= 0` the viewport hasn't been measured yet (first commit),
+ * so we render a bounded window of the first `UNMEASURED_FALLBACK_COUNT`
+ * items. Rendering everything here would make mounting a large dataset pay a
+ * full unvirtualized commit (10k tasks ≈ tens of seconds) that is thrown away
+ * one frame later; rendering the capped window is never visible as a flash,
+ * because the real metrics arrive via `useLayoutEffect` and re-render before
+ * the browser paints. The cap also keeps jsdom (client sizes always 0)
+ * rendering enough rows for component tests. `itemSize <= 0` is treated the
+ * same way.
  */
+import { UNMEASURED_FALLBACK_COUNT } from "./constants";
+
 export interface IndexRange {
   /** First visible item index (inclusive). */
   start: number;
@@ -30,7 +38,7 @@ export function rangeFromOffset(
     return { start: 0, end: 0 };
   }
   if (viewSize <= 0 || itemSize <= 0) {
-    return { start: 0, end: itemCount };
+    return { start: 0, end: Math.min(itemCount, UNMEASURED_FALLBACK_COUNT) };
   }
 
   const firstVisible = Math.floor(offset / itemSize);

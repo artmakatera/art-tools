@@ -15,6 +15,14 @@ export const GRID_MIN_WIDTH = 10;
 /** Minimum width of a task-list column when drag-resizing, in px. */
 export const COLUMN_MIN_WIDTH = 60;
 
+/**
+ * Max items rendered per axis while the viewport is still unmeasured (first
+ * commit, before `useLayoutEffect` reports real metrics; also jsdom, where
+ * client sizes are always 0). Enough to fill any realistic screen, but a hard
+ * bound so mounting a 10k-task dataset never renders 10k rows unwindowed.
+ */
+export const UNMEASURED_FALLBACK_COUNT = 100;
+
 /** Extra task rows rendered above/below the viewport so fast vertical scrolls stay covered. */
 export const ROW_OVERSCAN = 6;
 

@@ -1,18 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { rangeFromOffset } from '../../core/virtualize';
+import { UNMEASURED_FALLBACK_COUNT } from '../../core/constants';
 
 describe('rangeFromOffset', () => {
   it('returns an empty range when there are no items', () => {
     expect(rangeFromOffset(0, 500, 40, 0)).toEqual({ start: 0, end: 0 });
   });
 
-  it('renders everything before the viewport is measured (viewSize <= 0)', () => {
-    expect(rangeFromOffset(0, 0, 40, 100)).toEqual({ start: 0, end: 100 });
-    expect(rangeFromOffset(120, -1, 40, 100)).toEqual({ start: 0, end: 100 });
+  it('renders everything before the viewport is measured when the list is small (viewSize <= 0)', () => {
+    expect(rangeFromOffset(0, 0, 40, 50)).toEqual({ start: 0, end: 50 });
+    expect(rangeFromOffset(120, -1, 40, 50)).toEqual({ start: 0, end: 50 });
   });
 
-  it('renders everything when itemSize is non-positive', () => {
-    expect(rangeFromOffset(0, 500, 0, 100)).toEqual({ start: 0, end: 100 });
+  it('caps the unmeasured fallback so large datasets never render unwindowed', () => {
+    expect(rangeFromOffset(0, 0, 40, 10_000)).toEqual({
+      start: 0,
+      end: UNMEASURED_FALLBACK_COUNT,
+    });
+  });
+
+  it('renders the capped fallback when itemSize is non-positive', () => {
+    expect(rangeFromOffset(0, 500, 0, 50)).toEqual({ start: 0, end: 50 });
+    expect(rangeFromOffset(0, 500, 0, 10_000)).toEqual({
+      start: 0,
+      end: UNMEASURED_FALLBACK_COUNT,
+    });
   });
 
   it('covers the items intersecting the viewport with no overscan', () => {
