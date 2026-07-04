@@ -3,7 +3,6 @@ import {
   useCallback,
   useContext,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -160,52 +159,58 @@ export function GanttProvider({
   onTaskClick,
   onDependencyCreate,
   onDependencyDelete,
-  onTaskCreate,
+  onTaskCreate: onTaskCreateProp,
   onTaskDelete,
   onTaskEdit,
   onTasksChange,
   apiRef,
   children,
 }: GanttProviderProps) {
+  const [selectedId, setSelectedId] = useState<Id | null>(null);
+
+  // Vertical scroll-to-task. The row offset is a pure function of the target's
+  // index in `visibleTasks`, so we scroll imperatively instead of round-tripping
+  // through state + a layout effect. The real work lives in a ref assigned below
+  // (once the scroll containers and visible list exist); this thin, stable
+  // wrapper can be captured by `onTaskCreate` before those hooks run. Callers
+  // that create a task must commit that state synchronously (see `createTask`'s
+  // flushSync) so the new row is already in `visibleTasks` at call time.
+  const scrollImplRef = useRef<(id: Id) => void>(() => {});
+  const scrollToTask = useCallback((id: Id) => scrollImplRef.current(id), []);
+
+  const onTaskCreate = useCallback(
+    (task: GanttTask, afterId?: Id | null) => {
+      onTaskCreateProp?.(task, afterId);
+      setSelectedId(task.id);
+      scrollToTask(task.id);
+    },
+    [onTaskCreateProp, scrollToTask],
+  );
+
+
+
   const { tasksList, updateTask, createTask, deleteTask, undo, redo, canUndo, canRedo } =
     useTaskList(tasks, dependencies, { onTaskCreate, onTaskDelete, onTasksChange });
 
-  const { visibleTasks, expandedIds, parentIds, toggleExpand, revealAncestors } =
+  const { visibleTasks, expandedIds, parentIds, toggleExpand } =
     useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
-  const [selectedId, setSelectedId] = useState<Id | null>(null);
+  // Latest visible list, read at scroll time so the stable `scrollToTask` never
+  // captures a stale snapshot.
+  const visibleTasksRef = useRef(visibleTasks);
+  visibleTasksRef.current = visibleTasks;
 
-  // Vertical scroll-to-task. The trigger expands collapsed ancestors and bumps a
-  // nonce'd target; the layout effect then reveals the row. The nonce guarantees
-  // the effect re-fires even when the target was already visible (no expansion).
-  const scrollNonce = useRef(0);
-  const [scrollTarget, setScrollTarget] = useState<{ id: Id; nonce: number } | null>(null);
-
-  const scrollToTask = useCallback(
-    (id: Id) => {
-      revealAncestors(id);
-      scrollNonce.current += 1;
-      setScrollTarget({ id, nonce: scrollNonce.current });
-    },
-    [revealAncestors],
-  );
-
-  // Runs after the expand-driven re-render commits, so visibleTasks (and the
-  // target's row index) are current. Writing scrollTop fires the pane's onScroll,
-  // which syncs the other pane and re-windows both. Deps are [scrollTarget] only
-  // on purpose: re-running on unrelated visibleTasks changes (e.g. the user
-  // collapsing another node) would yank scroll back to a stale target.
-  useLayoutEffect(() => {
-    if (!scrollTarget) {
-      return;
-    }
+  // Reveal the target row by writing scrollTop on whichever pane is mounted;
+  // that fires the pane's onScroll, which syncs the other pane and re-windows
+  // both. Reassigned every render so it closes over the current rowHeight/refs.
+  scrollImplRef.current = (id: Id) => {
     const el = taskListRef.current ?? gridRef.current;
     if (!el) {
       return;
     }
-    const index = visibleTasks.findIndex((t) => t.id === scrollTarget.id);
+    const index = visibleTasksRef.current.findIndex((t) => t.id === id);
     if (index < 0) {
       return;
     }
@@ -219,8 +224,7 @@ export function GanttProvider({
     if (next !== el.scrollTop) {
       el.scrollTop = next;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrollTarget]);
+  };
 
   useImperativeHandle(
     apiRef,
