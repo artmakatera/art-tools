@@ -101,6 +101,7 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
     header: "Task Name",
     render: (task: GanttTask) => task.name,
     width: 200,
+    isTreeColumn: true,
   },
   {
     key: "__start",

@@ -16,6 +16,7 @@ interface TaskListRowProps {
 }
 
 const INDENT_PX = 16;
+const DEFAULT_COL_WIDTH = 100;
 
 export const TaskListRow = memo(function TaskListRow({
   task,
@@ -36,14 +37,14 @@ export const TaskListRow = memo(function TaskListRow({
       onClick={() => onSelect(task.id)}
     >
       {columns.map((col) => {
-        const isName = col.key === "__name";
+  
         return (
           <div
             key={col.key}
-            className={`${styles.cell} ${isName ? styles.nameCell : ""}`}
-            style={col.width ? { width: col.width, flexShrink: 0 } : { flex: "1 1 auto", minWidth: 100 }}
+            className={`${styles.cell} ${col.isTreeColumn ? styles.treeCell : ""}`}
+            style={{ width: col.width || DEFAULT_COL_WIDTH, flexShrink: 0 }}
           >
-            {isName ? (
+            {col.isTreeColumn ? (
               <span
                 className={styles.nameContent}
                 style={{ paddingLeft: depth * INDENT_PX }}
