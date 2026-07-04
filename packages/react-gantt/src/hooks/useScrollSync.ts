@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useIsomorphicLayoutEffect } from "./useIsomorphicLayoutEffect";
 
 /** Scroll offset + client size of the grid viewport, read for virtualization. */
 export interface ViewportMetrics {
@@ -81,7 +82,8 @@ export function useScrollSync() {
 
   // Measure synchronously before first paint to avoid a blank initial frame,
   // and keep client size in sync with container resizes.
-  useLayoutEffect(() => {
+  // (Isomorphic: plain useEffect during SSR to avoid React 18's server warning.)
+  useIsomorphicLayoutEffect(() => {
     const grid = gridRef.current;
     if (!grid) {
       return;
