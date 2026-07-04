@@ -18,16 +18,19 @@ const tasks: GanttTask[] = [
 ];
 
 describe('<Gantt />', () => {
+  // The task name renders in both the task list row and the grid bar, so the
+  // queries below pick the task-list occurrence (first in DOM order).
   it('renders one row per task', () => {
-    render(<Gantt tasks={tasks} />);
-    expect(screen.getByText('Design phase')).toBeInTheDocument();
-    expect(screen.getByText('Implementation')).toBeInTheDocument();
+    const { container } = render(<Gantt tasks={tasks} />);
+    expect(container.querySelectorAll('.taskList .row')).toHaveLength(2);
+    expect(screen.getAllByText('Design phase')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Implementation')[0]).toBeInTheDocument();
   });
 
   it('invokes onTaskClick with the clicked task', () => {
     const onTaskClick = vi.fn();
     render(<Gantt tasks={tasks} onTaskClick={onTaskClick} />);
-    fireEvent.click(screen.getByText('Design phase'));
+    fireEvent.click(screen.getAllByText('Design phase')[0]!);
     expect(onTaskClick).toHaveBeenCalledTimes(1);
     expect(onTaskClick).toHaveBeenCalledWith(tasks[0]);
   });

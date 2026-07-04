@@ -10,9 +10,9 @@ export function generateTasks(count: number): GanttTask[] {
     return {
       id: String(i),
       name: `Task ${i + 1}`,
-      start,
-      end,
-      progress: (i % 100) / 100,
+      startDate: start,
+      endDate: end,
+      progress: i % 100,
     };
   });
 }

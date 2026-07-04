@@ -1,15 +1,10 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useMemo } from "react";
 import {
   useGanttConfig,
   useGanttScroll,
-  useGanttTask,
+  useGanttSelectedId,
+  useGanttTaskActions,
+  useGanttTaskState,
 } from "../../context/GanttContext";
 import type { ColumnDef, GanttTask, Id } from "../../types";
 import { TaskListHeader } from "./TaskListHeader";
@@ -20,6 +15,7 @@ import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
 import { useColumnWidths } from "../../hooks/useColumnWidths";
+import { useViewportMeasure } from "../../hooks/useViewportMeasure";
 import styles from "./TaskList.module.css";
 
 interface TaskListProps {
@@ -27,22 +23,14 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [] }: TaskListProps) {
-  const {
-    visibleTasks,
-    tasksList,
-    expandedIds,
-    parentIds,
-    toggleExpand,
-    selectedId,
-    setSelectedId,
-    onTaskClick,
-  } = useGanttTask();
+  const { visibleTasks, tasksList, expandedIds, parentIds } = useGanttTaskState();
+  const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
+  const selectedId = useGanttSelectedId();
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
   const {
     taskListRef,
     onTaskListScroll,
     gridRef,
-    scrollToTask: scrollRowIntoView,
   } = useGanttScroll();
 
   const { widths, onResizeStart } = useColumnWidths();
@@ -93,10 +81,9 @@ export function TaskList({ columns = [] }: TaskListProps) {
       if (task) {
         onTaskClick?.(task);
         scrollToTask(task); // existing horizontal grid reveal — unchanged
-        scrollRowIntoView(id); // new vertical list reveal (+ auto-expand)
       }
     },
-    [setSelectedId, visibleTasks, onTaskClick, scrollToTask, scrollRowIntoView],
+    [setSelectedId, visibleTasks, onTaskClick, scrollToTask],
   );
 
   // Depth map: how many levels deep each task is
@@ -113,62 +100,18 @@ export function TaskList({ columns = [] }: TaskListProps) {
   // the grid's viewport: the grid may not be mounted (e.g. task-list-only mode),
   // in which case its metrics never get measured and we'd render every row. The
   // list body's scrollTop stays in sync with the grid when both are present, so
-  // self-measuring is correct either way. Coalesce bursts into one rAF update.
-  const [listViewport, setListViewport] = useState({
-    scrollTop: 0,
-    clientHeight: 0,
+  // self-measuring is correct either way. Horizontal tracking is off: the list
+  // body has `width: max-content`, so column/splitter resizes churn its width
+  // without affecting which rows are visible.
+  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(taskListRef, {
+    trackHorizontal: false,
   });
-  const measureFrameRef = useRef<number | null>(null);
-
-  const measureViewport = useCallback(() => {
-    if (measureFrameRef.current !== null) {
-      return;
-    }
-    measureFrameRef.current = requestAnimationFrame(() => {
-      measureFrameRef.current = null;
-      const el = taskListRef.current;
-      if (!el) {
-        return;
-      }
-      setListViewport((prev) =>
-        prev.scrollTop === el.scrollTop && prev.clientHeight === el.clientHeight
-          ? prev
-          : { scrollTop: el.scrollTop, clientHeight: el.clientHeight },
-      );
-    });
-  }, [taskListRef]);
-
-  // Measure synchronously before first paint so the initial window is correct.
-  useLayoutEffect(() => {
-    const el = taskListRef.current;
-    if (!el) {
-      return;
-    }
-    setListViewport({ scrollTop: el.scrollTop, clientHeight: el.clientHeight });
-  }, [taskListRef]);
-
-  // Keep clientHeight in sync with container resizes.
-  useEffect(() => {
-    const el = taskListRef.current;
-    if (!el || typeof ResizeObserver === "undefined") {
-      return;
-    }
-    const observer = new ResizeObserver(measureViewport);
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      if (measureFrameRef.current !== null) {
-        cancelAnimationFrame(measureFrameRef.current);
-        measureFrameRef.current = null;
-      }
-    };
-  }, [taskListRef, measureViewport]);
 
   // Re-measure on scroll (after syncing the grid), then window the rows.
   const handleScroll = useCallback(() => {
     onTaskListScroll();
-    measureViewport();
-  }, [onTaskListScroll, measureViewport]);
+    scheduleMeasure();
+  }, [onTaskListScroll, scheduleMeasure]);
 
   // Render only the rows intersecting the viewport (plus overscan). The `.rows`
   // height stays full (via the spacers) so the scrollbar extent is unaffected.

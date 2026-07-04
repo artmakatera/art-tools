@@ -12,6 +12,7 @@ interface TaskBarProps {
   title: string;
   progress: number;
   onProgressChange: (newProgress: number) => void;
+  onProgressEnd: (newProgress: number) => void;
   onResize: (newWidth: number, newLeft: number) => void;
   onResizeEnd: (newWidth: number, newLeft: number) => void;
   onMove: (newLeft: number) => void;
@@ -27,6 +28,7 @@ export function TaskBar({
   title,
   progress = 30,
   onProgressChange,
+  onProgressEnd,
   onResize,
   onResizeEnd,
   onMove,
@@ -51,6 +53,7 @@ export function TaskBar({
           height={height}
           progress={progress}
           onProgressChange={onProgressChange}
+          onProgressEnd={onProgressEnd}
         />
         <div className={styles.taskContent} title={title}>{title}</div>
         <TaskResizer

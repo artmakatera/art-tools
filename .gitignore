@@ -4,6 +4,7 @@
 node_modules
 .pnp
 .pnp.js
+.claude/skills/vercel-react*
 
 # Local env files
 .env

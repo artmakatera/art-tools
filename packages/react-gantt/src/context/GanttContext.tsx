@@ -3,7 +3,6 @@ import {
   useCallback,
   useContext,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,10 +10,17 @@ import {
   type Ref,
 } from "react";
 import type { ColumnApi, GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
-import { useTaskList } from "../hooks/useTaskList";
+import { useTaskList, EMPTY_DEPENDENCIES } from "../hooks/useTaskList";
 import { useExpand } from "../hooks/useExpand";
 import { useScrollSync, type ViewportMetrics } from "../hooks/useScrollSync";
-import { scrollOffsetToReveal } from "../core/scroll";
+import { useEventCallback } from "../hooks/useEventCallback";
+import { useLatestRef } from "../hooks/useLatestRef";
+import { useScrollToTask } from "../hooks/useScrollToTask";
+import {
+  useDependencyDrag,
+  type ConnectorHandle,
+  type DependencyDragState,
+} from "../hooks/useDependencyDrag";
 import type { DatePatch } from "../core/barUtils";
 import {
   DEFAULT_COL_WIDTH,
@@ -22,16 +28,16 @@ import {
   DEFAULT_ROW_HEIGHT,
 } from "../core/constants";
 
-export type ConnectorHandle = "start" | "end";
+export type { ConnectorHandle, DependencyDragState } from "../hooks/useDependencyDrag";
 
-export interface DependencyDragState {
-  fromTaskId: Id;
-  handle: ConnectorHandle;
-  startX: number;
-  startY: number;
-  currentX: number;
-  currentY: number;
-}
+// Contexts are split by update frequency so high-frequency state (drag
+// position, viewport, selection) never invalidates consumers that only need
+// stable references. Rough cadence, hottest first:
+//   drag position  → every drag-move frame   (DependencyPreview only)
+//   viewport       → every scroll frame      (Grid only)
+//   selection      → per click               (TaskList only)
+//   task state     → per edit/expand         (Grid, TaskList)
+//   everything else is identity-stable across those updates.
 
 // --- Config ---------------------------------------------------------------
 
@@ -48,51 +54,83 @@ const GanttConfigContext = createContext<GanttConfigValue | null>(null);
 
 export function useGanttConfig(): GanttConfigValue {
   const ctx = useContext(GanttConfigContext);
-  if (!ctx) throw new Error("useGanttConfig must be used within a <GanttProvider>");
+  if (!ctx) {
+    throw new Error("useGanttConfig must be used within a <GanttProvider>");
+  }
   return ctx;
 }
 
-// --- Tasks ----------------------------------------------------------------
+// --- Task state -----------------------------------------------------------
 
-interface GanttTaskValue {
+interface GanttTaskStateValue {
   tasksList: GanttTask[];
   visibleTasks: GanttTask[];
+  expandedIds: Set<Id>;
+  parentIds: Set<Id>;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
+const GanttTaskStateContext = createContext<GanttTaskStateValue | null>(null);
+
+export function useGanttTaskState(): GanttTaskStateValue {
+  const ctx = useContext(GanttTaskStateContext);
+  if (!ctx) {
+    throw new Error("useGanttTaskState must be used within a <GanttProvider>");
+  }
+  return ctx;
+}
+
+// --- Task actions ---------------------------------------------------------
+
+// Everything here is identity-stable except `updateTask`/`columnApi`, which
+// only change when the `dependencies` prop changes — so per-row consumers
+// (TaskListRow) can rely on memoization.
+interface GanttTaskActionsValue {
   updateTask: (id: Id, patch: DatePatch) => void;
   createTask: (task: GanttTask, afterId?: Id | null) => void;
   deleteTask: (id: Id) => void;
   undo: () => void;
   redo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   /** API handed to `ColumnDef.render` so columns can mutate/edit tasks. */
   columnApi: ColumnApi;
-  selectedId: Id | null;
   setSelectedId: (id: Id | null) => void;
-  expandedIds: Set<Id>;
-  parentIds: Set<Id>;
   toggleExpand: (id: Id) => void;
   onTaskClick?: (task: GanttTask) => void;
+  scrollToTask: (id: Id) => void;
 }
 
-const GanttTaskContext = createContext<GanttTaskValue | null>(null);
+const GanttTaskActionsContext = createContext<GanttTaskActionsValue | null>(null);
 
-export function useGanttTask(): GanttTaskValue {
-  const ctx = useContext(GanttTaskContext);
-  if (!ctx) throw new Error("useGanttTask must be used within a <GanttProvider>");
+export function useGanttTaskActions(): GanttTaskActionsValue {
+  const ctx = useContext(GanttTaskActionsContext);
+  if (!ctx) {
+    throw new Error("useGanttTaskActions must be used within a <GanttProvider>");
+  }
   return ctx;
+}
+
+// --- Selection ------------------------------------------------------------
+
+// Primitive context (no null-throw pattern: `null` is a valid value, meaning
+// "nothing selected"). The setter lives in the actions context.
+const GanttSelectionContext = createContext<Id | null>(null);
+
+export function useGanttSelectedId(): Id | null {
+  return useContext(GanttSelectionContext);
 }
 
 // --- Scroll ---------------------------------------------------------------
 
+// Refs and handlers only — all identity-stable, so this context never
+// re-renders its consumers. Viewport metrics live in their own context below.
 interface GanttScrollValue {
   taskListRef: React.RefObject<HTMLDivElement | null>;
   gridRef: React.RefObject<HTMLDivElement | null>;
+  gridBodyRef: React.RefObject<HTMLDivElement | null>;
   onTaskListScroll: () => void;
   onGridScroll: () => void;
-  gridBodyRef: React.RefObject<HTMLDivElement | null>;
-  /** Scroll offset + client size of the grid viewport, for virtualization. */
-  viewport: ViewportMetrics;
-  /** Scroll the task list vertically to reveal a task (auto-expanding ancestors). */
+  /** Scroll the task list vertically to reveal a task. */
   scrollToTask: (id: Id) => void;
 }
 
@@ -100,7 +138,22 @@ const GanttScrollContext = createContext<GanttScrollValue | null>(null);
 
 export function useGanttScroll(): GanttScrollValue {
   const ctx = useContext(GanttScrollContext);
-  if (!ctx) throw new Error("useGanttScroll must be used within a <GanttProvider>");
+  if (!ctx) {
+    throw new Error("useGanttScroll must be used within a <GanttProvider>");
+  }
+  return ctx;
+}
+
+// --- Viewport -------------------------------------------------------------
+
+/** Scroll offset + client size of the grid viewport, for virtualization. */
+const GanttViewportContext = createContext<ViewportMetrics | null>(null);
+
+export function useGanttViewport(): ViewportMetrics {
+  const ctx = useContext(GanttViewportContext);
+  if (!ctx) {
+    throw new Error("useGanttViewport must be used within a <GanttProvider>");
+  }
   return ctx;
 }
 
@@ -108,9 +161,7 @@ export function useGanttScroll(): GanttScrollValue {
 
 interface GanttDependencyValue {
   dependencies: TaskDependency[];
-  onDependencyCreate?: (dep: TaskDependency) => void;
   onDependencyDelete?: (dep: TaskDependency) => void;
-  drag: DependencyDragState | null;
   startDrag: (state: DependencyDragState) => void;
   endDrag: (toTaskId: Id | null, toHandle?: ConnectorHandle) => void;
 }
@@ -119,8 +170,27 @@ const GanttDependencyContext = createContext<GanttDependencyValue | null>(null);
 
 export function useGanttDependency(): GanttDependencyValue {
   const ctx = useContext(GanttDependencyContext);
-  if (!ctx) throw new Error("useGanttDependency must be used within a <GanttProvider>");
+  if (!ctx) {
+    throw new Error("useGanttDependency must be used within a <GanttProvider>");
+  }
   return ctx;
+}
+
+// --- Dependency drag ------------------------------------------------------
+
+// Split in two: per-row ConnectorHandles only need "is a drag in progress"
+// (changes at drag start/end), while DependencyPreview needs the coordinates
+// (changes every drag-move frame). Primitive contexts, plain defaults.
+const GanttDragActiveContext = createContext<boolean>(false);
+
+export function useGanttDragActive(): boolean {
+  return useContext(GanttDragActiveContext);
+}
+
+const GanttDragContext = createContext<DependencyDragState | null>(null);
+
+export function useGanttDependencyDrag(): DependencyDragState | null {
+  return useContext(GanttDragContext);
 }
 
 // --- Provider -------------------------------------------------------------
@@ -144,11 +214,6 @@ export interface GanttProviderProps {
   children: ReactNode;
 }
 
-const HANDLE_TO_TYPE: Record<ConnectorHandle, Record<ConnectorHandle, TaskDependency["type"]>> = {
-  end: { start: "FS", end: "FF" },
-  start: { start: "SS", end: "SF" },
-};
-
 export function GanttProvider({
   tasks,
   rowHeight = DEFAULT_ROW_HEIGHT,
@@ -156,71 +221,62 @@ export function GanttProvider({
   height,
   scales,
   padDays = DEFAULT_PAD_DAYS,
-  dependencies = [],
+  dependencies = EMPTY_DEPENDENCIES,
   onTaskClick,
   onDependencyCreate,
   onDependencyDelete,
-  onTaskCreate,
+  onTaskCreate: onTaskCreateProp,
   onTaskDelete,
   onTaskEdit,
   onTasksChange,
   apiRef,
   children,
 }: GanttProviderProps) {
-  const { tasksList, updateTask, createTask, deleteTask, undo, redo, canUndo, canRedo } =
-    useTaskList(tasks, dependencies, { onTaskCreate, onTaskDelete, onTasksChange });
+  const [selectedId, setSelectedId] = useState<Id | null>(null);
 
-  const { visibleTasks, expandedIds, parentIds, toggleExpand, revealAncestors } =
+  // Latest-refs for consumer callbacks used internally at a single call site,
+  // so the handlers that wrap them keep a stable identity even when the
+  // consumer passes inline functions.
+  const onTaskEditRef = useLatestRef(onTaskEdit);
+
+  // Callbacks handed to consumers through context: presence-preserving stable
+  // wrappers, so context values only churn when the callback's presence flips.
+  const onTaskClickStable = useEventCallback(onTaskClick);
+  const onDependencyDeleteStable = useEventCallback(onDependencyDelete);
+
+  const {
+    tasksList,
+    updateTask,
+    createTask: commitCreateTask,
+    deleteTask,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useTaskList(tasks, dependencies, {
+    onTaskCreate: onTaskCreateProp,
+    onTaskDelete,
+    onTasksChange,
+  });
+
+  const { visibleTasks, expandedIds, parentIds, toggleExpand } =
     useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
-  const [selectedId, setSelectedId] = useState<Id | null>(null);
+  const scrollToTask = useScrollToTask({ taskListRef, gridRef, visibleTasks, rowHeight });
 
-  // Vertical scroll-to-task. The trigger expands collapsed ancestors and bumps a
-  // nonce'd target; the layout effect then reveals the row. The nonce guarantees
-  // the effect re-fires even when the target was already visible (no expansion).
-  const scrollNonce = useRef(0);
-  const [scrollTarget, setScrollTarget] = useState<{ id: Id; nonce: number } | null>(null);
-
-  const scrollToTask = useCallback(
-    (id: Id) => {
-      revealAncestors(id);
-      scrollNonce.current += 1;
-      setScrollTarget({ id, nonce: scrollNonce.current });
+  // Commit (flushSync inside, so the consumer's onTaskCreate fires first),
+  // then select and reveal the new task. `scrollToTask` sees the fresh list:
+  // flushSync re-rendered this provider before returning.
+  const createTask = useCallback(
+    (task: GanttTask, afterId?: Id | null) => {
+      commitCreateTask(task, afterId);
+      setSelectedId(task.id);
+      scrollToTask(task.id);
     },
-    [revealAncestors],
+    [commitCreateTask, scrollToTask],
   );
-
-  // Runs after the expand-driven re-render commits, so visibleTasks (and the
-  // target's row index) are current. Writing scrollTop fires the pane's onScroll,
-  // which syncs the other pane and re-windows both. Deps are [scrollTarget] only
-  // on purpose: re-running on unrelated visibleTasks changes (e.g. the user
-  // collapsing another node) would yank scroll back to a stale target.
-  useLayoutEffect(() => {
-    if (!scrollTarget) {
-      return;
-    }
-    const el = taskListRef.current ?? gridRef.current;
-    if (!el) {
-      return;
-    }
-    const index = visibleTasks.findIndex((t) => t.id === scrollTarget.id);
-    if (index < 0) {
-      return;
-    }
-    const next = scrollOffsetToReveal(
-      index * rowHeight,
-      rowHeight,
-      el.scrollTop,
-      el.clientHeight,
-      rowHeight,
-    );
-    if (next !== el.scrollTop) {
-      el.scrollTop = next;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrollTarget]);
 
   useImperativeHandle(
     apiRef,
@@ -236,133 +292,80 @@ export function GanttProvider({
       undo,
       redo,
       scrollToTask,
-      editTask: (task) => onTaskEdit?.(task),
+      editTask: (task) => onTaskEditRef.current?.(task),
     }),
-    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, onTaskEdit],
-  );
-  const [drag, setDrag] = useState<DependencyDragState | null>(null);
-  const dragListenersRef = useRef<{ move: (e: MouseEvent) => void; up: (e: MouseEvent) => void } | null>(null);
-
-  const startDrag = useCallback((state: DependencyDragState) => {
-    setDrag(state);
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!gridBodyRef.current) return;
-      const rect = gridBodyRef.current.getBoundingClientRect();
-      setDrag((prev) =>
-        prev ? { ...prev, currentX: e.clientX - rect.left, currentY: e.clientY - rect.top } : null,
-      );
-    };
-
-    const onMouseUp = () => {
-      setDrag(null);
-      if (dragListenersRef.current) {
-        window.removeEventListener("mousemove", dragListenersRef.current.move);
-        window.removeEventListener("mouseup", dragListenersRef.current.up);
-        dragListenersRef.current = null;
-      }
-    };
-
-    dragListenersRef.current = { move: onMouseMove, up: onMouseUp };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  }, []);
-
-  const endDrag = useCallback(
-    (toTaskId: Id | null, toHandle?: ConnectorHandle) => {
-      setDrag((prev) => {
-        if (prev && toTaskId !== null && toHandle && toTaskId !== prev.fromTaskId) {
-          const type = HANDLE_TO_TYPE[prev.handle][toHandle];
-          onDependencyCreate?.({ from: prev.fromTaskId, to: toTaskId, type });
-        }
-        return null;
-      });
-      if (dragListenersRef.current) {
-        window.removeEventListener("mousemove", dragListenersRef.current.move);
-        window.removeEventListener("mouseup", dragListenersRef.current.up);
-        dragListenersRef.current = null;
-      }
-    },
-    [onDependencyCreate],
+    // onTaskEditRef is identity-stable (useLatestRef); listed only to satisfy
+    // exhaustive-deps.
+    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, onTaskEditRef],
   );
 
+  const { drag, startDrag, endDrag } = useDependencyDrag({ gridBodyRef, onDependencyCreate });
+
+  // --- Context values ---
   const configValue = useMemo<GanttConfigValue>(
     () => ({ rowHeight, colWidth, scales, padDays, height }),
     [rowHeight, colWidth, scales, padDays, height],
   );
 
-  const taskValue = useMemo<GanttTaskValue>(
-    () => ({
-      tasksList,
-      visibleTasks,
-      updateTask,
-      createTask,
-      deleteTask,
-      undo,
-      redo,
-      canUndo,
-      canRedo,
-      columnApi,
-      selectedId,
-      setSelectedId,
-      expandedIds,
-      parentIds,
-      toggleExpand,
-      onTaskClick,
-    }),
-    [
-      tasksList,
-      visibleTasks,
-      updateTask,
-      createTask,
-      deleteTask,
-      undo,
-      redo,
-      canUndo,
-      canRedo,
-      columnApi,
-      selectedId,
-      expandedIds,
-      parentIds,
-      toggleExpand,
-      onTaskClick,
-    ],
+  const taskStateValue = useMemo<GanttTaskStateValue>(
+    () => ({ tasksList, visibleTasks, expandedIds, parentIds, canUndo, canRedo }),
+    [tasksList, visibleTasks, expandedIds, parentIds, canUndo, canRedo],
   );
 
-  const scrollValue = useMemo<GanttScrollValue>(
+  // `setSelectedId` is a useState setter — stable, safe to omit from deps.
+  const taskActionsValue = useMemo<GanttTaskActionsValue>(
     () => ({
-      taskListRef,
-      gridRef,
-      onTaskListScroll,
-      onGridScroll,
-      gridBodyRef,
-      viewport,
+      updateTask,
+      createTask,
+      deleteTask,
+      undo,
+      redo,
+      columnApi,
+      setSelectedId,
+      toggleExpand,
+      onTaskClick: onTaskClickStable,
       scrollToTask,
     }),
-    [taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport, scrollToTask],
+    [updateTask, createTask, deleteTask, undo, redo, columnApi, toggleExpand, onTaskClickStable, scrollToTask],
+  );
+
+  // All members are stable refs/callbacks → created exactly once.
+  const scrollValue = useMemo<GanttScrollValue>(
+    () => ({ taskListRef, gridRef, gridBodyRef, onTaskListScroll, onGridScroll, scrollToTask }),
+    [taskListRef, gridRef, onTaskListScroll, onGridScroll, scrollToTask],
   );
 
   const dependencyValue = useMemo<GanttDependencyValue>(
     () => ({
       dependencies,
-      onDependencyCreate,
-      onDependencyDelete,
-      drag,
+      onDependencyDelete: onDependencyDeleteStable,
       startDrag,
       endDrag,
     }),
-    [dependencies, onDependencyCreate, onDependencyDelete, drag, startDrag, endDrag],
+    [dependencies, onDependencyDeleteStable, startDrag, endDrag],
   );
 
+  // `viewport`, `selectedId`, `drag`, and `drag !== null` are passed directly:
+  // primitives or already identity-stable when unchanged.
   return (
     <GanttConfigContext.Provider value={configValue}>
-      <GanttTaskContext.Provider value={taskValue}>
-        <GanttScrollContext.Provider value={scrollValue}>
+      <GanttScrollContext.Provider value={scrollValue}>
+        <GanttTaskActionsContext.Provider value={taskActionsValue}>
           <GanttDependencyContext.Provider value={dependencyValue}>
-            {children}
+            <GanttTaskStateContext.Provider value={taskStateValue}>
+              <GanttSelectionContext.Provider value={selectedId}>
+                <GanttDragActiveContext.Provider value={drag !== null}>
+                  <GanttViewportContext.Provider value={viewport}>
+                    <GanttDragContext.Provider value={drag}>
+                      {children}
+                    </GanttDragContext.Provider>
+                  </GanttViewportContext.Provider>
+                </GanttDragActiveContext.Provider>
+              </GanttSelectionContext.Provider>
+            </GanttTaskStateContext.Provider>
           </GanttDependencyContext.Provider>
-        </GanttScrollContext.Provider>
-      </GanttTaskContext.Provider>
+        </GanttTaskActionsContext.Provider>
+      </GanttScrollContext.Provider>
     </GanttConfigContext.Provider>
   );
 }

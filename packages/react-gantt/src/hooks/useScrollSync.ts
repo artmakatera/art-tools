@@ -1,61 +1,19 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
+import { useViewportMeasure } from "./useViewportMeasure";
 
-/** Scroll offset + client size of the grid viewport, read for virtualization. */
-export interface ViewportMetrics {
-  scrollTop: number;
-  scrollLeft: number;
-  clientWidth: number;
-  clientHeight: number;
-}
+export type { ViewportMetrics } from "./useViewportMeasure";
 
-const ZERO_METRICS: ViewportMetrics = {
-  scrollTop: 0,
-  scrollLeft: 0,
-  clientWidth: 0,
-  clientHeight: 0,
-};
-
-function readMetrics(el: HTMLDivElement): ViewportMetrics {
-  return {
-    scrollTop: el.scrollTop,
-    scrollLeft: el.scrollLeft,
-    clientWidth: el.clientWidth,
-    clientHeight: el.clientHeight,
-  };
-}
-
-function sameMetrics(a: ViewportMetrics, b: ViewportMetrics): boolean {
-  return (
-    a.scrollTop === b.scrollTop &&
-    a.scrollLeft === b.scrollLeft &&
-    a.clientWidth === b.clientWidth &&
-    a.clientHeight === b.clientHeight
-  );
-}
-
+/**
+ * Keep the task-list and grid panes vertically locked together, and expose
+ * the grid viewport's metrics for virtualization. Everything returned is
+ * identity-stable forever.
+ */
 export function useScrollSync() {
   const taskListRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const isSyncing = useRef(false);
-  const frameRef = useRef<number | null>(null);
 
-  const [viewport, setViewport] = useState<ViewportMetrics>(ZERO_METRICS);
-
-  // Coalesce bursts of scroll/resize events into one state update per frame.
-  const scheduleMeasure = useCallback(() => {
-    if (frameRef.current !== null) {
-      return;
-    }
-    frameRef.current = requestAnimationFrame(() => {
-      frameRef.current = null;
-      const grid = gridRef.current;
-      if (!grid) {
-        return;
-      }
-      const next = readMetrics(grid);
-      setViewport((prev) => (sameMetrics(prev, next) ? prev : next));
-    });
-  }, []);
+  const { viewport, scheduleMeasure } = useViewportMeasure(gridRef);
 
   const onTaskListScroll = useCallback(() => {
     if (isSyncing.current) {
@@ -77,35 +35,6 @@ export function useScrollSync() {
       isSyncing.current = false;
     }
     scheduleMeasure();
-  }, [scheduleMeasure]);
-
-  // Measure synchronously before first paint to avoid a blank initial frame,
-  // and keep client size in sync with container resizes.
-  useLayoutEffect(() => {
-    const grid = gridRef.current;
-    if (!grid) {
-      return;
-    }
-    setViewport((prev) => {
-      const next = readMetrics(grid);
-      return sameMetrics(prev, next) ? prev : next;
-    });
-  }, []);
-
-  useEffect(() => {
-    const grid = gridRef.current;
-    if (!grid || typeof ResizeObserver === "undefined") {
-      return;
-    }
-    const observer = new ResizeObserver(scheduleMeasure);
-    observer.observe(grid);
-    return () => {
-      observer.disconnect();
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-    };
   }, [scheduleMeasure]);
 
   return { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport };

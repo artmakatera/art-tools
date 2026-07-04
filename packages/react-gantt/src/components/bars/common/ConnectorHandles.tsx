@@ -1,5 +1,6 @@
 import {
   useGanttDependency,
+  useGanttDragActive,
   useGanttScroll,
   type ConnectorHandle,
 } from "../../../context/GanttContext";
@@ -18,7 +19,8 @@ interface ConnectorHandlesProps {
 }
 
 export function ConnectorHandles({ taskId, barLeft, barWidth, barCenterY, show }: ConnectorHandlesProps) {
-  const { drag, startDrag, endDrag } = useGanttDependency();
+  const { startDrag, endDrag } = useGanttDependency();
+  const isDragging = useGanttDragActive();
   const { gridBodyRef } = useGanttScroll();
 
   const getStartCoords = (e: React.MouseEvent, _handle: ConnectorHandle) => {
@@ -40,7 +42,7 @@ export function ConnectorHandles({ taskId, barLeft, barWidth, barCenterY, show }
   };
 
   const onMouseUp = (e: React.MouseEvent, handle: ConnectorHandle) => {
-    if (drag) {
+    if (isDragging) {
       e.stopPropagation();
       endDrag(taskId, handle);
     }
@@ -52,7 +54,7 @@ export function ConnectorHandles({ taskId, barLeft, barWidth, barCenterY, show }
       <div
         role="button"
         tabIndex={0}
-        className={`${styles.handle} ${show || !!drag ? styles.visible : ""}`}
+        className={`${styles.handle} ${show || isDragging ? styles.visible : ""}`}
         style={{ left: barLeft - CONNECTOR_HANDLE_SIZE, top: barCenterY - HANDLE_OFFSET }}
         onMouseDown={(e) => onMouseDown(e, "start")}
         onMouseUp={(e) => onMouseUp(e, "start")}
@@ -60,7 +62,7 @@ export function ConnectorHandles({ taskId, barLeft, barWidth, barCenterY, show }
       <div
         role="button"
         tabIndex={0}
-        className={`${styles.handle} ${show || !!drag ? styles.visible : ""}`}
+        className={`${styles.handle} ${show || isDragging ? styles.visible : ""}`}
         style={{ left: barLeft + barWidth, top: barCenterY - HANDLE_OFFSET }}
         onMouseDown={(e) => onMouseDown(e, "end")}
         onMouseUp={(e) => onMouseUp(e, "end")}
