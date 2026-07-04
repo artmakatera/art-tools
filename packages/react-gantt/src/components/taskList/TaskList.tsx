@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useMemo } from "react";
 import {
   useGanttConfig,
   useGanttScroll,
@@ -21,7 +15,7 @@ import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
 import { useColumnWidths } from "../../hooks/useColumnWidths";
-import { useIsomorphicLayoutEffect } from "../../hooks/useIsomorphicLayoutEffect";
+import { useViewportMeasure } from "../../hooks/useViewportMeasure";
 import styles from "./TaskList.module.css";
 
 interface TaskListProps {
@@ -106,63 +100,18 @@ export function TaskList({ columns = [] }: TaskListProps) {
   // the grid's viewport: the grid may not be mounted (e.g. task-list-only mode),
   // in which case its metrics never get measured and we'd render every row. The
   // list body's scrollTop stays in sync with the grid when both are present, so
-  // self-measuring is correct either way. Coalesce bursts into one rAF update.
-  const [listViewport, setListViewport] = useState({
-    scrollTop: 0,
-    clientHeight: 0,
+  // self-measuring is correct either way. Horizontal tracking is off: the list
+  // body has `width: max-content`, so column/splitter resizes churn its width
+  // without affecting which rows are visible.
+  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(taskListRef, {
+    trackHorizontal: false,
   });
-  const measureFrameRef = useRef<number | null>(null);
-
-  const measureViewport = useCallback(() => {
-    if (measureFrameRef.current !== null) {
-      return;
-    }
-    measureFrameRef.current = requestAnimationFrame(() => {
-      measureFrameRef.current = null;
-      const el = taskListRef.current;
-      if (!el) {
-        return;
-      }
-      setListViewport((prev) =>
-        prev.scrollTop === el.scrollTop && prev.clientHeight === el.clientHeight
-          ? prev
-          : { scrollTop: el.scrollTop, clientHeight: el.clientHeight },
-      );
-    });
-  }, [taskListRef]);
-
-  // Measure synchronously before first paint so the initial window is correct.
-  // (Isomorphic: plain useEffect during SSR to avoid React 18's server warning.)
-  useIsomorphicLayoutEffect(() => {
-    const el = taskListRef.current;
-    if (!el) {
-      return;
-    }
-    setListViewport({ scrollTop: el.scrollTop, clientHeight: el.clientHeight });
-  }, [taskListRef]);
-
-  // Keep clientHeight in sync with container resizes.
-  useEffect(() => {
-    const el = taskListRef.current;
-    if (!el || typeof ResizeObserver === "undefined") {
-      return;
-    }
-    const observer = new ResizeObserver(measureViewport);
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      if (measureFrameRef.current !== null) {
-        cancelAnimationFrame(measureFrameRef.current);
-        measureFrameRef.current = null;
-      }
-    };
-  }, [taskListRef, measureViewport]);
 
   // Re-measure on scroll (after syncing the grid), then window the rows.
   const handleScroll = useCallback(() => {
     onTaskListScroll();
-    measureViewport();
-  }, [onTaskListScroll, measureViewport]);
+    scheduleMeasure();
+  }, [onTaskListScroll, scheduleMeasure]);
 
   // Render only the rows intersecting the viewport (plus overscan). The `.rows`
   // height stays full (via the spacers) so the scrollbar extent is unaffected.
