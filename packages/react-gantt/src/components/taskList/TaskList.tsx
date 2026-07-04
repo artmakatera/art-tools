@@ -23,15 +23,12 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [] }: TaskListProps) {
-  const { visibleTasks, tasksList, expandedIds, parentIds } = useGanttTaskState();
+  const { visibleTasks, expandedIds, parentIds } =
+    useGanttTaskState();
   const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
   const selectedId = useGanttSelectedId();
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
-  const {
-    taskListRef,
-    onTaskListScroll,
-    gridRef,
-  } = useGanttScroll();
+  const { taskListRef, onTaskListScroll, gridRef } = useGanttScroll();
 
   const { widths, onResizeStart } = useColumnWidths();
 
@@ -103,9 +100,12 @@ export function TaskList({ columns = [] }: TaskListProps) {
   // self-measuring is correct either way. Horizontal tracking is off: the list
   // body has `width: max-content`, so column/splitter resizes churn its width
   // without affecting which rows are visible.
-  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(taskListRef, {
-    trackHorizontal: false,
-  });
+  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(
+    taskListRef,
+    {
+      trackHorizontal: false,
+    },
+  );
 
   // Re-measure on scroll (after syncing the grid), then window the rows.
   const handleScroll = useCallback(() => {
@@ -123,19 +123,10 @@ export function TaskList({ columns = [] }: TaskListProps) {
     ROW_OVERSCAN,
   );
 
-  // No fixed height → the body grows to fit every row. With a height, the body
-  // flexes to fill the space left by the header and scrolls (synced to the grid).
-  const bodyHeight = tasksList.length * rowHeight;
-  const bodyStyle =
-    height !== undefined
-      ? { flex: "1 1 auto", minHeight: 0 }
-      : { height: bodyHeight };
+  const bodyStyle = { flex: "1 1 auto", minHeight: 0 };
 
   return (
-    <div
-      className={styles.taskList}
-      style={height !== undefined ? { height } : undefined}
-    >
+    <div className={styles.taskList} style={{ height }}>
       <TaskListHeader
         columns={resolvedColumns}
         rowHeight={rowHeight}
@@ -170,8 +161,6 @@ export function TaskList({ columns = [] }: TaskListProps) {
               />
             );
           })}
-          {/* Spacer for the rows below the viewport, keeping the scroll extent
-              equal to the full list height. */}
           <div
             style={{
               height: (visibleTasks.length - rowRange.end) * rowHeight,

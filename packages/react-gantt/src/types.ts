@@ -33,6 +33,8 @@ export interface ColumnDef<T extends GanttTask = GanttTask> {
   header: string;
   width?: number;
   render: (task: T, api: ColumnApi) => React.ReactNode;
+  isTreeColumn?: boolean;
+
 }
 
 /** Patch passed to the imperative `updateTask`; only the provided fields change. */
@@ -67,7 +69,7 @@ export interface GanttProps {
   colWidth?: number;
   /** Total component height in px. When set, rows scroll vertically within it
    *  (calendar/header stay pinned); omit to grow with content. */
-  height?: number;
+  height: number;
   scales?: Scale[];
   padDays?: number;
   onTaskClick?: (task: GanttTask) => void;
