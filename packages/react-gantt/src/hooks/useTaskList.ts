@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { ChangeLog, GanttTask, Id, TaskCommand, TaskDependency, TaskPatch } from "../types";
 import { getTaskList, resolveCommittedTasks } from "../core/prepareData";
 import { buildDependencyGraph, scheduleDependents } from "../core/scheduling";
@@ -101,7 +102,13 @@ export const useTaskList = (
   }, [dependencyGraph]);
 
   const createTask = useCallback((task: GanttTask, afterId?: Id | null) => {
-    setLog((prev) => appendTransaction(prev, [{ type: "create", task, afterId }]));
+    // Commit synchronously so the new task is present in the resolved list (and
+    // thus in the consumer's `visibleTasks`) before `onTaskCreate` fires. This
+    // lets handlers like scroll-to-new-task read post-create state imperatively
+    // without waiting for an effect.
+    flushSync(() => {
+      setLog((prev) => appendTransaction(prev, [{ type: "create", task, afterId }]));
+    });
     onTaskCreate?.(task, afterId);
   }, [onTaskCreate]);
 

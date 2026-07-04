@@ -42,7 +42,6 @@ export function TaskList({ columns = [] }: TaskListProps) {
     taskListRef,
     onTaskListScroll,
     gridRef,
-    scrollToTask: scrollRowIntoView,
   } = useGanttScroll();
 
   const { widths, onResizeStart } = useColumnWidths();
@@ -93,10 +92,9 @@ export function TaskList({ columns = [] }: TaskListProps) {
       if (task) {
         onTaskClick?.(task);
         scrollToTask(task); // existing horizontal grid reveal — unchanged
-        scrollRowIntoView(id); // new vertical list reveal (+ auto-expand)
       }
     },
-    [setSelectedId, visibleTasks, onTaskClick, scrollToTask, scrollRowIntoView],
+    [setSelectedId, visibleTasks, onTaskClick, scrollToTask],
   );
 
   // Depth map: how many levels deep each task is
