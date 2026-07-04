@@ -1,9 +1,11 @@
-import { useGanttDependency } from "../../context/GanttContext";
+import { useGanttDependencyDrag } from "../../context/GanttContext";
 import styles from "./DependencyPreview.module.css";
 
 export function DependencyPreview() {
-  const { drag } = useGanttDependency();
-  if (!drag) return null;
+  const drag = useGanttDependencyDrag();
+  if (!drag) {
+    return null;
+  }
 
   const dx = drag.currentX - drag.startX;
   const dy = drag.currentY - drag.startY;
