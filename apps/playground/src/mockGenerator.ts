@@ -28,6 +28,16 @@ export interface GenerateOptions {
   seed?: number;
   /** First day of the timeline. Defaults to 2022-01-03 (a Monday). */
   startDate?: Date;
+  /**
+   * Inclusive calendar-year span the generated data should cover, e.g.
+   * `[2020, 2025]`. When set, projects are scattered across the whole window
+   * (Jan 1 of the first year → Dec 31 of the last) instead of running
+   * single-file from `startDate`, and this takes precedence over `startDate`
+   * for the timeline origin. Order-insensitive; a single year like `[2024,
+   * 2024]` spans that one year. Each project keeps its own day-granular layout,
+   * so a late-starting project may spill a little past the final year.
+   */
+  yearsRange?: [number, number];
 }
 
 export interface MockData {
@@ -156,7 +166,20 @@ export function generateMockData(
   }
 
   const rng = makeRng(options.seed ?? 1);
-  const baseDate = options.startDate ?? new Date("2022-01-03");
+
+  // When a years range is given it defines the timeline window and overrides
+  // `startDate`; `spreadDays` (>0) then scatters project starts across it.
+  let spreadDays = 0;
+  let baseDate: Date;
+  if (options.yearsRange) {
+    const [a, b] = options.yearsRange;
+    const firstYear = Math.min(a, b);
+    const lastYear = Math.max(a, b);
+    baseDate = new Date(firstYear, 0, 1);
+    spreadDays = Math.max(0, daysBetween(baseDate, new Date(lastYear, 11, 31)));
+  } else {
+    baseDate = options.startDate ?? new Date("2022-01-03");
+  }
 
   let nextId = 1;
   let nameSeq = 0;
@@ -339,18 +362,24 @@ export function generateMockData(
     const projectSize = Math.min(remaining, randInt(9, 28));
     remaining -= projectSize;
 
+    // With a years range, each project starts on a random day inside the
+    // window so the dataset spreads across the whole span; otherwise projects
+    // stagger off the previous one via `globalCursor`.
+    const projectStart =
+      spreadDays > 0 ? addDays(baseDate, randInt(0, spreadDays)) : globalCursor;
+
     const projectId = nextId++;
     const project: GanttTask = {
       id: projectId,
       name: `${pick(PROJECT_NAMES)} ${nextId}`,
-      startDate: globalCursor,
-      endDate: globalCursor,
+      startDate: projectStart,
+      endDate: projectStart,
       progress: 0,
       type: "project",
     };
     tasks.push(project);
 
-    const body = layChildren(projectId, projectSize - 1, globalCursor, 1);
+    const body = layChildren(projectId, projectSize - 1, projectStart, 1);
     project.startDate = body.start;
     project.endDate = body.end;
     project.progress = body.leafCount

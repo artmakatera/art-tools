@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useRef, useState } from "react";
-import { type GanttHandle, type GanttTask, type TaskDependency, type TaskPatch } from "@am/react-gantt"
+import type { GanttHandle, GanttTask, TaskDependency, TaskPatch } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { generateMockData } from "./mockGenerator";
 import { TaskEditModal } from "./TaskEditModal";
@@ -19,7 +19,7 @@ const Gantt = lazy(() =>
 const count = 10000;
 const seed = 1;
 
-const mockData = generateMockData(count, { seed, startDate: new Date("2010-01-23") });
+const mockData = generateMockData(count, { seed, yearsRange: [2023, 2025] });
 function GanttWithTaskList() {
   // How many tasks to generate, and a bump counter to reshuffle with a new seed.
 

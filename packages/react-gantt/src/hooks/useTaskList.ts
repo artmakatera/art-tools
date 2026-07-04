@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { ChangeLog, GanttTask, Id, TaskCommand, TaskDependency, TaskPatch } from "../types";
-import { getTaskList, resolveCommittedTasks } from "../core/prepareData";
+import {
+  createResolveCache,
+  getTaskList,
+  resolveCommittedTasksCached,
+  type ResolveCache,
+} from "../core/prepareData";
 import { buildDependencyGraph, scheduleDependents } from "../core/scheduling";
 
 const EMPTY_LOG: ChangeLog = { transactions: [], cursor: 0 };
@@ -58,12 +63,16 @@ export const useTaskList = (
     [dependencies],
   );
 
-  // Replay the log exactly once per change. Both the display list and the
-  // edit base derive from this single resolved map — no second replay.
-  const resolvedById = useMemo(
-    () => resolveCommittedTasks(tasks, log),
-    [tasks, log],
-  );
+  // Resolve the log incrementally: the cache reuses the snapshot at the
+  // previous cursor, so an edit costs one map clone instead of replaying the
+  // whole log, and undo/redo to a recent cursor reuses the cached map as-is.
+  // Both the display list and the edit base derive from this single resolved
+  // map — no second replay.
+  const resolveCacheRef = useRef<ResolveCache | null>(null);
+  const resolvedById = useMemo(() => {
+    resolveCacheRef.current ??= createResolveCache();
+    return resolveCommittedTasksCached(resolveCacheRef.current, tasks, log);
+  }, [tasks, log]);
 
   // Mirror the latest resolved map so event handlers (updateTask) can read the
   // current effective state without replaying. Updated every render, so at the
