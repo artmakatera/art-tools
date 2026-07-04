@@ -6,6 +6,7 @@ interface BarProgressProps {
   height: number;
   progress: number;
   onProgressChange?: (newProgress: number) => void;
+  onProgressEnd?: (newProgress: number) => void;
 }
 
 export function BarProgress({
@@ -13,8 +14,10 @@ export function BarProgress({
   width: parentWidth,
   height,
   onProgressChange,
+  onProgressEnd,
 }: BarProgressProps) {
   const width = (progress / 100) * parentWidth;
+  const toProgress = (newWidth: number) => (newWidth / parentWidth) * 100;
 
   return (
     <div className={styles.barProgress} style={{ width, height }}>
@@ -22,9 +25,12 @@ export function BarProgress({
         <BarProgressResizeHandle
           width={width}
           parentWidth={parentWidth}
-          onResize={(newWidth) => {
-            onProgressChange((newWidth / parentWidth) * 100);
-          }}
+          onResize={(newWidth) => onProgressChange(toProgress(newWidth))}
+          onResizeEnd={
+            onProgressEnd
+              ? (newWidth) => onProgressEnd(toProgress(newWidth))
+              : undefined
+          }
         />
       )}
     </div>
