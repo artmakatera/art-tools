@@ -15,13 +15,17 @@ import {
   useGanttConfig,
   useGanttDependency,
   useGanttScroll,
-  useGanttTask,
+  useGanttTaskActions,
+  useGanttTaskState,
+  useGanttViewport,
 } from "../../context/GanttContext";
 
 export function GanttGrid() {
-  const { visibleTasks, updateTask, onTaskClick, setSelectedId } = useGanttTask();
+  const { visibleTasks } = useGanttTaskState();
+  const { updateTask, onTaskClick, setSelectedId } = useGanttTaskActions();
   const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
-  const { gridRef, onGridScroll, gridBodyRef, viewport } = useGanttScroll();
+  const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
+  const viewport = useGanttViewport();
   const { dependencies, onDependencyDelete } = useGanttDependency();
 
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});

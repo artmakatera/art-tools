@@ -9,7 +9,9 @@ import {
 import {
   useGanttConfig,
   useGanttScroll,
-  useGanttTask,
+  useGanttSelectedId,
+  useGanttTaskActions,
+  useGanttTaskState,
 } from "../../context/GanttContext";
 import type { ColumnDef, GanttTask, Id } from "../../types";
 import { TaskListHeader } from "./TaskListHeader";
@@ -27,16 +29,9 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [] }: TaskListProps) {
-  const {
-    visibleTasks,
-    tasksList,
-    expandedIds,
-    parentIds,
-    toggleExpand,
-    selectedId,
-    setSelectedId,
-    onTaskClick,
-  } = useGanttTask();
+  const { visibleTasks, tasksList, expandedIds, parentIds } = useGanttTaskState();
+  const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
+  const selectedId = useGanttSelectedId();
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
   const {
     taskListRef,

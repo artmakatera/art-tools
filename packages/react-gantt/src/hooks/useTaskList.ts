@@ -6,6 +6,10 @@ import { buildDependencyGraph, scheduleDependents } from "../core/scheduling";
 
 const EMPTY_LOG: ChangeLog = { transactions: [], cursor: 0 };
 
+// Module-level so an omitted `dependencies` prop keeps a stable identity and
+// the dependency graph isn't rebuilt on every render.
+export const EMPTY_DEPENDENCIES: TaskDependency[] = [];
+
 /** Drop any redo branch, append `commands` as one transaction, advance the cursor. */
 function appendTransaction(log: ChangeLog, commands: TaskCommand[]): ChangeLog {
   const kept = log.transactions.slice(0, log.cursor);
@@ -38,10 +42,14 @@ export interface UseTaskListOptions {
 
 export const useTaskList = (
   tasks: GanttTask[],
-  dependencies: TaskDependency[] = [],
+  dependencies: TaskDependency[] = EMPTY_DEPENDENCIES,
   options: UseTaskListOptions = {},
 ) => {
-  const { onTaskCreate, onTaskDelete, onTasksChange } = options;
+  // Latest-ref so the returned mutators stay identity-stable even when the
+  // caller passes inline callbacks; handlers read the current options at call
+  // time. Updated during render, same pattern as `resolvedRef` below.
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
   const [log, setLog] = useState<ChangeLog>(EMPTY_LOG);
 
   // Built once per dependency list and reused across every commit.
@@ -109,13 +117,13 @@ export const useTaskList = (
     flushSync(() => {
       setLog((prev) => appendTransaction(prev, [{ type: "create", task, afterId }]));
     });
-    onTaskCreate?.(task, afterId);
-  }, [onTaskCreate]);
+    optionsRef.current.onTaskCreate?.(task, afterId);
+  }, []);
 
   const deleteTask = useCallback((id: Id) => {
     setLog((prev) => appendTransaction(prev, [{ type: "delete", id }]));
-    onTaskDelete?.(id);
-  }, [onTaskDelete]);
+    optionsRef.current.onTaskDelete?.(id);
+  }, []);
 
   const undo = useCallback(() => {
     setLog((prev) =>
@@ -134,15 +142,17 @@ export const useTaskList = (
   const canUndo = log.cursor > 0;
   const canRedo = log.cursor < log.transactions.length;
 
-  // Notify the parent of the resolved list, skipping the initial mount.
+  // Notify the parent of the resolved list, skipping the initial mount. Depends
+  // only on the list itself: a new `onTasksChange` identity with an unchanged
+  // list must not re-fire a duplicate notification.
   const mounted = useRef(false);
   useEffect(() => {
     if (!mounted.current) {
       mounted.current = true;
       return;
     }
-    onTasksChange?.(tasksList);
-  }, [tasksList, onTasksChange]);
+    optionsRef.current.onTasksChange?.(tasksList);
+  }, [tasksList]);
 
   return {
     tasksList,

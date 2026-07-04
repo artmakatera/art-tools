@@ -16,7 +16,7 @@ const Gantt = lazy(() =>
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
 // internal change log, so we never feed the resolved list back into `tasks`.
 
-const count = 1000;
+const count = 10000;
 const seed = 1;
 
 const mockData = generateMockData(count, { seed, startDate: new Date("2010-01-23") });
@@ -110,7 +110,7 @@ function GanttWithTaskList() {
           dependencies={dependencies}
           colWidth={60}
           rowHeight={40}
-          height={1000}
+          height={500}
           onTaskEdit={setEditing}
           onTasksChange={handleTasksChange}
           onDependencyCreate={handleDependencyCreate}
