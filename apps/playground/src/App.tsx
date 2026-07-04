@@ -19,7 +19,7 @@ const Gantt = lazy(() =>
 const count = 10000;
 const seed = 1;
 
-const mockData = generateMockData(count, { seed, yearsRange: [2012, 2025] });
+const mockData = generateMockData(count, { seed, yearsRange: [2023, 2025] });
 function GanttWithTaskList() {
   // How many tasks to generate, and a bump counter to reshuffle with a new seed.
 
@@ -38,7 +38,7 @@ function GanttWithTaskList() {
   const addTask = useCallback(() => {
     // Start from the selected task (fall back to a default); span exactly one
     // day (endDate inclusive), progress 0. Populate every GanttTask field.
-    const start =  new Date("2022-01-12");
+    const start =  new Date("2023-01-12");
     const end = new Date(start); // 1 day: endDate is the inclusive last day
     const task: GanttTask = {
       id: `new-${Date.now()}`,
