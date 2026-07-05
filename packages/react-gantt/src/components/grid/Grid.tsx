@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
+import type { ComponentProps, ElementType } from "react";
 import { buildDatesFromTasks } from "../../core/dateUtils";
 import type { GanttTask, Id, TaskState } from "../../types";
+import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
+import { useGanttSlots } from "../../context/GanttSlotsContext";
 import { Calendar } from "../calendar/Calendar";
 import { Bar } from "../bars/common/Bar";
 import { DependencyLinksProvider } from "../dependency-links/DependencyLinksContext";
@@ -20,7 +23,49 @@ import {
   useGanttViewport,
 } from "../../context/GanttContext";
 
-export function GanttGrid() {
+/** State passed to the function form of the Grid slotProps. */
+export interface GridOwnerState {
+  /** Total content width in px (`dates.length * colWidth`). */
+  totalWidth: number;
+  /** Total body height in px (`visibleTasks.length * rowHeight`). */
+  bodyHeight: number;
+  /** Fixed grid-wrapper height when configured, else `undefined` (auto). */
+  height: number | undefined;
+}
+
+export interface GridSlots {
+  /** The scroll wrapper (`styles.gridWrapper`). Default: `"div"`. */
+  root?: ElementType;
+  /** The scrollable body layer (`styles.body`). Default: `"div"`. */
+  body?: ElementType;
+}
+
+export interface GridSlotProps {
+  root?: SlotPropsInput<ComponentProps<"div">, GridOwnerState>;
+  body?: SlotPropsInput<ComponentProps<"div">, GridOwnerState>;
+}
+
+/**
+ * Slot config for the Gantt grid. Threaded from `<Gantt>` in a later pass.
+ *
+ * NOTE: pass a referentially stable / memoized object so downstream memoization
+ * is not defeated by a fresh object each render.
+ */
+export type GridSlotConfig = SlotConfig<GridSlots, GridSlotProps>;
+
+interface GanttGridProps {
+  slots?: GridSlots;
+  slotProps?: GridSlotProps;
+}
+
+export function GanttGrid({
+  slots: slotsProp,
+  slotProps: slotPropsProp,
+}: GanttGridProps = {}) {
+  const ganttSlots = useGanttSlots();
+  const slots = slotsProp ?? ganttSlots.timeline?.grid?.slots;
+  const slotProps = slotPropsProp ?? ganttSlots.timeline?.grid?.slotProps;
+
   const { visibleTasks } = useGanttTaskState();
   const { updateTask, onTaskClick, setSelectedId } = useGanttTaskActions();
   const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
@@ -92,13 +137,32 @@ export function GanttGrid() {
     maxY: rowRange.end * rowHeight,
   };
 
+  const Root = slots?.root ?? "div";
+  const Body = slots?.body ?? "div";
+
+  const ownerState: GridOwnerState = { totalWidth, bodyHeight, height };
+
+  const rootProps = mergeSlotProps(
+    {
+      className: styles.gridWrapper,
+      style: height !== undefined ? { height } : {},
+      onScroll: onGridScroll,
+    },
+    slotProps?.root,
+    ownerState,
+  );
+
+  const bodyProps = mergeSlotProps(
+    {
+      className: styles.body,
+      style: { height: bodyHeight, width: totalWidth },
+    },
+    slotProps?.body,
+    ownerState,
+  );
+
   return (
-    <div
-      ref={gridRef}
-      className={styles.gridWrapper}
-      style={height !== undefined ? { height } : undefined}
-      onScroll={onGridScroll}
-    >
+    <Root ref={gridRef} {...rootProps}>
       <div className={styles.grid} style={{ width: totalWidth }}>
         <Calendar
           colWidth={colWidth}
@@ -116,11 +180,7 @@ export function GanttGrid() {
           snapToDay={snapToDay}
           overrides={overrides}
         >
-          <div
-            ref={gridBodyRef}
-            className={styles.body}
-            style={{ height: bodyHeight, width: totalWidth }}
-          >
+          <Body ref={gridBodyRef} {...bodyProps}>
             <GridColumns
               dates={dates}
               colWidth={colWidth}
@@ -153,10 +213,10 @@ export function GanttGrid() {
                 />
               );
             })}
-          </div>
+          </Body>
         </DependencyLinksProvider>
       </div>
-    </div>
+    </Root>
   );
 }
 

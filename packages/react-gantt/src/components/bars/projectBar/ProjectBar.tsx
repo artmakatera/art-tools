@@ -1,6 +1,35 @@
+import type { ComponentProps, ElementType } from "react";
+import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
+import { useGanttSlots } from "../../../context/GanttSlotsContext";
 import { DraggableBar } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./ProjectBar.module.css";
+
+/** State passed to the function form of each ProjectBar slotProps. */
+export interface ProjectBarOwnerState {
+  width: number;
+  height: number;
+  progress: number;
+  title: string;
+}
+
+export interface ProjectBarSlots {
+  /** The draggable bar wrapper. Default: `DraggableBar`. */
+  root?: ElementType;
+  /** The inner layout wrapper holding progress/label. Default: `"div"`. */
+  inner?: ElementType;
+  /** The title label. Default: `"div"`. */
+  label?: ElementType;
+}
+
+export interface ProjectBarSlotProps {
+  root?: SlotPropsInput<ComponentProps<"div">, ProjectBarOwnerState>;
+  inner?: SlotPropsInput<ComponentProps<"div">, ProjectBarOwnerState>;
+  label?: SlotPropsInput<ComponentProps<"div">, ProjectBarOwnerState>;
+}
+
+/** Slot config for the project bar. */
+export type ProjectBarSlotConfig = SlotConfig<ProjectBarSlots, ProjectBarSlotProps>;
 
 interface ProjectBarProps {
   width: number;
@@ -14,6 +43,8 @@ interface ProjectBarProps {
   onProgressEnd: (newProgress: number) => void;
   onMove: (newLeft: number) => void;
   onMoveEnd: (newLeft: number) => void;
+  slots?: ProjectBarSlots;
+  slotProps?: ProjectBarSlotProps;
 }
 
 export function ProjectBar({
@@ -28,21 +59,53 @@ export function ProjectBar({
   onProgressEnd,
   onMove,
   onMoveEnd,
+  slots: slotsProp,
+  slotProps: slotPropsProp,
 }: ProjectBarProps) {
+  const ganttSlots = useGanttSlots();
+  const slots = slotsProp ?? ganttSlots.bars?.projectBar?.slots;
+  const slotProps = slotPropsProp ?? ganttSlots.bars?.projectBar?.slotProps;
+
+  const ownerState: ProjectBarOwnerState = { width, height, progress, title };
+
+  const Root = slots?.root ?? DraggableBar;
+  const Inner = slots?.inner ?? "div";
+  const Label = slots?.label ?? "div";
+
+  const rootProps = mergeSlotProps(
+    {
+      className: styles.project,
+      style: { lineHeight: `${height}px` },
+    },
+    slotProps?.root,
+    ownerState,
+  );
+
+  const innerProps = mergeSlotProps(
+    { className: styles.projectInner },
+    slotProps?.inner,
+    ownerState,
+  );
+
+  const labelProps = mergeSlotProps(
+    { className: styles.projectContent, children: title },
+    slotProps?.label,
+    ownerState,
+  );
+
   return (
-    <DraggableBar
+    <Root
       left={left}
       top={top}
       width={width}
       height={height}
       colWidth={colWidth}
       dragAnchor={left}
-      className={styles.project}
-      style={{ lineHeight: `${height}px` }}
       onMove={onMove}
       onMoveEnd={onMoveEnd}
+      {...rootProps}
     >
-      <div className={styles.projectInner}>
+      <Inner {...innerProps}>
         <BarProgress
           width={width}
           height={height}
@@ -50,8 +113,8 @@ export function ProjectBar({
           onProgressChange={onProgressChange}
           onProgressEnd={onProgressEnd}
         />
-        <div className={styles.projectContent}>{title}</div>
-      </div>
-    </DraggableBar>
+        <Label {...labelProps} />
+      </Inner>
+    </Root>
   );
 }

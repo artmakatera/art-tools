@@ -1,5 +1,12 @@
-import { Suspense, lazy, useCallback, useRef, useState } from "react";
-import type { GanttHandle, GanttTask, TaskDependency, TaskPatch } from "@am/react-gantt"
+import { Suspense, lazy, useCallback, useRef, useState, type ComponentProps } from "react";
+import type {
+  GanttHandle,
+  GanttTask,
+  TaskDependency,
+  TaskPatch,
+  GanttTaskListSlots,
+  GanttBarsSlots,
+} from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { generateMockData } from "./mockGenerator";
 import { TaskEditModal } from "./TaskEditModal";
@@ -20,6 +27,61 @@ const count = 10000;
 const seed = 1;
 
 const mockData = generateMockData(count, { seed, yearsRange: [2023, 2025] });
+
+// --- Slot examples --------------------------------------------------------
+// Module-level constants keep these config objects referentially stable, so the
+// memoized task rows don't re-render every frame.
+
+// A custom expand/collapse button. It receives the library's merged props —
+// onClick (the toggle), aria-label, className, and children (the glyph) — so
+// toggling keeps working; we just spread them and add our own styling.
+function RoundToggle(props: ComponentProps<"button">) {
+  return (
+    <button
+      {...props}
+      style={{
+        ...props.style,
+        width: 16,
+        height: 16,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: "1px solid #cbd5e1",
+        borderRadius: "50%",
+        background: "#f8fafc",
+        cursor: "pointer",
+        fontSize: 9,
+        lineHeight: 1,
+      }}
+    />
+  );
+}
+
+// 1. `slots` swaps the tree cell's expand button for our RoundToggle component,
+//    and `slotProps` (function form, reading ownerState) sets the +/− glyph.
+const taskListSlots: GanttTaskListSlots = {
+  treeCell: {
+    slots: { expandButton: RoundToggle },
+    slotProps: {
+      expandButton: ({ isExpanded }) => ({
+        children: isExpanded ? "−" : "+",
+      }),
+    },
+  },
+};
+
+// 2. Restyle the task bars via the `root` slot (className/style are merged onto
+//    the library's defaults, not replaced).
+const barSlots: GanttBarsSlots = {
+  taskBar: {
+    slotProps: {
+      root: {
+        style: { borderRadius: 8, boxShadow: "0 1px 4px rgba(0,0,0,0.35)" },
+      },
+    },
+  },
+};
+
 function GanttWithTaskList() {
   // How many tasks to generate, and a bump counter to reshuffle with a new seed.
 
@@ -111,6 +173,8 @@ function GanttWithTaskList() {
           colWidth={60}
           rowHeight={40}
           height={500}
+          taskList={taskListSlots}
+          bars={barSlots}
           onTaskEdit={setEditing}
           onTasksChange={handleTasksChange}
           onDependencyCreate={handleDependencyCreate}

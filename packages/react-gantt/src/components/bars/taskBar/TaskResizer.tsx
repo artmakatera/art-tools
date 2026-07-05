@@ -1,6 +1,29 @@
 import clsx from "clsx";
+import type { ComponentProps, ElementType } from "react";
 import { useDrag } from "../../../hooks/useDrag";
+import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
+import { useGanttSlots } from "../../../context/GanttSlotsContext";
 import styles from "./TaskBar.module.css";
+
+/** State passed to the function form of each TaskResizer slotProps. */
+export interface TaskResizerOwnerState {
+  width: number;
+  left: number;
+}
+
+export interface TaskResizerSlots {
+  /** The left/start resize button. Default: `"button"`. */
+  startHandle?: ElementType;
+  /** The right/end resize button. Default: `"button"`. */
+  endHandle?: ElementType;
+}
+
+export interface TaskResizerSlotProps {
+  startHandle?: SlotPropsInput<ComponentProps<"button">, TaskResizerOwnerState>;
+  endHandle?: SlotPropsInput<ComponentProps<"button">, TaskResizerOwnerState>;
+}
+
+export type TaskResizerSlotConfig = SlotConfig<TaskResizerSlots, TaskResizerSlotProps>;
 
 interface TaskResizerProps {
   width: number;
@@ -8,6 +31,8 @@ interface TaskResizerProps {
   colWidth: number;
   onResize: (newWidth: number, newLeft: number) => void;
   onResizeEnd: (newWidth: number, newLeft: number) => void;
+  slots?: TaskResizerSlots;
+  slotProps?: TaskResizerSlotProps;
 }
 
 export function TaskResizer({
@@ -16,7 +41,13 @@ export function TaskResizer({
   colWidth,
   onResize,
   onResizeEnd,
+  slots: slotsProp,
+  slotProps: slotPropsProp,
 }: TaskResizerProps) {
+  const ganttSlots = useGanttSlots();
+  const slots = slotsProp ?? ganttSlots.bars?.taskResizer?.slots;
+  const slotProps = slotPropsProp ?? ganttSlots.bars?.taskResizer?.slotProps;
+
   const onStartHandleMouseDown = useDrag({
     onStart: () => ({ startWidth: width, startLeft: left }),
     onDrag: (deltaX, { startWidth, startLeft }) => {
@@ -54,20 +85,37 @@ export function TaskResizer({
     },
   });
 
+  const ownerState: TaskResizerOwnerState = { width, left };
+
+  const StartHandle = slots?.startHandle ?? "button";
+  const EndHandle = slots?.endHandle ?? "button";
+
+  const startHandleProps = mergeSlotProps(
+    {
+      type: "button" as const,
+      "aria-label": "Resize task start",
+      className: clsx(styles.resizer, styles.startResizer),
+      onMouseDown: onStartHandleMouseDown,
+    },
+    slotProps?.startHandle,
+    ownerState,
+  );
+
+  const endHandleProps = mergeSlotProps(
+    {
+      type: "button" as const,
+      "aria-label": "Resize task end",
+      className: clsx(styles.resizer, styles.endResizer),
+      onMouseDown: onEndHandleMouseDown,
+    },
+    slotProps?.endHandle,
+    ownerState,
+  );
+
   return (
     <>
-      <button
-        type="button"
-        aria-label="Resize task start"
-        className={clsx(styles.resizer, styles.startResizer)}
-        onMouseDown={onStartHandleMouseDown}
-      />
-      <button
-        type="button"
-        aria-label="Resize task end"
-        className={clsx(styles.resizer, styles.endResizer)}
-        onMouseDown={onEndHandleMouseDown}
-      />
+      <StartHandle {...startHandleProps} />
+      <EndHandle {...endHandleProps} />
     </>
   );
 }

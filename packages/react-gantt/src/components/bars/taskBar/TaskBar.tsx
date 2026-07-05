@@ -1,7 +1,36 @@
+import type { ComponentProps, ElementType } from "react";
+import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
+import { useGanttSlots } from "../../../context/GanttSlotsContext";
 import { DraggableBar } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./TaskBar.module.css";
 import { TaskResizer } from "./TaskResizer";
+
+/** State passed to the function form of each TaskBar slotProps. */
+export interface TaskBarOwnerState {
+  width: number;
+  height: number;
+  progress: number;
+  title: string;
+}
+
+export interface TaskBarSlots {
+  /** The draggable bar wrapper. Default: `DraggableBar`. */
+  root?: ElementType;
+  /** The inner layout wrapper holding progress/label/resizer. Default: `"div"`. */
+  inner?: ElementType;
+  /** The title label. Default: `"div"`. */
+  label?: ElementType;
+}
+
+export interface TaskBarSlotProps {
+  root?: SlotPropsInput<ComponentProps<"div">, TaskBarOwnerState>;
+  inner?: SlotPropsInput<ComponentProps<"div">, TaskBarOwnerState>;
+  label?: SlotPropsInput<ComponentProps<"div">, TaskBarOwnerState>;
+}
+
+/** Slot config for the task bar. */
+export type TaskBarSlotConfig = SlotConfig<TaskBarSlots, TaskBarSlotProps>;
 
 interface TaskBarProps {
   width: number;
@@ -17,6 +46,8 @@ interface TaskBarProps {
   onResizeEnd: (newWidth: number, newLeft: number) => void;
   onMove: (newLeft: number) => void;
   onMoveEnd: (newLeft: number) => void;
+  slots?: TaskBarSlots;
+  slotProps?: TaskBarSlotProps;
 }
 
 export function TaskBar({
@@ -33,21 +64,53 @@ export function TaskBar({
   onResizeEnd,
   onMove,
   onMoveEnd,
+  slots: slotsProp,
+  slotProps: slotPropsProp,
 }: TaskBarProps) {
+  const ganttSlots = useGanttSlots();
+  const slots = slotsProp ?? ganttSlots.bars?.taskBar?.slots;
+  const slotProps = slotPropsProp ?? ganttSlots.bars?.taskBar?.slotProps;
+
+  const ownerState: TaskBarOwnerState = { width, height, progress, title };
+
+  const Root = slots?.root ?? DraggableBar;
+  const Inner = slots?.inner ?? "div";
+  const Label = slots?.label ?? "div";
+
+  const rootProps = mergeSlotProps(
+    {
+      className: `${styles.task} am-gantt-bar-task`,
+      style: { lineHeight: `${height}px` },
+    },
+    slotProps?.root,
+    ownerState,
+  );
+
+  const innerProps = mergeSlotProps(
+    { className: styles.taskInner },
+    slotProps?.inner,
+    ownerState,
+  );
+
+  const labelProps = mergeSlotProps(
+    { className: styles.taskContent, title, children: title },
+    slotProps?.label,
+    ownerState,
+  );
+
   return (
-    <DraggableBar
+    <Root
       left={left}
       top={top}
       width={width}
       height={height}
       colWidth={colWidth}
       dragAnchor={left}
-      className={`${styles.task} am-gantt-bar-task`}
-      style={{ lineHeight: `${height}px` }}
       onMove={onMove}
       onMoveEnd={onMoveEnd}
+      {...rootProps}
     >
-      <div className={styles.taskInner}>
+      <Inner {...innerProps}>
         <BarProgress
           width={width}
           height={height}
@@ -55,7 +118,7 @@ export function TaskBar({
           onProgressChange={onProgressChange}
           onProgressEnd={onProgressEnd}
         />
-        <div className={styles.taskContent} title={title}>{title}</div>
+        <Label {...labelProps} />
         <TaskResizer
           width={width}
           left={left}
@@ -63,7 +126,7 @@ export function TaskBar({
           onResize={onResize}
           onResizeEnd={onResizeEnd}
         />
-      </div>
-    </DraggableBar>
+      </Inner>
+    </Root>
   );
 }

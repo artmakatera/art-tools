@@ -9,6 +9,7 @@ import {
 import type { ColumnDef, GanttTask, Id } from "../../types";
 import { TaskListHeader } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
+import type { GanttTaskListSlots } from "../../context/GanttSlotsContext";
 import { addDays, getMinMaxDates } from "../../core/dateUtils";
 import { computeTaskPixels, getFinestUnit } from "../../core/barUtils";
 import { scrollOffsetToReveal } from "../../core/scroll";
@@ -20,9 +21,11 @@ import styles from "./TaskList.module.css";
 
 interface TaskListProps {
   columns?: ColumnDef[];
+  /** Slot overrides for the task-list pane (`treeCell`, `header`). Pass a stable object. */
+  taskList?: GanttTaskListSlots;
 }
 
-export function TaskList({ columns = [] }: TaskListProps) {
+export function TaskList({ columns = [], taskList }: TaskListProps) {
   const { visibleTasks, expandedIds, parentIds } =
     useGanttTaskState();
   const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
@@ -132,6 +135,8 @@ export function TaskList({ columns = [] }: TaskListProps) {
         rowHeight={rowHeight}
         scales={scales}
         onResizeStart={onResizeStart}
+        slots={taskList?.header?.slots}
+        slotProps={taskList?.header?.slotProps}
       />
       <div
         ref={taskListRef}
@@ -158,6 +163,7 @@ export function TaskList({ columns = [] }: TaskListProps) {
                 onToggleExpand={toggleExpand}
                 onSelect={handleSelect}
                 columns={resolvedColumns}
+                treeCell={taskList?.treeCell}
               />
             );
           })}
