@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { ColumnDef, GanttTask, Id } from "../../types";
 import { useGanttTaskActions } from "../../context/GanttContext";
+import { TreeCell } from "./TreeCell";
 import styles from "./TaskList.module.css";
 
 interface TaskListRowProps {
@@ -15,7 +16,6 @@ interface TaskListRowProps {
   columns: ColumnDef[];
 }
 
-const INDENT_PX = 16;
 const DEFAULT_COL_WIDTH = 100;
 
 export const TaskListRow = memo(function TaskListRow({
@@ -37,7 +37,6 @@ export const TaskListRow = memo(function TaskListRow({
       onClick={() => onSelect(task.id)}
     >
       {columns.map((col) => {
-  
         return (
           <div
             key={col.key}
@@ -45,26 +44,15 @@ export const TaskListRow = memo(function TaskListRow({
             style={{ width: col.width || DEFAULT_COL_WIDTH, flexShrink: 0 }}
           >
             {col.isTreeColumn ? (
-              <span
-                className={styles.nameContent}
-                style={{ paddingLeft: depth * INDENT_PX }}
+              <TreeCell
+                taskId={task.id}
+                depth={depth}
+                isParent={isParent}
+                isExpanded={isExpanded}
+                onToggleExpand={onToggleExpand}
               >
-                {isParent ? (
-                  <button
-                    className={styles.expandBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleExpand(task.id);
-                    }}
-                    aria-label={isExpanded ? "Collapse" : "Expand"}
-                  >
-                    {isExpanded ? "▾" : "▸"}
-                  </button>
-                ) : (
-                  <span className={styles.expandPlaceholder} />
-                )}
                 {col.render(task, columnApi)}
-              </span>
+              </TreeCell>
             ) : (
               col.render(task, columnApi)
             )}
