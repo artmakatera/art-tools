@@ -2,7 +2,7 @@ import type { GanttTask, TaskDependency } from "@am/react-gantt";
 
 // Converted from the Bryntum project format:
 //   percentDone → progress, children flattened into parentId links,
-//   the root summary → type "project", a zero-duration node → "milestone".
+//   the root summary → type "summary", a zero-duration node → "milestone".
 // Intraday times are dropped: this chart is day-granular and treats endDate as
 // the last (inclusive) day.
 
@@ -13,7 +13,7 @@ export const mockTasks: GanttTask[] = [
     startDate: new Date("2022-01-10"),
     endDate: new Date("2022-01-21"),
     progress: 27,
-    type: "project",
+    type: "summary",
   },
 
 //   // ── Setup web server ────────────────────────────────────────
@@ -24,6 +24,7 @@ export const mockTasks: GanttTask[] = [
     endDate: new Date("2022-01-13"),
     progress: 33.3,
     parentId: 1000,
+    type: "summary",
   },
   {
     id: 11,
@@ -74,6 +75,7 @@ export const mockTasks: GanttTask[] = [
     endDate: new Date("2022-01-21"),
     progress: 39.3,
     parentId: 1000,
+    type: "summary",
   },
   {
     id: 21,
@@ -124,6 +126,7 @@ export const mockTasks: GanttTask[] = [
     endDate: new Date("2022-01-14"),
     progress: 15,
     parentId: 1000,
+    type: "summary",
   },
   {
     id: 31,
@@ -140,6 +143,7 @@ export const mockTasks: GanttTask[] = [
     endDate: new Date("2022-01-14"),
     progress: 6.7,
     parentId: 3,
+    type: "summary",
   },
   {
     id: 331,
