@@ -1,4 +1,10 @@
 import type React from "react";
+import type {
+  GanttTaskListSlots,
+  GanttBarsSlots,
+  GanttDependenciesSlots,
+  GanttTimelineSlots,
+} from "./context/GanttSlotsContext";
 
 type GanttTaskType = "task" | "milestone" | "project"
 
@@ -87,6 +93,19 @@ export interface GanttProps {
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
   hideTaskList?: boolean;
+  /**
+   * Slot overrides for the task-list pane (`treeCell`, `header`). Prop-drilled.
+   * Pass a referentially stable object — rows are memoized, so a fresh object each
+   * render re-renders every row.
+   */
+  taskList?: GanttTaskListSlots;
+  /** Slot overrides for the timeline bars and their handles. */
+  bars?: GanttBarsSlots;
+  /** Slot overrides for dependency links (named `dependencySlots` to avoid
+   *  colliding with the `dependencies` data prop above). */
+  dependencySlots?: GanttDependenciesSlots;
+  /** Slot overrides for the calendar/grid timeline chrome. */
+  timeline?: GanttTimelineSlots;
 }
 
 

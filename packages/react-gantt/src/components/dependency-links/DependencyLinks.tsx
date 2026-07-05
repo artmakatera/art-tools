@@ -1,7 +1,21 @@
-import { Fragment, useEffect, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useState,
+  type ComponentProps,
+  type ElementType,
+} from "react";
 import { useDependencyLinks } from "./DependencyLinksContext";
-import { linkBounds, midpoint, type Bounds, type Point } from "./geometry";
+import {
+  linkBounds,
+  midpoint,
+  type Bounds,
+  type DependencyLink,
+  type Point,
+} from "./geometry";
 import type { TaskDependency } from "../../types";
+import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
+import { useGanttSlots } from "../../context/GanttSlotsContext";
 import styles from "./DependencyLinks.module.css";
 
 /** Stroke thickness of the link, in pixels. */
@@ -11,12 +25,79 @@ const ARROW = 8;
 /** Transparent hit-area padding around each segment, in pixels. */
 const HIT_PADDING = 6;
 
+/** State passed to the function form of the `layer` slotProps. */
+export interface DependencyLinksLayerOwnerState {
+  width: number;
+  height: number;
+  /** Number of dependency links currently in the layer. */
+  linkCount: number;
+}
+
+/** State shared by the per-link slots (`arrow`). */
+export interface DependencyLinkOwnerState {
+  /** The dependency link being rendered. */
+  link: DependencyLink;
+  /** Whether this link is currently selected. */
+  isSelected: boolean;
+}
+
+/** State passed to the `segment` slotProps, per visible segment of a link. */
+export interface DependencySegmentOwnerState extends DependencyLinkOwnerState {
+  /** Start point of this segment. */
+  from: Point;
+  /** End point of this segment. */
+  to: Point;
+  /** Index of this segment within the link's polyline. */
+  index: number;
+}
+
+/** State passed to the `lagLabel` slotProps. */
+export interface DependencyLagLabelOwnerState extends DependencyLinkOwnerState {
+  /** The lag value in days (non-zero when the label renders). */
+  lag: number;
+}
+
+/** State passed to the `deleteButton` slotProps. */
+export interface DependencyDeleteButtonOwnerState {
+  /** The dependency the button will delete when clicked. */
+  dependency: TaskDependency;
+}
+
+export interface DependencyLinksSlots {
+  /** The absolutely-positioned links layer container. Default: `"div"`. */
+  layer?: ElementType;
+  /** A single visible link segment. Default: `"div"`. */
+  segment?: ElementType;
+  /** The arrowhead at the target end of a link. Default: `"div"`. */
+  arrow?: ElementType;
+  /** The `+Nd` / `-Nd` lag label. Default: `"div"`. */
+  lagLabel?: ElementType;
+  /** The `×` delete button shown for the selected link. Default: `"button"`. */
+  deleteButton?: ElementType;
+}
+
+export interface DependencyLinksSlotProps {
+  layer?: SlotPropsInput<ComponentProps<"div">, DependencyLinksLayerOwnerState>;
+  segment?: SlotPropsInput<ComponentProps<"div">, DependencySegmentOwnerState>;
+  arrow?: SlotPropsInput<ComponentProps<"div">, DependencyLinkOwnerState>;
+  lagLabel?: SlotPropsInput<ComponentProps<"div">, DependencyLagLabelOwnerState>;
+  deleteButton?: SlotPropsInput<ComponentProps<"button">, DependencyDeleteButtonOwnerState>;
+}
+
+/** Slot config for the dependency links layer. */
+export type DependencyLinksSlotConfig = SlotConfig<
+  DependencyLinksSlots,
+  DependencyLinksSlotProps
+>;
+
 interface DependencyLinksProps {
   width: number;
   height: number;
   onDependencyDelete?: (dep: TaskDependency) => void;
   /** Overscan-padded visible pixel rect; links outside it are not rendered. */
   visibleRect?: Bounds;
+  slots?: DependencyLinksSlots;
+  slotProps?: DependencyLinksSlotProps;
 }
 
 /** True when a link's bounding box overlaps the visible rect (or no rect set). */
@@ -90,7 +171,18 @@ function arrow(points: Point[]) {
   };
 }
 
-export function DependencyLinks({ width, height, onDependencyDelete, visibleRect }: DependencyLinksProps) {
+export function DependencyLinks({
+  width,
+  height,
+  onDependencyDelete,
+  visibleRect,
+  slots: slotsProp,
+  slotProps: slotPropsProp,
+}: DependencyLinksProps) {
+  const ganttSlots = useGanttSlots();
+  const slots = slotsProp ?? ganttSlots.dependencies?.links?.slots;
+  const slotProps = slotPropsProp ?? ganttSlots.dependencies?.links?.slotProps;
+
   const links = useDependencyLinks();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deletePos, setDeletePos] = useState<{ x: number; y: number } | null>(null);
@@ -98,10 +190,14 @@ export function DependencyLinks({ width, height, onDependencyDelete, visibleRect
   const selectedLink = selectedId ? links.find((l) => l.id === selectedId) : null;
 
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId) {
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedLink) onDependencyDelete?.(selectedLink.dep);
+        if (selectedLink) {
+          onDependencyDelete?.(selectedLink.dep);
+        }
         setSelectedId(null);
         setDeletePos(null);
       }
@@ -110,7 +206,9 @@ export function DependencyLinks({ width, height, onDependencyDelete, visibleRect
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedId, selectedLink, onDependencyDelete]);
 
-  if (links.length === 0) return null;
+  if (links.length === 0) {
+    return null;
+  }
 
   const handleLinkClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -127,18 +225,35 @@ export function DependencyLinks({ width, height, onDependencyDelete, visibleRect
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (selectedLink) onDependencyDelete?.(selectedLink.dep);
+    if (selectedLink) {
+      onDependencyDelete?.(selectedLink.dep);
+    }
     setSelectedId(null);
     setDeletePos(null);
   };
 
+  const Layer = slots?.layer ?? "div";
+  const Segment = slots?.segment ?? "div";
+  const Arrow = slots?.arrow ?? "div";
+  const LagLabel = slots?.lagLabel ?? "div";
+  const DeleteButton = slots?.deleteButton ?? "button";
+
+  const layerProps = mergeSlotProps(
+    {
+      className: styles.layer,
+      style: { width, height },
+      "aria-hidden": true,
+      onClick: () => {
+        setSelectedId(null);
+        setDeletePos(null);
+      },
+    },
+    slotProps?.layer,
+    { width, height, linkCount: links.length },
+  );
+
   return (
-    <div
-      className={styles.layer}
-      style={{ width, height }}
-      aria-hidden
-      onClick={() => { setSelectedId(null); setDeletePos(null); }}
-    >
+    <Layer {...layerProps}>
       {links.map((link) => {
         const isSelected = link.id === selectedId;
         // Cull links outside the viewport, but keep the selected one rendered.
@@ -148,6 +263,16 @@ export function DependencyLinks({ width, height, onDependencyDelete, visibleRect
         const head = arrow(link.points);
         const segs = segments(link.points);
         const mid = link.dep.lag ? midpoint(link.points) : null;
+        const linkOwnerState: DependencyLinkOwnerState = { link, isSelected };
+
+        const arrowProps = mergeSlotProps(
+          {
+            className: `${head.className} ${isSelected ? styles.arrowSelected : ""}`,
+            style: head.style,
+          },
+          slotProps?.arrow,
+          linkOwnerState,
+        );
 
         return (
           <Fragment key={link.id}>
@@ -161,23 +286,38 @@ export function DependencyLinks({ width, height, onDependencyDelete, visibleRect
               />
             ))}
             {/* Visible segments */}
-            {segs.map(([a, b]) => (
-              <div
-                key={`seg-${a.x},${a.y}-${b.x},${b.y}`}
-                className={`${styles.segment} ${isSelected ? styles.segmentSelected : ""}`}
-                style={segmentStyle(a, b)}
-              />
-            ))}
-            <div className={`${head.className} ${isSelected ? styles.arrowSelected : ""}`} style={head.style} />
+            {segs.map(([a, b], index) => {
+              const segmentProps = mergeSlotProps(
+                {
+                  className: `${styles.segment} ${isSelected ? styles.segmentSelected : ""}`,
+                  style: segmentStyle(a, b),
+                },
+                slotProps?.segment,
+                { link, isSelected, from: a, to: b, index },
+              );
+              return (
+                <Segment
+                  key={`seg-${a.x},${a.y}-${b.x},${b.y}`}
+                  {...segmentProps}
+                />
+              );
+            })}
+            <Arrow {...arrowProps} />
 
             {/* Lag label */}
             {mid && link.dep.lag !== undefined && link.dep.lag !== 0 && (
-              <div
-                className={styles.lagLabel}
-                style={{ left: mid.x, top: mid.y }}
-              >
-                {link.dep.lag > 0 ? `+${link.dep.lag}d` : `${link.dep.lag}d`}
-              </div>
+              <LagLabel
+                {...mergeSlotProps(
+                  {
+                    className: styles.lagLabel,
+                    style: { left: mid.x, top: mid.y },
+                    children:
+                      link.dep.lag > 0 ? `+${link.dep.lag}d` : `${link.dep.lag}d`,
+                  },
+                  slotProps?.lagLabel,
+                  { link, isSelected, lag: link.dep.lag },
+                )}
+              />
             )}
           </Fragment>
         );
@@ -185,15 +325,20 @@ export function DependencyLinks({ width, height, onDependencyDelete, visibleRect
 
       {/* Delete button */}
       {selectedLink && deletePos && (
-        <button
-          className={styles.deleteBtn}
-          style={{ left: deletePos.x, top: deletePos.y }}
-          onClick={handleDelete}
-          aria-label="Delete dependency"
-        >
-          ×
-        </button>
+        <DeleteButton
+          {...mergeSlotProps(
+            {
+              className: styles.deleteBtn,
+              style: { left: deletePos.x, top: deletePos.y },
+              onClick: handleDelete,
+              "aria-label": "Delete dependency",
+              children: "×",
+            },
+            slotProps?.deleteButton,
+            { dependency: selectedLink.dep },
+          )}
+        />
       )}
-    </div>
+    </Layer>
   );
 }
