@@ -263,6 +263,7 @@ export function generateMockData(
           endDate: cursor,
           progress: 0,
           parentId,
+          type: "summary",
         };
         tasks.push(summary);
 
@@ -375,7 +376,7 @@ export function generateMockData(
       startDate: projectStart,
       endDate: projectStart,
       progress: 0,
-      type: "project",
+      type: "summary",
     };
     tasks.push(project);
 

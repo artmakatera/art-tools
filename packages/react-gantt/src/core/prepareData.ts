@@ -216,7 +216,12 @@ export function getParentTaskData(
   task: GanttTask,
   children: GanttTask[],
 ): GanttTask {
-  if (children.length === 0) return task;
+  // Only summary tasks roll their children's dates/progress up. A parent typed
+  // "task" or "milestone" (or untyped) keeps its own data and renders as a
+  // regular bar, even when it has children.
+  if (task.type !== "summary" || children.length === 0) {
+    return task;
+  }
 
   let { startDate, endDate: taskEndDate, duration } = children[0]!;
 

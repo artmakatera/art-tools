@@ -97,7 +97,7 @@ export const Bar = memo(function Bar({
           onMoveEnd={(newCenter) => handleUpdate(task.id, moveAt(newCenter))}
         />
       )}
-      {task.type === "project" && (
+      {task.type === "summary" && (
         <ProjectBar
           left={visualLeft}
           top={TASK_VERTICAL_PADDING}
