@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { ColumnDef, GanttTask, Id } from "../../types";
 import { useGanttTaskActions } from "../../context/GanttContext";
-import { TreeCell } from "./TreeCell";
+import { TreeCell, type TreeCellSlotConfig } from "./TreeCell";
 import styles from "./TaskList.module.css";
 
 interface TaskListRowProps {
@@ -14,6 +14,7 @@ interface TaskListRowProps {
   onToggleExpand: (id: Id) => void;
   onSelect: (id: Id) => void;
   columns: ColumnDef[];
+  treeCell?: TreeCellSlotConfig;
 }
 
 const DEFAULT_COL_WIDTH = 100;
@@ -28,6 +29,7 @@ export const TaskListRow = memo(function TaskListRow({
   onToggleExpand,
   onSelect,
   columns,
+  treeCell,
 }: TaskListRowProps) {
   const { columnApi } = useGanttTaskActions();
   return (
@@ -50,6 +52,8 @@ export const TaskListRow = memo(function TaskListRow({
                 isParent={isParent}
                 isExpanded={isExpanded}
                 onToggleExpand={onToggleExpand}
+                slots={treeCell?.slots}
+                slotProps={treeCell?.slotProps}
               >
                 {col.render(task, columnApi)}
               </TreeCell>

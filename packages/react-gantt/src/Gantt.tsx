@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { GanttProvider } from "./context/GanttContext";
+import { GanttSlotsProvider } from "./context/GanttSlotsContext";
 import { GanttGrid } from "./components/grid/Grid";
 import { GridResizeHandle } from "./components/grid/GridResizeHandle";
 import { TaskList } from "./components/taskList/TaskList";
@@ -25,12 +26,23 @@ export function Gantt({
   onTaskEdit,
   onTasksChange,
   apiRef,
-  hideTaskList
+  hideTaskList,
+  taskList,
+  bars,
+  dependencySlots,
+  timeline
 }: GanttProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const { gridWidth, onHandleMouseDown } = useGridResize(containerRef, overlayRef);
   const showTaskList = columns !== undefined && !hideTaskList;
+
+  // Grid-side slot groups reach deep components (bars, dependencies, calendar,
+  // grid) via context instead of prop-drilling. `taskList` is drilled separately.
+  const slotsValue = useMemo(
+    () => ({ bars, dependencies: dependencySlots, timeline }),
+    [bars, dependencySlots, timeline],
+  );
 
   return (
     <GanttProvider
@@ -50,9 +62,10 @@ export function Gantt({
       onTasksChange={onTasksChange}
       apiRef={apiRef}
     >
+      <GanttSlotsProvider value={slotsValue}>
       {showTaskList ? (
         <div ref={containerRef} style={{ position: "relative" }}>
-            <TaskList columns={columns} />
+            <TaskList columns={columns} taskList={taskList} />
           <div
             ref={overlayRef}
             style={{
@@ -77,6 +90,7 @@ export function Gantt({
       ) : (
         <GanttGrid />
       )}
+      </GanttSlotsProvider>
     </GanttProvider>
   );
 }
