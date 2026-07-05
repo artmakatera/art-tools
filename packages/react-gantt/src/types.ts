@@ -6,7 +6,7 @@ import type {
   GanttTimelineSlots,
 } from "./context/GanttSlotsContext";
 
-type GanttTaskType = "task" | "milestone" | "project"
+type GanttTaskType = "task" | "milestone" | "summary"
 
 export type CalendarUnit = "day" | "week" | "month" | "quarter" | "year";
 

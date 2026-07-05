@@ -157,7 +157,7 @@ describe("getTaskList", () => {
   it("rolls parent dates and progress up from children", () => {
     const resolved = resolveCommittedTasks(
       [
-        task("p", { startDate: new Date("2026-06-01"), endDate: new Date("2026-06-02"), progress: 0 }),
+        task("p", { type: "summary", startDate: new Date("2026-06-01"), endDate: new Date("2026-06-02"), progress: 0 }),
         task("c1", {
           parentId: "p",
           startDate: new Date("2026-01-05"),
@@ -182,7 +182,7 @@ describe("getTaskList", () => {
   it("excludes milestone progress from the parent roll-up", () => {
     const resolved = resolveCommittedTasks(
       [
-        task("p"),
+        task("p", { type: "summary" }),
         task("c1", { parentId: "p", progress: 90 }),
         task("c2", { parentId: "p", progress: 94 }),
         task("m", { parentId: "p", type: "milestone", progress: 100 }),
@@ -197,7 +197,11 @@ describe("getTaskList", () => {
 
   it("treats children without progress as 0% in the roll-up", () => {
     const resolved = resolveCommittedTasks(
-      [task("p"), task("c1", { parentId: "p", progress: 50 }), task("c2", { parentId: "p" })],
+      [
+        task("p", { type: "summary" }),
+        task("c1", { parentId: "p", progress: 50 }),
+        task("c2", { parentId: "p" }),
+      ],
       log([]),
     );
     const [parent] = getTaskList(resolved);
@@ -207,7 +211,7 @@ describe("getTaskList", () => {
   it("reports 0% for a parent whose children are all milestones", () => {
     const resolved = resolveCommittedTasks(
       [
-        task("p"),
+        task("p", { type: "summary" }),
         task("m1", { parentId: "p", type: "milestone", progress: 100 }),
         task("m2", { parentId: "p", type: "milestone" }),
       ],
@@ -216,5 +220,74 @@ describe("getTaskList", () => {
     const [parent] = getTaskList(resolved);
     // Previously progressSum / 0 = Infinity.
     expect(parent!.progress).toBe(0);
+  });
+
+  it("does NOT roll up a parent typed \"task\" — it keeps its own data", () => {
+    const resolved = resolveCommittedTasks(
+      [
+        task("p", {
+          type: "task",
+          startDate: new Date("2026-06-01"),
+          endDate: new Date("2026-06-02"),
+          progress: 5,
+        }),
+        task("c1", {
+          parentId: "p",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2026-01-20"),
+          progress: 80,
+        }),
+      ],
+      log([]),
+    );
+    const [parent, child] = getTaskList(resolved);
+    // Parent keeps its own dates/progress; children are still emitted below it.
+    expect(parent!.startDate).toEqual(new Date("2026-06-01"));
+    expect(parent!.endDate).toEqual(new Date("2026-06-02"));
+    expect(parent!.progress).toBe(5);
+    expect(child!.id).toBe("c1");
+  });
+
+  it("does NOT roll up an untyped parent — only \"summary\" rolls up", () => {
+    const resolved = resolveCommittedTasks(
+      [
+        task("p", { startDate: new Date("2026-06-01"), endDate: new Date("2026-06-02"), progress: 5 }),
+        task("c1", {
+          parentId: "p",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2026-01-20"),
+          progress: 80,
+        }),
+      ],
+      log([]),
+    );
+    const [parent] = getTaskList(resolved);
+    expect(parent!.startDate).toEqual(new Date("2026-06-01"));
+    expect(parent!.progress).toBe(5);
+  });
+
+  it("rolls a summary up from a regular-task child's OWN dates, not its subtree", () => {
+    // Summary s → task-parent t (own dates Jan 1–5) → leaf l (extends to Jan 20).
+    // t is a regular task, so its effective span is its own; s rolls up t's own.
+    const resolved = resolveCommittedTasks(
+      [
+        task("s", { type: "summary", startDate: new Date("2026-06-01"), endDate: new Date("2026-06-02") }),
+        task("t", {
+          parentId: "s",
+          type: "task",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2026-01-05"),
+        }),
+        task("l", {
+          parentId: "t",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2026-01-20"),
+        }),
+      ],
+      log([]),
+    );
+    const [summary] = getTaskList(resolved);
+    expect(summary!.startDate).toEqual(new Date("2026-01-01"));
+    expect(summary!.endDate).toEqual(new Date("2026-01-05")); // t's own end, not l's Jan 20
   });
 });
