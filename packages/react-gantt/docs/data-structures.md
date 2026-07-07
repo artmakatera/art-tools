@@ -27,7 +27,7 @@ interface GanttTask {
   endDate?: Date;          // inclusive last day (chart is day-granular)
   duration?: number;
   progress?: number;       // 0–100
-  type?: "task" | "milestone" | "project";
+  type?: "task" | "milestone" | "summary";
   parentId?: Id | null;    // null/undefined = root
 }
 ```
@@ -70,7 +70,7 @@ edits live in the change log layered on top of it. The active mock:
 
 ```jsonc
 [
-  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-21", "progress": 27, "type": "project" },
+  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-21", "progress": 27, "type": "summary" },
   { "id": 1,    "name": "Setup web server",    "startDate": "2022-01-10", "endDate": "2022-01-13", "progress": 33.3, "parentId": 1000 },
   { "id": 11,   "name": "Install Apache",      "startDate": "2022-01-10", "endDate": "2022-01-10", "progress": 50,   "parentId": 1 },
   { "id": 12,   "name": "Configure firewall",  "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1 },
@@ -82,7 +82,7 @@ edits live in the change log layered on top of it. The active mock:
 Hierarchy via `parentId`:
 
 ```
-1000  Launch SaaS Product (project)
+1000  Launch SaaS Product (summary)
 └── 1    Setup web server
     ├── 11   Install Apache
     └── 12   Configure firewall
@@ -178,7 +178,7 @@ Given the empty log, the seed above resolves & flattens to:
 ```jsonc
 [
   // 1000 rolled up from child {1}, which is rolled up from {11,12}
-  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-13", "progress": 50, "type": "project" },
+  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-13", "progress": 50, "type": "summary" },
   { "id": 1,    "name": "Setup web server",    "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1000 },
   { "id": 11,   "name": "Install Apache",      "startDate": "2022-01-10", "endDate": "2022-01-10", "progress": 50,   "parentId": 1 },
   { "id": 12,   "name": "Configure firewall",  "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1 },

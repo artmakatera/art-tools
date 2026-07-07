@@ -2,11 +2,13 @@
 
 A high-performance, composable Gantt chart component library for React, built as a pnpm/Turborepo monorepo. The core library lives in `packages/react-gantt` (`@am/react-gantt`); `apps/playground` is a local sandbox for testing it against large datasets and running benchmarks.
 
+> **📖 Full library documentation:** [`packages/react-gantt/README.md`](packages/react-gantt/README.md) — install, API reference, data model, slots & theming, architecture, and roadmap. This root readme is just a monorepo overview.
+
 ## Key features
 
 - **Composable API** — use the all-in-one `<Gantt />` wrapper, or assemble the pieces yourself with `<GanttProvider>`, `<TaskList>`, and `<GanttGrid>` for full layout control.
 - **Task hierarchy** — parent/child tasks with expand/collapse, automatic progress and date roll-up for parent rows.
-- **Task bar types** — regular task bars, milestones, and project (summary) bars, each independently stylable.
+- **Task bar types** — regular task bars, milestones, and summary bars, each independently stylable.
 - **Drag interactions** — drag to move or resize task bars, with cascading reschedules for dependent tasks.
 - **Dependency links** — visualize Finish-to-Start, Finish-to-Finish, Start-to-Start, and Start-to-Finish relationships (with optional lag) between tasks; create and delete links interactively.
 - **Undo/redo** — every user action (drag, resize, create, delete, edit) is recorded as a transaction in an undoable/redoable change log.
