@@ -5,7 +5,7 @@ import {
   pxToDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
-import type { GanttTask, Id, TaskState } from "../../../types";
+import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
 import { TaskBar } from "../taskBar/TaskBar";
@@ -19,6 +19,7 @@ interface BarProps {
   colWidth: number;
   rowHeight: number;
   snapToDay: boolean;
+  unit: CalendarUnit;
   onUpdate: (id: Id, patch: DatePatch) => void;
   override?: Partial<TaskState>;
   onOverride: (id: Id, patch: DatePatch | null) => void;
@@ -32,6 +33,7 @@ export const Bar = memo(function Bar({
   colWidth,
   rowHeight,
   snapToDay,
+  unit,
   override,
   onOverride,
   onUpdate,
@@ -42,6 +44,7 @@ export const Bar = memo(function Bar({
     override || {},
     origin,
     colWidth,
+    unit,
     { snapToDay },
   );
   const top = index * rowHeight;
@@ -52,13 +55,13 @@ export const Bar = memo(function Bar({
   const [hovered, setHovered] = useState(false);
 
   const moveAt = (newLeft: number): DatePatch => ({
-    startDate: pxToDate(newLeft, origin, colWidth),
-    endDate: pxToDate(newLeft + width - colWidth, origin, colWidth),
+    startDate: pxToDate(newLeft, origin, colWidth, unit),
+    endDate: pxToDate(newLeft + width - colWidth, origin, colWidth, unit),
   });
 
   const resizeAt = (newWidth: number, newLeft: number): DatePatch => ({
-    startDate: pxToDate(newLeft, origin, colWidth),
-    endDate: pxToDate(newLeft + newWidth - colWidth, origin, colWidth),
+    startDate: pxToDate(newLeft, origin, colWidth, unit),
+    endDate: pxToDate(newLeft + newWidth - colWidth, origin, colWidth, unit),
   });
 
   const handleOverride = (patch: DatePatch) => {

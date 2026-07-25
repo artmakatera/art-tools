@@ -1,5 +1,10 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { GanttTask, TaskDependency, TaskState } from "../../types";
+import type {
+  CalendarUnit,
+  GanttTask,
+  TaskDependency,
+  TaskState,
+} from "../../types";
 import { computeDependencyLinks, type DependencyLink } from "./geometry";
 
 const DependencyLinksContext = createContext<DependencyLink[] | null>(null);
@@ -11,6 +16,7 @@ interface DependencyLinksProviderProps {
   colWidth: number;
   rowHeight: number;
   snapToDay: boolean;
+  unit: CalendarUnit;
   children: ReactNode;
   overrides: Record<string, Partial<TaskState>>;
 }
@@ -27,6 +33,7 @@ export function DependencyLinksProvider({
   colWidth,
   rowHeight,
   snapToDay,
+  unit,
   children,
   overrides,
 }: DependencyLinksProviderProps) {
@@ -39,9 +46,10 @@ export function DependencyLinksProvider({
         colWidth,
         rowHeight,
         snapToDay,
+        unit,
         overrides,
       }),
-    [tasks, dependencies, origin, colWidth, rowHeight, snapToDay, overrides],
+    [tasks, dependencies, origin, colWidth, rowHeight, snapToDay, unit, overrides],
   );
 
   return (

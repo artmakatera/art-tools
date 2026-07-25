@@ -1,6 +1,6 @@
 import { computeTaskPixels } from "../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../core/constants";
-import type { GanttTask, Id, TaskDependency, TaskDependencyType, TaskState } from "../../types";
+import type { CalendarUnit, GanttTask, Id, TaskDependency, TaskDependencyType, TaskState } from "../../types";
 
 /** Length of the horizontal stub that leaves a bar before the link turns. */
 const STUB = 12;
@@ -182,6 +182,7 @@ export interface DependencyLinkParams {
   colWidth: number;
   rowHeight: number;
   snapToDay: boolean;
+  unit: CalendarUnit;
   overrides: Record<string, Partial<TaskState>>;
 }
 
@@ -199,10 +200,11 @@ export function computeDependencyLinks({
   colWidth,
   rowHeight,
   snapToDay,
+  unit,
   overrides
 }: DependencyLinkParams): DependencyLink[] {
   const boxes = buildBoxes(tasks, rowHeight, (task) =>
-    computeTaskPixels(task, overrides[task.id] || {}, origin, colWidth, { snapToDay }),
+    computeTaskPixels(task, overrides[task.id] || {}, origin, colWidth, unit, { snapToDay }),
   );
   const links: DependencyLink[] = [];
 

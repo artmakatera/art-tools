@@ -1,23 +1,17 @@
-import type { CalendarUnit, GanttTask, Scale, TaskState } from "../types";
+import type { CalendarUnit, GanttTask, TaskState } from "../types";
 
 const MS_PER_DAY = 86_400_000;
 
-const UNIT_RANK: Record<CalendarUnit, number> = {
-  day: 0,
-  week: 1,
-  month: 2,
-  quarter: 3,
-  year: 4,
+const MS_PER_UNIT: Record<CalendarUnit, number> = {
+  minute: 60_000,
+  hour: 3_600_000,
+  day: MS_PER_DAY,
+  week: MS_PER_DAY * 7,
+  month: MS_PER_DAY * 30, // approximate
+  quarter: MS_PER_DAY * 91, // approximate
+  year: MS_PER_DAY * 365, // approximate
 };
 
-export function getFinestUnit(scales: Scale[] | undefined): CalendarUnit {
-  const first = scales?.[0];
-  if (!first) return "day";
-  return scales.reduce<CalendarUnit>(
-    (finest, s) => (UNIT_RANK[s.unit] < UNIT_RANK[finest] ? s.unit : finest),
-    first.unit,
-  );
-}
 
 function startOfDay(date: Date): Date {
   const d = new Date(date);
@@ -36,19 +30,22 @@ export function computeTaskPixels(
   override: Partial<TaskState> = {},
   origin: Date,
   colWidth: number,
+  unit: CalendarUnit = "day",
   options?: { snapToDay?: boolean },
 ): TaskPixels {
+  const msPerUnit = MS_PER_UNIT[unit];
   let startDate = override.startDate ?? startOfDay(task.startDate);
   let endDate =
     override.endDate ?? (task.endDate ? startOfDay(task.endDate) : startDate);
-  if (options?.snapToDay) {
-    startDate = startOfDay(startDate);
-    endDate = startOfDay(endDate);
-  }
+  // if (options?.snapToDay) {
+  //   startDate = startOfDay(startDate);
+  //   endDate = startOfDay(endDate);
+  // }
   const left =
-    ((startDate.getTime() - origin.getTime()) / MS_PER_DAY) * colWidth;
+    ((startDate.getTime() - origin.getTime()) / msPerUnit) * colWidth;
   const width =
-    ((endDate.getTime() - startDate.getTime()) / MS_PER_DAY + 1) * colWidth;
+    ((endDate.getTime() - startDate.getTime()) / msPerUnit + 1) * colWidth;
+
   return {
     left,
     width,
@@ -60,8 +57,9 @@ export function pxToDate(
   pxOffset: number,
   origin: Date,
   colWidth: number,
+  unit: CalendarUnit = "day",
 ): Date {
-  return new Date(origin.getTime() + (pxOffset / colWidth) * MS_PER_DAY);
+  return new Date(origin.getTime() + (pxOffset / colWidth) * MS_PER_UNIT[unit]);
 }
 
 export interface DatePatch {

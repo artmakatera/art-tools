@@ -32,6 +32,8 @@ export function periodKey(date: Date, unit: CalendarUnit, step: number): string 
     case "year": {
       return `y-${Math.floor(y / step)}`;
     }
+    default:
+      throw new Error(`Unsupported unit: ${unit}`);
   }
 }
 
@@ -47,7 +49,9 @@ export function diffDays(from: Date, to: Date): number {
 }
 
 export function addDays(date: Date, days: number): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return new Date(d.getTime() + days * MS_PER_DAY);
 }
 
 export function buildDates(start: Date, count: number): Date[] {
