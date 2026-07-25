@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
 import { buildDatesFromTasks } from "../../core/dateUtils";
+import { resolveColumnUnit } from "../../core/scales";
 import type { GanttTask, Id, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
@@ -11,7 +12,6 @@ import { DependencyLinks } from "../dependency-links/DependencyLinks";
 import { DependencyPreview } from "../dependency-links/DependencyPreview";
 import { GridColumns } from "./GridColumns";
 import styles from "./Grid.module.css";
-import { getFinestUnit } from "../../core/barUtils";
 import { rangeFromOffset } from "../../core/virtualize";
 import { COL_OVERSCAN, ROW_OVERSCAN } from "../../core/constants";
 import {
@@ -106,7 +106,8 @@ export function GanttGrid({
   );
   if (!origin) return null;
 
-  const snapToDay = getFinestUnit(scales) !== "day";
+  const snapToDay = true; // TODO: make this configurable per Gantt instance
+  const unit = resolveColumnUnit(scales);
   const totalWidth = dates.length * colWidth;
   const bodyHeight = visibleTasks.length * rowHeight;
 
@@ -178,6 +179,7 @@ export function GanttGrid({
           colWidth={colWidth}
           rowHeight={rowHeight}
           snapToDay={snapToDay}
+          unit={unit}
           overrides={overrides}
         >
           <Body ref={gridBodyRef} {...bodyProps}>
@@ -206,6 +208,7 @@ export function GanttGrid({
                   colWidth={colWidth}
                   rowHeight={rowHeight}
                   snapToDay={snapToDay}
+                  unit={unit}
                   onUpdate={updateTask}
                   override={overrides[task.id]}
                   onOverride={handleOverride}

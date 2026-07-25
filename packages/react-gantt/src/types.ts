@@ -8,7 +8,7 @@ import type {
 
 type GanttTaskType = "task" | "milestone" | "summary"
 
-export type CalendarUnit = "day" | "week" | "month" | "quarter" | "year";
+export type CalendarUnit = "minute" | "hour" |"day" | "week" | "month" | "quarter" | "year";
 
 
 export type Scale = {

@@ -11,7 +11,8 @@ import { TaskListHeader } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
 import type { GanttTaskListSlots } from "../../context/GanttSlotsContext";
 import { addDays, getMinMaxDates } from "../../core/dateUtils";
-import { computeTaskPixels, getFinestUnit } from "../../core/barUtils";
+import { computeTaskPixels } from "../../core/barUtils";
+import { resolveColumnUnit } from "../../core/scales";
 import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
@@ -54,9 +55,16 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
       }
       // Matches the grid's origin: buildDatesFromTasks starts at min - padDays.
       const origin = addDays(range.min, -padDays);
-      const { left, width } = computeTaskPixels(task, {}, origin, colWidth, {
-        snapToDay: getFinestUnit(scales) !== "day",
-      });
+      const { left, width } = computeTaskPixels(
+        task,
+        {},
+        origin,
+        colWidth,
+        resolveColumnUnit(scales),
+        {
+          snapToDay: true, // TODO: make this configurable per Gantt instance
+        },
+      );
       const nextLeft = scrollOffsetToReveal(
         left,
         width,
