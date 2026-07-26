@@ -91,8 +91,8 @@ export function GanttGrid({
   }, []);
 
   const dates = useMemo(
-    () => buildDatesFromTasks(visibleTasks, padDays),
-    [visibleTasks, padDays],
+    () => buildDatesFromTasks(visibleTasks, padDays, scales),
+    [visibleTasks, padDays, scales],
   );
 
   // `dates` rebuilds on every task change, so `dates[0]` is a fresh Date each
@@ -188,6 +188,7 @@ export function GanttGrid({
               colWidth={colWidth}
               bodyHeight={bodyHeight}
               colRange={colRange}
+              unit={unit}
             />
             <DependencyLinks
               width={totalWidth}

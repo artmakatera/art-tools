@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 import type { ComponentProps, ElementType } from "react";
 import { isWeekend } from "../../core/dateUtils";
+import type { CalendarUnit } from "../../types";
 import type { IndexRange } from "../../core/virtualize";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
@@ -40,6 +41,8 @@ interface GridColumnsProps {
   bodyHeight: number;
   /** Half-open range of date indices to render (virtualization window). */
   colRange: IndexRange;
+  /** Column unit; weekends are only shaded when this is `"day"`. */
+  unit?: CalendarUnit;
   slots?: GridColumnsSlots;
   slotProps?: GridColumnsSlotProps;
 }
@@ -55,6 +58,7 @@ export function GridColumns({
   colWidth,
   bodyHeight,
   colRange,
+  unit = "day",
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: GridColumnsProps) {
@@ -68,7 +72,7 @@ export function GridColumns({
     <div className={styles.cols} aria-hidden>
       {dates.slice(colRange.start, colRange.end).map((date, i) => {
         const index = colRange.start + i;
-        const weekend = isWeekend(date);
+        const weekend = unit === "day" && isWeekend(date);
         const ownerState: GridColumnOwnerState = {
           date,
           index,

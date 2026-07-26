@@ -1,7 +1,19 @@
-import type { CalendarUnit } from "../types";
+import type { CalendarUnit, Scale } from "../types";
+import { resolveColumnStep, resolveColumnUnit } from "./scales";
 import { memoize } from "./utils";
 
+const MS_PER_MINUTE = 60_000;
+const MS_PER_HOUR = 3_600_000;
 const MS_PER_DAY = 86_400_000;
+const MS_PER_WEEK = MS_PER_DAY * 7;
+
+/** Fixed-length units convert to pixels by simple ms division. */
+const LINEAR_UNIT_MS: Partial<Record<CalendarUnit, number>> = {
+  minute: MS_PER_MINUTE,
+  hour: MS_PER_HOUR,
+  day: MS_PER_DAY,
+  week: MS_PER_WEEK,
+};
 
 export function periodKey(date: Date, unit: CalendarUnit, step: number): string {
   const y = date.getFullYear();
@@ -9,6 +21,18 @@ export function periodKey(date: Date, unit: CalendarUnit, step: number): string 
   const d = date.getDate();
 
   switch (unit) {
+    case "minute": {
+      const local = new Date(date);
+      local.setSeconds(0, 0);
+      const minuteIndex = Math.round(local.getTime() / MS_PER_MINUTE);
+      return `mi-${Math.floor(minuteIndex / step)}`;
+    }
+    case "hour": {
+      const local = new Date(date);
+      local.setMinutes(0, 0, 0);
+      const hourIndex = Math.round(local.getTime() / MS_PER_HOUR);
+      return `h-${Math.floor(hourIndex / step)}`;
+    }
     case "day": {
       const dayIndex = Math.floor(Date.UTC(y, m, d) / MS_PER_DAY);
       return `d-${Math.floor(dayIndex / step)}`;
@@ -54,8 +78,158 @@ export function addDays(date: Date, days: number): Date {
   return new Date(d.getTime() + days * MS_PER_DAY);
 }
 
-export function buildDates(start: Date, count: number): Date[] {
-  return Array.from({ length: count }, (_, i) => addDays(start, i));
+/**
+ * Start boundary of the calendar unit containing `date` (local time): top of the
+ * minute/hour, midnight for `day`, Monday for `week`, the 1st for `month`, the
+ * first day of the quarter for `quarter`, Jan 1 for `year`.
+ */
+export function startOfUnit(date: Date, unit: CalendarUnit): Date {
+  const d = new Date(date);
+  switch (unit) {
+    case "minute": {
+      d.setSeconds(0, 0);
+      return d;
+    }
+    case "hour": {
+      d.setMinutes(0, 0, 0);
+      return d;
+    }
+    case "day": {
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    case "week": {
+      d.setHours(0, 0, 0, 0);
+      const dow = d.getDay();
+      const toMonday = dow === 0 ? -6 : 1 - dow;
+      d.setDate(d.getDate() + toMonday);
+      return d;
+    }
+    case "month": {
+      d.setHours(0, 0, 0, 0);
+      d.setDate(1);
+      return d;
+    }
+    case "quarter": {
+      d.setHours(0, 0, 0, 0);
+      d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1);
+      return d;
+    }
+    case "year": {
+      d.setHours(0, 0, 0, 0);
+      d.setMonth(0, 1);
+      return d;
+    }
+    default: {
+      throw new Error(`Unsupported unit: ${unit}`);
+    }
+  }
+}
+
+/**
+ * Add `amount` whole calendar units to `date`. Minute/hour/day/week are fixed-ms
+ * math; month/quarter/year use calendar arithmetic (`setMonth`/`setFullYear`) so
+ * lengths and leap years are respected. Time-of-day is preserved for sub-day
+ * units and via the calendar setters for month+.
+ */
+export function addUnit(date: Date, unit: CalendarUnit, amount: number): Date {
+  const linearMs = LINEAR_UNIT_MS[unit];
+  if (linearMs !== undefined) {
+    if (unit === "day" || unit === "week") {
+      return addDays(date, amount * (linearMs / MS_PER_DAY));
+    }
+    return new Date(date.getTime() + amount * linearMs);
+  }
+  const d = new Date(date);
+  switch (unit) {
+    case "month": {
+      d.setMonth(d.getMonth() + amount);
+      return d;
+    }
+    case "quarter": {
+      d.setMonth(d.getMonth() + amount * 3);
+      return d;
+    }
+    case "year": {
+      d.setFullYear(d.getFullYear() + amount);
+      return d;
+    }
+    default: {
+      throw new Error(`Unsupported unit: ${unit}`);
+    }
+  }
+}
+
+/**
+ * Fractional number of `unit` columns from `origin` to `date`. Fixed-length units
+ * are linear ms; month/quarter/year count whole units with calendar-correct
+ * boundaries and interpolate the partial unit within its own [start, next) span.
+ * Inverse of {@link dateAtOffset}.
+ */
+export function unitOffset(origin: Date, date: Date, unit: CalendarUnit): number {
+  const linearMs = LINEAR_UNIT_MS[unit];
+  if (linearMs !== undefined) {
+    return (date.getTime() - origin.getTime()) / linearMs;
+  }
+  // Bracket `date` between whole-unit boundaries addUnit(origin, unit, k) and
+  // addUnit(origin, unit, k+1). Seed k from raw month arithmetic, then correct
+  // (only a step or two) so the estimate survives varying month lengths.
+  const monthsPerUnit = unit === "month" ? 1 : unit === "quarter" ? 3 : 12;
+  const originMonths = origin.getFullYear() * 12 + origin.getMonth();
+  const dateMonths = date.getFullYear() * 12 + date.getMonth();
+  let k = Math.floor((dateMonths - originMonths) / monthsPerUnit);
+  while (addUnit(origin, unit, k).getTime() > date.getTime()) {
+    k -= 1;
+  }
+  while (addUnit(origin, unit, k + 1).getTime() <= date.getTime()) {
+    k += 1;
+  }
+  const base = addUnit(origin, unit, k).getTime();
+  const next = addUnit(origin, unit, k + 1).getTime();
+  return k + (date.getTime() - base) / (next - base);
+}
+
+/**
+ * Date at a fractional `offset` of `unit` columns from `origin`. Inverse of
+ * {@link unitOffset}.
+ */
+export function dateAtOffset(
+  origin: Date,
+  unit: CalendarUnit,
+  offset: number,
+): Date {
+  const linearMs = LINEAR_UNIT_MS[unit];
+  if (linearMs !== undefined) {
+    return new Date(origin.getTime() + offset * linearMs);
+  }
+  const whole = Math.floor(offset);
+  const frac = offset - whole;
+  const base = addUnit(origin, unit, whole).getTime();
+  const next = addUnit(origin, unit, whole + 1).getTime();
+  return new Date(base + frac * (next - base));
+}
+
+/**
+ * The timeline origin: the start-of-unit boundary containing `min`, padded
+ * outward by `pad` whole columns (`pad * step` units). Grid and TaskList both
+ * derive their origin from this so their pixel math cannot drift.
+ */
+export function resolveOrigin(
+  min: Date,
+  unit: CalendarUnit,
+  pad: number,
+  step: number,
+): Date {
+  return addUnit(startOfUnit(min, unit), unit, -pad * step);
+}
+
+export function buildDates(
+  start: Date,
+  count: number,
+  unit: CalendarUnit = "day",
+  step = 1,
+): Date[] {
+  return Array.from({ length: count }, (_, i) => addUnit(start, unit, i * step));
 }
 
 interface TaskDates {
@@ -83,15 +257,18 @@ export const getMinMaxDates = memoize(getMinMaxDatesNonCached, 3);
 
 export function buildDatesFromTasks(
   tasks: readonly TaskDates[],
-  padDays = 0,
+  pad = 0,
+  scales?: Scale[],
 ): Date[] {
   const range = getMinMaxDates(tasks);
   if (!range) return [];
-  
-  const { min, max } = range;
-  let start = addDays(min, -padDays);
-  let end = addDays(max, padDays);
-  return buildDates(start, diffDays(start, end) + 1);
+
+  const unit = resolveColumnUnit(scales);
+  const step = resolveColumnStep(scales);
+  const start = resolveOrigin(range.min, unit, pad, step);
+  const end = addUnit(startOfUnit(range.max, unit), unit, pad * step);
+  const count = Math.round(unitOffset(start, end, unit) / step) + 1;
+  return buildDates(start, count, unit, step);
 }
 
 
