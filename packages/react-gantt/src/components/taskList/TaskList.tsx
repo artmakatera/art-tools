@@ -10,9 +10,9 @@ import type { ColumnDef, GanttTask, Id } from "../../types";
 import { TaskListHeader } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
 import type { GanttTaskListSlots } from "../../context/GanttSlotsContext";
-import { addDays, getMinMaxDates } from "../../core/dateUtils";
+import { getMinMaxDates, resolveOrigin } from "../../core/dateUtils";
 import { computeTaskPixels } from "../../core/barUtils";
-import { resolveColumnUnit } from "../../core/scales";
+import { resolveColumnStep, resolveColumnUnit } from "../../core/scales";
 import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
@@ -53,18 +53,13 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
       if (!grid || !range) {
         return;
       }
-      // Matches the grid's origin: buildDatesFromTasks starts at min - padDays.
-      const origin = addDays(range.min, -padDays);
-      const { left, width } = computeTaskPixels(
-        task,
-        {},
-        origin,
-        colWidth,
-        resolveColumnUnit(scales),
-        {
-          snapToDay: true, // TODO: make this configurable per Gantt instance
-        },
-      );
+      // Matches the grid's origin: buildDatesFromTasks aligns to the unit
+      // boundary containing min, padded outward by whole columns.
+      const unit = resolveColumnUnit(scales);
+      const origin = resolveOrigin(range.min, unit, padDays, resolveColumnStep(scales));
+      const { left, width } = computeTaskPixels(task, {}, origin, colWidth, unit, {
+        snapToDay: true, // TODO: make this configurable per Gantt instance
+      });
       const nextLeft = scrollOffsetToReveal(
         left,
         width,

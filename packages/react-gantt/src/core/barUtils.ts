@@ -1,23 +1,5 @@
 import type { CalendarUnit, GanttTask, TaskState } from "../types";
-
-const MS_PER_DAY = 86_400_000;
-
-const MS_PER_UNIT: Record<CalendarUnit, number> = {
-  minute: 60_000,
-  hour: 3_600_000,
-  day: MS_PER_DAY,
-  week: MS_PER_DAY * 7,
-  month: MS_PER_DAY * 30, // approximate
-  quarter: MS_PER_DAY * 91, // approximate
-  year: MS_PER_DAY * 365, // approximate
-};
-
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+import { dateAtOffset, startOfUnit, unitOffset } from "./dateUtils";
 
 export interface TaskPixels {
   left: number;
@@ -33,18 +15,15 @@ export function computeTaskPixels(
   unit: CalendarUnit = "day",
   options?: { snapToDay?: boolean },
 ): TaskPixels {
-  const msPerUnit = MS_PER_UNIT[unit];
-  let startDate = override.startDate ?? startOfDay(task.startDate);
-  let endDate =
-    override.endDate ?? (task.endDate ? startOfDay(task.endDate) : startDate);
-  // if (options?.snapToDay) {
-  //   startDate = startOfDay(startDate);
-  //   endDate = startOfDay(endDate);
-  // }
-  const left =
-    ((startDate.getTime() - origin.getTime()) / msPerUnit) * colWidth;
-  const width =
-    ((endDate.getTime() - startDate.getTime()) / msPerUnit + 1) * colWidth;
+  // Task dates are snapped to the column unit, so a task fills the whole columns
+  // it touches; the "+1 column" keeps a single-unit task exactly one column wide.
+  const startDate = override.startDate ?? startOfUnit(task.startDate, unit);
+  const endDate =
+    override.endDate ?? (task.endDate ? startOfUnit(task.endDate, unit) : startDate);
+  const startOff = unitOffset(origin, startDate, unit);
+  const endOff = unitOffset(origin, endDate, unit);
+  const left = startOff * colWidth;
+  const width = (endOff - startOff + 1) * colWidth;
 
   return {
     left,
@@ -59,7 +38,7 @@ export function pxToDate(
   colWidth: number,
   unit: CalendarUnit = "day",
 ): Date {
-  return new Date(origin.getTime() + (pxOffset / colWidth) * MS_PER_UNIT[unit]);
+  return dateAtOffset(origin, unit, pxOffset / colWidth);
 }
 
 export interface DatePatch {

@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
   addDays,
+  addUnit,
   buildDates,
   buildDatesFromTasks,
+  dateAtOffset,
   diffDays,
   isWeekend,
   periodKey,
+  resolveOrigin,
+  startOfUnit,
+  unitOffset,
 } from '../../core/dateUtils';
+import type { Scale } from '../../types';
+
+/** Minimal scale row; format is irrelevant to date math. */
+const scale = (unit: Scale['unit'], step = 1): Scale => ({
+  unit,
+  step,
+  format: () => '',
+});
 
 describe('periodKey', () => {
   describe('day', () => {
@@ -356,5 +369,118 @@ describe('buildDatesFromTasks', () => {
     expect(result).toHaveLength(5);
     expect(diffDays(new Date(2026, 0, 1), result[0]!)).toBe(0);
     expect(diffDays(new Date(2026, 0, 5), result[result.length - 1]!)).toBe(0);
+  });
+
+  it('steps by the finest scale unit (month), aligned to month starts', () => {
+    const tasks = [
+      { startDate: new Date(2026, 0, 15), endDate: new Date(2026, 2, 20) },
+    ];
+    const result = buildDatesFromTasks(tasks, 0, [scale('year'), scale('month')]);
+    expect(result.map((d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`)).toEqual([
+      '2026-0-1',
+      '2026-1-1',
+      '2026-2-1',
+    ]);
+  });
+
+  it('pads by whole columns of the finest unit (month)', () => {
+    const tasks = [
+      { startDate: new Date(2026, 5, 10), endDate: new Date(2026, 5, 20) },
+    ];
+    const result = buildDatesFromTasks(tasks, 1, [scale('year'), scale('month')]);
+    expect(result.map((d) => d.getMonth())).toEqual([4, 5, 6]); // May, June, July
+  });
+
+  it('steps by the hour for a sub-day scale', () => {
+    const tasks = [
+      {
+        startDate: new Date(2026, 0, 1, 9, 20),
+        endDate: new Date(2026, 0, 1, 11, 40),
+      },
+    ];
+    const result = buildDatesFromTasks(tasks, 0, [scale('day'), scale('hour')]);
+    // Aligned to top-of-hour 9..11 inclusive.
+    expect(result.map((d) => d.getHours())).toEqual([9, 10, 11]);
+    expect(result.every((d) => d.getMinutes() === 0)).toBe(true);
+  });
+});
+
+describe('startOfUnit', () => {
+  it('truncates to top of minute and hour', () => {
+    const mi = startOfUnit(new Date(2026, 0, 1, 9, 20, 45, 500), 'minute');
+    expect([mi.getMinutes(), mi.getSeconds(), mi.getMilliseconds()]).toEqual([20, 0, 0]);
+    const h = startOfUnit(new Date(2026, 0, 1, 9, 20, 45), 'hour');
+    expect([h.getHours(), h.getMinutes(), h.getSeconds()]).toEqual([9, 0, 0]);
+  });
+
+  it('anchors day/week/month/quarter/year', () => {
+    expect(startOfUnit(new Date(2026, 0, 15, 14), 'day').getHours()).toBe(0);
+    // 2026-01-15 is a Thursday -> Monday is 2026-01-12.
+    const w = startOfUnit(new Date(2026, 0, 15), 'week');
+    expect([w.getDate(), w.getDay()]).toEqual([12, 1]);
+    expect(startOfUnit(new Date(2026, 0, 15), 'month').getDate()).toBe(1);
+    const q = startOfUnit(new Date(2026, 4, 20), 'quarter'); // May -> Q2 starts April
+    expect([q.getMonth(), q.getDate()]).toEqual([3, 1]);
+    const y = startOfUnit(new Date(2026, 6, 9), 'year');
+    expect([y.getMonth(), y.getDate()]).toEqual([0, 1]);
+  });
+});
+
+describe('addUnit', () => {
+  it('adds fixed-length units (minute/hour/day/week)', () => {
+    const base = new Date(2026, 0, 1, 23, 30);
+    expect(addUnit(base, 'minute', 45).getTime()).toBe(base.getTime() + 45 * 60_000);
+    // 23:30 + 1h crosses midnight into Jan 2.
+    const h = addUnit(base, 'hour', 1);
+    expect([h.getDate(), h.getHours()]).toEqual([2, 0]);
+    expect(diffDays(new Date(2026, 0, 1), addUnit(new Date(2026, 0, 1), 'day', 3))).toBe(3);
+    expect(diffDays(new Date(2026, 0, 1), addUnit(new Date(2026, 0, 1), 'week', 2))).toBe(14);
+  });
+
+  it('adds calendar months/quarters/years', () => {
+    expect(addUnit(new Date(2026, 0, 15), 'month', 1).getMonth()).toBe(1);
+    expect(addUnit(new Date(2026, 1, 10), 'quarter', 1).getMonth()).toBe(4); // Feb -> May
+    expect(addUnit(new Date(2024, 5, 1), 'year', 2).getFullYear()).toBe(2026);
+  });
+});
+
+describe('unitOffset / dateAtOffset', () => {
+  it('is linear for fixed-length units', () => {
+    const origin = new Date(2026, 0, 1, 0, 0);
+    expect(unitOffset(origin, new Date(2026, 0, 1, 3, 30), 'hour')).toBeCloseTo(3.5, 9);
+    expect(unitOffset(origin, new Date(2026, 0, 15), 'day')).toBeCloseTo(14, 9);
+    expect(unitOffset(origin, new Date(2026, 0, 15), 'week')).toBeCloseTo(2, 9);
+  });
+
+  it('interpolates within a partial month', () => {
+    const origin = new Date(2026, 0, 1);
+    expect(unitOffset(origin, new Date(2026, 1, 15), 'month')).toBeCloseTo(1 + 14 / 28, 9);
+  });
+
+  it('round-trips through dateAtOffset for every unit', () => {
+    const origin = new Date(2026, 0, 1);
+    const probe = new Date(2026, 6, 9, 8, 15, 0);
+    (['minute', 'hour', 'day', 'week', 'month', 'quarter', 'year'] as const).forEach((unit) => {
+      const back = dateAtOffset(origin, unit, unitOffset(origin, probe, unit));
+      expect(back.getTime()).toBeCloseTo(probe.getTime(), -1);
+    });
+  });
+});
+
+describe('resolveOrigin', () => {
+  it('aligns to the unit boundary then pads by whole columns', () => {
+    const o = resolveOrigin(new Date(2026, 2, 15), 'month', 2, 1); // Mar 15 -> Mar 1 -> -2mo = Jan 1
+    expect([o.getFullYear(), o.getMonth(), o.getDate()]).toEqual([2026, 0, 1]);
+  });
+});
+
+describe('periodKey (sub-day)', () => {
+  it('groups by hour and minute', () => {
+    const a = new Date(2026, 0, 1, 9, 15);
+    const b = new Date(2026, 0, 1, 9, 45);
+    const c = new Date(2026, 0, 1, 10, 5);
+    expect(periodKey(a, 'hour', 1)).toBe(periodKey(b, 'hour', 1));
+    expect(periodKey(a, 'hour', 1)).not.toBe(periodKey(c, 'hour', 1));
+    expect(periodKey(a, 'minute', 1)).not.toBe(periodKey(b, 'minute', 1));
   });
 });

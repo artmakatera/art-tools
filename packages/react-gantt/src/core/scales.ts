@@ -29,3 +29,11 @@ export const DEFAULT_SCALES: Scale[] = [
 export function resolveColumnUnit(scales?: Scale[]): CalendarUnit {
   return (scales ?? DEFAULT_SCALES).at(-1)?.unit ?? "day";
 }
+
+/**
+ * The `step` of the bottom-most (finest) scale row — how many units each column
+ * spans. Pairs with {@link resolveColumnUnit}; defaults to 1.
+ */
+export function resolveColumnStep(scales?: Scale[]): number {
+  return (scales ?? DEFAULT_SCALES).at(-1)?.step ?? 1;
+}
