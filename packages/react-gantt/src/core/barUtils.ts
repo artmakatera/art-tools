@@ -1,6 +1,8 @@
 import type { CalendarUnit, GanttTask, TaskState } from "../types";
 import { dateAtOffset, startOfUnit, unitOffset } from "./dateUtils";
 
+const MS_PER_DAY = 86_400_000;
+
 export interface TaskPixels {
   left: number;
   width: number;
@@ -15,15 +17,18 @@ export function computeTaskPixels(
   unit: CalendarUnit = "day",
   options?: { snapToDay?: boolean },
 ): TaskPixels {
-  // Task dates are snapped to the column unit, so a task fills the whole columns
-  // it touches; the "+1 column" keeps a single-unit task exactly one column wide.
-  const startDate = override.startDate ?? startOfUnit(task.startDate, unit);
+  // Position by the task's true (day-granular) dates rather than snapping to the
+  // column unit, so a bar's size is proportional to its real duration. The bar
+  // fills through the END of endDate's day, so the right edge is measured at the
+  // exclusive next day. At a coarse unit (e.g. quarter) a one-day task is then a
+  // thin sliver — 1/90th of a column — not a whole column.
+  const startDate = override.startDate ?? startOfUnit(task.startDate, "day");
   const endDate =
-    override.endDate ?? (task.endDate ? startOfUnit(task.endDate, unit) : startDate);
+    override.endDate ?? (task.endDate ? startOfUnit(task.endDate, "day") : startDate);
   const startOff = unitOffset(origin, startDate, unit);
-  const endOff = unitOffset(origin, endDate, unit);
+  const endOff = unitOffset(origin, new Date(endDate.getTime() + MS_PER_DAY), unit);
   const left = startOff * colWidth;
-  const width = (endOff - startOff + 1) * colWidth;
+  const width = (endOff - startOff) * colWidth;
 
   return {
     left,
@@ -39,6 +44,22 @@ export function pxToDate(
   unit: CalendarUnit = "day",
 ): Date {
   return dateAtOffset(origin, unit, pxOffset / colWidth);
+}
+
+/**
+ * Inclusive end date whose bar right-edge lands at `rightEdgePx`. Inverse of the
+ * {@link computeTaskPixels} width convention: the bar fills through the end of
+ * endDate's day, so the stored endDate is the day before the exclusive edge.
+ */
+export function pxToEndDate(
+  rightEdgePx: number,
+  origin: Date,
+  colWidth: number,
+  unit: CalendarUnit = "day",
+): Date {
+  return new Date(
+    pxToDate(rightEdgePx, origin, colWidth, unit).getTime() - MS_PER_DAY,
+  );
 }
 
 export interface DatePatch {

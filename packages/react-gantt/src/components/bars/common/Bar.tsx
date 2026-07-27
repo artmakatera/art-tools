@@ -3,6 +3,7 @@ import {
   computeTaskPixels,
   type DatePatch,
   pxToDate,
+  pxToEndDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
 import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
@@ -56,12 +57,12 @@ export const Bar = memo(function Bar({
 
   const moveAt = (newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth, unit),
-    endDate: pxToDate(newLeft + width - colWidth, origin, colWidth, unit),
+    endDate: pxToEndDate(newLeft + width, origin, colWidth, unit),
   });
 
   const resizeAt = (newWidth: number, newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth, unit),
-    endDate: pxToDate(newLeft + newWidth - colWidth, origin, colWidth, unit),
+    endDate: pxToEndDate(newLeft + newWidth, origin, colWidth, unit),
   });
 
   const handleOverride = (patch: DatePatch) => {
