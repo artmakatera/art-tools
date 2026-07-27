@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeTaskPixels, pxToDate } from '../../core/barUtils';
+import { computeTaskPixels, pxToDate, pxToEndDate } from '../../core/barUtils';
 import type { GanttTask } from '../../types';
 
 const task = (startDate: Date, endDate?: Date): GanttTask => ({
@@ -38,60 +38,87 @@ describe('computeTaskPixels', () => {
     });
   });
 
-  describe('month unit (calendar-accurate, snapped to unit)', () => {
+  describe('month unit (true-scale, proportional widths)', () => {
     const origin = new Date(2026, 0, 1);
 
-    it('makes a task touching N months exactly N columns wide', () => {
+    it('sizes a task by its real duration, not a whole column', () => {
+      // Jan 1 .. Mar 31 = all of Q1 = exactly 3 month columns.
       const { left, width } = computeTaskPixels(
-        task(new Date(2026, 0, 15), new Date(2026, 2, 20)), // mid-Jan .. mid-Mar
+        task(new Date(2026, 0, 1), new Date(2026, 2, 31)),
         {},
         origin,
         COL,
         'month',
       );
-      expect(left).toBe(0); // snapped to Jan 1
-      // Jan, Feb, Mar columns — not the old 30-day approximation, not a fractional bar.
-      expect(width).toBe(3 * COL);
+      expect(left).toBe(0);
+      expect(width).toBeCloseTo(3 * COL, 6);
     });
 
-    it('offsets a task starting in a later month by whole columns', () => {
+    it('draws a one-day task as a proportional sliver, not a full month', () => {
       const { left, width } = computeTaskPixels(
-        task(new Date(2026, 2, 5)), // March, no end
+        task(new Date(2026, 0, 1)), // 1 day, no end
         {},
         origin,
         COL,
         'month',
       );
-      expect(left).toBe(2 * COL); // Jan, Feb, then March column
-      expect(width).toBe(COL);
+      expect(left).toBe(0);
+      // Jan has 31 days → ~1/31 of a column, and strictly less than one column.
+      expect(width).toBeCloseTo(COL / 31, 6);
+      expect(width).toBeLessThan(COL);
+    });
+
+    it('positions a mid-month start at its fractional offset', () => {
+      const { left } = computeTaskPixels(
+        task(new Date(2026, 1, 15)), // Feb 15, Feb has 28 days in 2026
+        {},
+        origin,
+        COL,
+        'month',
+      );
+      expect(left).toBeCloseTo((1 + 14 / 28) * COL, 6);
     });
   });
 
-  describe('hour unit', () => {
-    const origin = new Date(2026, 0, 1, 0, 0);
+  describe('quarter unit (the reported case)', () => {
+    const origin = new Date(2026, 0, 1); // Q1 start
 
-    it('spans the hour columns a task touches', () => {
-      const { left, width } = computeTaskPixels(
-        task(new Date(2026, 0, 1, 9, 20), new Date(2026, 0, 1, 11, 40)),
+    it('draws a one-day task as ~1/90 of a column, not a whole quarter', () => {
+      const { width } = computeTaskPixels(
+        task(new Date(2026, 0, 1)), // 1 day
         {},
         origin,
         COL,
-        'hour',
+        'quarter',
       );
-      expect(left).toBe(9 * COL); // snapped to 09:00
-      expect(width).toBe(3 * COL); // 09, 10, 11
+      // Q1 2026 ≈ 90 days → ~1/90 of a column (a sub-pixel sliver), and far
+      // less than a whole column. (Loose tolerance: the span crosses a DST
+      // boundary in some timezones, shifting it by an hour.)
+      expect(width).toBeCloseTo(COL / 90, 1);
+      expect(width).toBeLessThan(1);
+    });
+
+    it('draws a full quarter as exactly one column', () => {
+      const { width } = computeTaskPixels(
+        task(new Date(2026, 0, 1), new Date(2026, 2, 31)),
+        {},
+        origin,
+        COL,
+        'quarter',
+      );
+      expect(width).toBeCloseTo(COL, 6);
     });
   });
 });
 
-describe('pxToDate', () => {
+describe('pxToDate / pxToEndDate', () => {
   it('maps a whole-column edge to a unit boundary (month)', () => {
     const d = pxToDate(3 * COL, new Date(2026, 0, 1), COL, 'month');
     expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2026, 3, 1]); // Apr 1
   });
 
-  it('maps a whole-column edge to a unit boundary (hour)', () => {
-    const d = pxToDate(5 * COL, new Date(2026, 0, 1, 0, 0), COL, 'hour');
-    expect([d.getHours(), d.getMinutes()]).toEqual([5, 0]);
+  it('derives the inclusive end date one day before the exclusive edge', () => {
+    const d = pxToEndDate(3 * COL, new Date(2026, 0, 1), COL, 'month');
+    expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2026, 2, 31]); // Mar 31
   });
 });
