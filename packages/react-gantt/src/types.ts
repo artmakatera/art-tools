@@ -5,6 +5,7 @@ import type {
   GanttDependenciesSlots,
   GanttTimelineSlots,
 } from "./context/GanttSlotsContext";
+import type { ZoomLevel } from "./core/zoom";
 
 type GanttTaskType = "task" | "milestone" | "summary"
 
@@ -61,6 +62,12 @@ export interface GanttHandle {
   /** Scroll the task list vertically to reveal a task, auto-expanding any
    *  collapsed ancestors first. No-op for an unknown id. */
   scrollToTask: (id: Id) => void;
+  /** Step the zoom ladder one level finer. No-op at the finest level. */
+  zoomIn: () => void;
+  /** Step the zoom ladder one level coarser. No-op at the coarsest level. */
+  zoomOut: () => void;
+  /** Jump to a zoom-ladder index (clamped to the ladder bounds). */
+  setZoom: (index: number) => void;
 }
 
 /** API passed as the 2nd arg to `ColumnDef.render`, for building actionable columns. */
@@ -78,6 +85,17 @@ export interface GanttProps {
   height: number;
   scales?: Scale[];
   padDays?: number;
+  /** Custom zoom ladder (coarse → fine). Defaults to the built-in ladder; when
+   *  omitted, `scales`/`colWidth` seed the default rung. */
+  zoomLevels?: ZoomLevel[];
+  /** Starting rung of the zoom ladder (default: the month/day level). */
+  defaultZoomIndex?: number;
+  /** Fired when the zoom level changes (and once on mount). */
+  onZoomChange?: (state: { index: number; count: number }) => void;
+  /** Enable Ctrl/Cmd + mouse-wheel zoom over the grid (anchors on the cursor). */
+  zoomWheel?: boolean;
+  /** Enable +/- keyboard zoom when the grid is focused. */
+  zoomKeyboard?: boolean;
   onTaskClick?: (task: GanttTask) => void;
   dependencies?: TaskDependency[];
   columns?: ColumnDef[];

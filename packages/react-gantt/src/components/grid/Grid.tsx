@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
 import { buildDatesFromTasks } from "../../core/dateUtils";
 import { resolveColumnUnit } from "../../core/scales";
@@ -21,6 +21,7 @@ import {
   useGanttTaskActions,
   useGanttTaskState,
   useGanttViewport,
+  useGanttZoom,
 } from "../../context/GanttContext";
 
 /** State passed to the function form of the Grid slotProps. */
@@ -72,6 +73,47 @@ export function GanttGrid({
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
   const viewport = useGanttViewport();
   const { dependencies, onDependencyDelete } = useGanttDependency();
+  const { zoomAt, zoomIn, zoomOut, wheelEnabled, keyboardEnabled } = useGanttZoom();
+
+  // Wire the optional wheel / keyboard zoom controls onto the scroll container.
+  // Wheel is non-passive so Ctrl/Cmd+wheel can preventDefault the page zoom, and
+  // anchors on the cursor; keyboard needs the grid focusable. Re-runs when the
+  // grid first gains rows (visibleTasks.length) so listeners attach once mounted.
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || (!wheelEnabled && !keyboardEnabled)) {
+      return;
+    }
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) {
+        return;
+      }
+      e.preventDefault();
+      const rect = grid.getBoundingClientRect();
+      const focusPx = grid.scrollLeft + (e.clientX - rect.left);
+      zoomAt(focusPx, e.deltaY < 0 ? 1 : -1);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        zoomIn();
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        zoomOut();
+      }
+    };
+    if (wheelEnabled) {
+      grid.addEventListener("wheel", onWheel, { passive: false });
+    }
+    if (keyboardEnabled) {
+      grid.tabIndex = 0;
+      grid.addEventListener("keydown", onKeyDown);
+    }
+    return () => {
+      grid.removeEventListener("wheel", onWheel);
+      grid.removeEventListener("keydown", onKeyDown);
+    };
+  }, [gridRef, wheelEnabled, keyboardEnabled, zoomAt, zoomIn, zoomOut, visibleTasks.length]);
 
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
 

@@ -10,6 +10,10 @@ export { Calendar } from './components/calendar/Calendar';
 export { mergeSlotProps } from './core/slots';
 export type { SlotConfig, SlotPropsInput } from './core/slots';
 
+// --- Zoom ---
+export { DEFAULT_ZOOM_LEVELS, DEFAULT_ZOOM_INDEX } from './core/zoom';
+export type { ZoomLevel } from './core/zoom';
+
 // --- Slot config groups (the shapes of the <Gantt> taskList/bars/dependencySlots/timeline props) ---
 export type {
   GanttTaskListSlots,

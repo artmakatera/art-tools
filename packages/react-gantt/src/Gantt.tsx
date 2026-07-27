@@ -16,6 +16,11 @@ export function Gantt({
   height,
   scales,
   padDays,
+  zoomLevels,
+  defaultZoomIndex,
+  onZoomChange,
+  zoomWheel,
+  zoomKeyboard,
   onTaskClick,
   columns = DEFAULT_COLUMNS,
   defaultTaskListWidth = 280,
@@ -53,6 +58,11 @@ export function Gantt({
       height={height}
       scales={scales}
       padDays={padDays}
+      zoomLevels={zoomLevels}
+      defaultZoomIndex={defaultZoomIndex}
+      onZoomChange={onZoomChange}
+      zoomWheel={zoomWheel}
+      zoomKeyboard={zoomKeyboard}
       onTaskClick={onTaskClick}
       onDependencyCreate={onDependencyCreate}
       onDependencyDelete={onDependencyDelete}
