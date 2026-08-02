@@ -1,4 +1,4 @@
-import type { Scale } from "../types";
+import type { CalendarUnit, Scale } from "../types";
 
 /**
  * Single source of truth for the default calendar scales. The Calendar renders
@@ -19,3 +19,21 @@ export const DEFAULT_SCALES: Scale[] = [
     format: (d: Date) => String(d.getDate()),
   },
 ];
+
+/**
+ * The unit of the bottom-most (finest) scale row — the one that maps 1:1 to a
+ * column, and therefore defines the time span of a single `colWidth`. Bar
+ * geometry uses this to convert dates <-> pixels. Falls back to the defaults
+ * when `scales` is omitted, and to `"day"` for an empty array.
+ */
+export function resolveColumnUnit(scales?: Scale[]): CalendarUnit {
+  return (scales ?? DEFAULT_SCALES).at(-1)?.unit ?? "day";
+}
+
+/**
+ * The `step` of the bottom-most (finest) scale row — how many units each column
+ * spans. Pairs with {@link resolveColumnUnit}; defaults to 1.
+ */
+export function resolveColumnStep(scales?: Scale[]): number {
+  return (scales ?? DEFAULT_SCALES).at(-1)?.step ?? 1;
+}

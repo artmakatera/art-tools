@@ -390,36 +390,22 @@ all exported from the package entry.
 Proposed future features. These are **not yet implemented** — they capture gaps in the
 current design and a sketch of how each would hook in.
 
-### 1. Discrete zoom API
 
-Today, "zoom" means hand-configuring the `scales` array and `colWidth`
-([`core/scales.ts`](./src/core/scales.ts)). Propose a first-class zoom API: a `zoom`
-prop with day/week/month/quarter presets (each preset a canned `scales` + `colWidth`
-pairing) plus imperative `zoomIn()` / `zoomOut()` / `setZoom(level)` on the
-`GanttHandle`, anchored on the viewport center.
 
-### 2. Editable task type
-
-`type` is authoring-time only — `TaskPatch` (in [`src/types.ts`](./src/types.ts)) has
-no `type` field, so `updateTask` can't convert a bar. Propose adding `type` to
-`TaskPatch` so a task can be turned into a milestone or promoted to a summary, with the
-roll-up/reschedule implications handled (converting to `summary` recomputes rolled-up
-dates; converting away restores authored dates).
-
-### 3. Keyboard navigation & accessibility
+### 1. Keyboard navigation & accessibility
 
 There is no keyboard model today. Propose ARIA `treegrid` roles on the task list,
 roving-tabindex focus across rows and bars, keyboard move/resize (arrow keys nudge a
 selected bar by one column), Enter/Space to expand/collapse, and focus management for
 dependency connector handles so links can be created without a pointer.
 
-### 4. Export / print
+### 2. Export / print
 
 Propose export of the chart to PNG/SVG/PDF, plus a print-friendly render mode that
 temporarily disables virtualization and renders the full extent so browser print
 captures every row.
 
-### 5. Critical path
+### 3. Critical path
 
 The scheduling engine already builds the dependency graph
 (`buildDependencyGraph` in [`src/core/scheduling.ts`](./src/core/scheduling.ts)).

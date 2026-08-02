@@ -1,29 +1,7 @@
-import type { CalendarUnit, GanttTask, Scale, TaskState } from "../types";
+import type { CalendarUnit, GanttTask, TaskState } from "../types";
+import { dateAtOffset, startOfUnit, unitOffset } from "./dateUtils";
 
 const MS_PER_DAY = 86_400_000;
-
-const UNIT_RANK: Record<CalendarUnit, number> = {
-  day: 0,
-  week: 1,
-  month: 2,
-  quarter: 3,
-  year: 4,
-};
-
-export function getFinestUnit(scales: Scale[] | undefined): CalendarUnit {
-  const first = scales?.[0];
-  if (!first) return "day";
-  return scales.reduce<CalendarUnit>(
-    (finest, s) => (UNIT_RANK[s.unit] < UNIT_RANK[finest] ? s.unit : finest),
-    first.unit,
-  );
-}
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 export interface TaskPixels {
   left: number;
@@ -36,19 +14,22 @@ export function computeTaskPixels(
   override: Partial<TaskState> = {},
   origin: Date,
   colWidth: number,
+  unit: CalendarUnit = "day",
   options?: { snapToDay?: boolean },
 ): TaskPixels {
-  let startDate = override.startDate ?? startOfDay(task.startDate);
-  let endDate =
-    override.endDate ?? (task.endDate ? startOfDay(task.endDate) : startDate);
-  if (options?.snapToDay) {
-    startDate = startOfDay(startDate);
-    endDate = startOfDay(endDate);
-  }
-  const left =
-    ((startDate.getTime() - origin.getTime()) / MS_PER_DAY) * colWidth;
-  const width =
-    ((endDate.getTime() - startDate.getTime()) / MS_PER_DAY + 1) * colWidth;
+  // Position by the task's true (day-granular) dates rather than snapping to the
+  // column unit, so a bar's size is proportional to its real duration. The bar
+  // fills through the END of endDate's day, so the right edge is measured at the
+  // exclusive next day. At a coarse unit (e.g. quarter) a one-day task is then a
+  // thin sliver — 1/90th of a column — not a whole column.
+  const startDate = override.startDate ?? startOfUnit(task.startDate, "day");
+  const endDate =
+    override.endDate ?? (task.endDate ? startOfUnit(task.endDate, "day") : startDate);
+  const startOff = unitOffset(origin, startDate, unit);
+  const endOff = unitOffset(origin, new Date(endDate.getTime() + MS_PER_DAY), unit);
+  const left = startOff * colWidth;
+  const width = (endOff - startOff) * colWidth;
+
   return {
     left,
     width,
@@ -60,8 +41,25 @@ export function pxToDate(
   pxOffset: number,
   origin: Date,
   colWidth: number,
+  unit: CalendarUnit = "day",
 ): Date {
-  return new Date(origin.getTime() + (pxOffset / colWidth) * MS_PER_DAY);
+  return dateAtOffset(origin, unit, pxOffset / colWidth);
+}
+
+/**
+ * Inclusive end date whose bar right-edge lands at `rightEdgePx`. Inverse of the
+ * {@link computeTaskPixels} width convention: the bar fills through the end of
+ * endDate's day, so the stored endDate is the day before the exclusive edge.
+ */
+export function pxToEndDate(
+  rightEdgePx: number,
+  origin: Date,
+  colWidth: number,
+  unit: CalendarUnit = "day",
+): Date {
+  return new Date(
+    pxToDate(rightEdgePx, origin, colWidth, unit).getTime() - MS_PER_DAY,
+  );
 }
 
 export interface DatePatch {
