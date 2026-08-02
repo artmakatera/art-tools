@@ -6,6 +6,7 @@ import type {
   TaskPatch,
   GanttTaskListSlots,
   GanttBarsSlots,
+  ZoomLevel,
 } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
 import { generateMockData } from "./mockGenerator";
@@ -23,7 +24,7 @@ const Gantt = lazy(() =>
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
 // internal change log, so we never feed the resolved list back into `tasks`.
 
-const count = 10000;
+const count = 100000;
 const seed = 1;
 
 const mockData = generateMockData(count, { seed, yearsRange: [2023, 2025] });
@@ -82,6 +83,45 @@ const barSlots: GanttBarsSlots = {
   },
 };
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+// The timeline is configured by a zoom ladder (coarse → fine) instead of a
+// single `scales` prop: each rung carries its own calendar rows + column width,
+// and Zoom in/out steps between them.
+const zoomLevels: ZoomLevel[] = [
+  {
+    colWidth: 48,
+    scales: [
+      { unit: "year", step: 1, format: (d) => String(d.getFullYear()) },
+      { unit: "quarter", step: 1, format: (d) => `Q${Math.floor(d.getMonth() / 3) + 1}` },
+    ],
+  },
+  {
+    colWidth: 40,
+    scales: [
+      { unit: "year", step: 1, format: (d) => String(d.getFullYear()) },
+      { unit: "month", step: 1, format: (d) => d.toLocaleString(undefined, { month: "short" }) },
+    ],
+  },
+  {
+    colWidth: 60,
+    scales: [
+      { unit: "month", step: 1, format: (d) => d.toLocaleString(undefined, { month: "long", year: "numeric" }) },
+      { unit: "day", step: 1, format: (d) => String(d.getDate()) },
+    ],
+  },
+  {
+    colWidth: 44,
+    scales: [
+      { unit: "day", step: 1, format: (d) => d.toLocaleString(undefined, { weekday: "short", day: "numeric" }) },
+      { unit: "hour", step: 1, format: (d) => `${pad2(d.getHours())}:00` },
+    ],
+  },
+];
+
+// Start at the month/day rung.
+const DEFAULT_ZOOM = 2;
+
 function GanttWithTaskList() {
   // How many tasks to generate, and a bump counter to reshuffle with a new seed.
 
@@ -96,6 +136,14 @@ function GanttWithTaskList() {
 
   const ganttRef = useRef<GanttHandle>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
+  const [zoom, setZoom] = useState({ index: 0, count: 0 });
+
+  const zoomIn = useCallback(() => ganttRef.current?.zoomIn(), []);
+  const zoomOut = useCallback(() => ganttRef.current?.zoomOut(), []);
+  const handleZoomChange = useCallback(
+    (state: { index: number; count: number }) => setZoom(state),
+    [],
+  );
 
   const addTask = useCallback(() => {
     // Start from the selected task (fall back to a default); span exactly one
@@ -160,6 +208,16 @@ function GanttWithTaskList() {
         </button>
         <button onClick={undo}>Undo</button>
         <button onClick={redo}>Redo</button>
+        <span style={{ width: 1, height: 20, background: "#ddd" }} />
+        <button onClick={zoomOut} disabled={zoom.index <= 0}>
+          − Zoom out
+        </button>
+        <button onClick={zoomIn} disabled={zoom.index >= zoom.count - 1}>
+          Zoom in +
+        </button>
+        <span style={{ color: "#666" }}>
+          level {zoom.index + 1}/{zoom.count}
+        </span>
       </div>
       <Suspense
         fallback={
@@ -170,15 +228,19 @@ function GanttWithTaskList() {
           apiRef={ganttRef}
           tasks={tasks}
           dependencies={dependencies}
-          colWidth={60}
           rowHeight={40}
           height={500}
+          zoomLevels={zoomLevels}
+          defaultZoomIndex={DEFAULT_ZOOM}
           taskList={taskListSlots}
           bars={barSlots}
           onTaskEdit={setEditing}
           onTasksChange={handleTasksChange}
           onDependencyCreate={handleDependencyCreate}
           onDependencyDelete={handleDependencyDelete}
+          onZoomChange={handleZoomChange}
+          zoomWheel
+          zoomKeyboard
         />
       </Suspense>
       {editing && (

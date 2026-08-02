@@ -31,6 +31,7 @@ function renderLinks(
       colWidth={30}
       rowHeight={40}
       snapToDay
+      unit="day"
       overrides={{}}
     >
       <DependencyLinks width={800} height={200} {...props} />
