@@ -43,7 +43,10 @@ export function computeTaskPixels(
   origin: Date,
   colWidth: number,
   unit: CalendarUnit = "day",
-  options?: { snapToDay?: boolean },
+  // Accepted but not yet honoured: bars are always positioned by their true
+  // day-granular dates (see the comment below). Callers already pass it, so the
+  // parameter stays to keep the signature stable for when snapping lands.
+  _options?: { snapToDay?: boolean },
 ): TaskPixels {
   // Position by the task's true (day-granular) dates rather than snapping to the
   // column unit, so a bar's size is proportional to its real duration. The bar

@@ -3,14 +3,40 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**"
+      ]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
     },
+    "@am/docs#check-types": {
+      "dependsOn": ["^check-types", "^build"]
+    },
+    "@am/mock-data#check-types": {
+      "dependsOn": ["^check-types", "^build"]
+    },
     "dev": {
       "persistent": true,
       "cache": false
+    },
+    "@am/react-gantt#dev": {
+      "persistent": true,
+      "cache": false,
+      "dependsOn": ["build"]
+    },
+    "@am/docs#dev": {
+      "persistent": true,
+      "cache": false,
+      "dependsOn": ["@am/react-gantt#build"]
+    },
+    "@am/playground#dev": {
+      "persistent": true,
+      "cache": false,
+      "dependsOn": ["@am/react-gantt#build"]
     },
     "lint": {
       "dependsOn": ["^lint"],

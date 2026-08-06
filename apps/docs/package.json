@@ -1,0 +1,36 @@
+{
+  "name": "@am/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Examples gallery for @am/react-gantt — each route renders a live chart beside the source that produced it",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "check-types": "next typegen && tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
+  },
+  "dependencies": {
+    "@am/mock-data": "workspace:*",
+    "@am/react-gantt": "workspace:*",
+    "@shikijs/langs": "^4.4.2",
+    "@shikijs/themes": "^4.4.2",
+    "next": "16.3.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "server-only": "^0.0.1",
+    "shiki": "^4.4.2"
+  },
+  "devDependencies": {
+    "@am/config-typescript": "workspace:*",
+    "@am/oxlint-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
+  }
+}

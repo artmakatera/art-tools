@@ -60,12 +60,24 @@ function makeRng(seed: number): () => number {
   };
 }
 
+/**
+ * Step the calendar day, matching the library's own `addDays`. Adding 24h chunks
+ * drifts across DST (a fall-back day is 25 hours, so the result lands back
+ * inside it), which would make generated data depend on the host timezone — and
+ * this generator's whole contract is that a given (count, seed) is reproducible.
+ */
 function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * MS_PER_DAY);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
+/** Whole calendar days between two dates, DST-independent. */
 function daysBetween(from: Date, to: Date): number {
-  return Math.round((to.getTime() - from.getTime()) / MS_PER_DAY);
+  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.round((b - a) / MS_PER_DAY);
 }
 
 const PROJECT_NAMES = [
