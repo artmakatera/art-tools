@@ -1,0 +1,4 @@
+{
+  "extends": "@am/config-typescript/react-app.json",
+  "include": ["src"]
+}

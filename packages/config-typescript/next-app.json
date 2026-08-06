@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_comment": "Next.js App Router apps. Note react-app.json's jsx:'react-jsx' is already what Next 16 wants (it writes that value itself when it manages a tsconfig). Because our configs use 'extends', Next silently skips its auto-setup entirely — it bails on any tsconfig with 'extends' or 'references' — so everything below must be maintained by hand.",
+  "extends": "./react-app.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "incremental": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "plugins": [{ "name": "next" }]
+  }
+}

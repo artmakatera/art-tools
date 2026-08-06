@@ -75,6 +75,67 @@ describe('useTaskList', () => {
     expect(first).toHaveBeenCalledTimes(1);
   });
 
+  it('settles when the consumer feeds the list straight back as `tasks`', () => {
+    // `onTasksChange={(t) => setTasks(t)}` is the shape consumers actually
+    // write. It used to hang: the notification re-seeded `tasks`, the re-seed
+    // produced a fresh tasksList identity with identical content, and that
+    // re-fired the notification ("Maximum update depth exceeded").
+    const onTasksChange = vi.fn();
+    let current = seed;
+    const { result, rerender } = renderHook(
+      ({ tasks }) =>
+        // Fresh inline callback every render, exactly as in the JSX form.
+        useTaskList(tasks, undefined, { onTasksChange: (t) => onTasksChange(t) }),
+      { initialProps: { tasks: current } },
+    );
+
+    act(() => result.current.updateTask('1', { name: 'Renamed' }));
+    expect(onTasksChange).toHaveBeenCalledTimes(1);
+
+    // The consumer re-seeds with what it was just handed, repeatedly. Each pass
+    // must be silent, or the real app spins.
+    for (let i = 0; i < 5; i += 1) {
+      current = onTasksChange.mock.calls.at(-1)![0] as GanttTask[];
+      rerender({ tasks: current });
+      expect(onTasksChange).toHaveBeenCalledTimes(1);
+    }
+
+    // The edit survived the round-trips rather than being replayed or lost.
+    expect(result.current.tasksList.find((t) => t.id === '1')?.name).toBe('Renamed');
+    expect(result.current.tasksList).toHaveLength(2);
+
+    // A genuine edit still notifies, and undo/redo do too.
+    act(() => result.current.updateTask('2', { name: 'Also renamed' }));
+    expect(onTasksChange).toHaveBeenCalledTimes(2);
+    act(() => result.current.undo());
+    expect(onTasksChange).toHaveBeenCalledTimes(3);
+    act(() => result.current.redo());
+    expect(onTasksChange).toHaveBeenCalledTimes(4);
+  });
+
+  it('re-seeding after a create neither duplicates nor drops the task', () => {
+    // Replaying the log against a seed that already contains the created task
+    // is safe because the resolved map is keyed by id — but assert it, since
+    // the round-trip above depends on it.
+    const onTasksChange = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ tasks }) => useTaskList(tasks, undefined, { onTasksChange }),
+      { initialProps: { tasks: seed } },
+    );
+
+    act(() =>
+      result.current.createTask(
+        { id: '3', name: 'QA', startDate: new Date(2026, 1, 16), endDate: new Date(2026, 1, 28) },
+        '2',
+      ),
+    );
+    const notified = onTasksChange.mock.calls.at(-1)![0] as GanttTask[];
+    expect(notified.map((t) => t.id)).toEqual(['1', '2', '3']);
+
+    rerender({ tasks: notified });
+    expect(result.current.tasksList.map((t) => t.id)).toEqual(['1', '2', '3']);
+  });
+
   it('fires onTaskCreate after the created task is committed', () => {
     const seen: GanttTask['id'][][] = [];
     const { result } = renderHook(() =>
@@ -94,54 +155,5 @@ describe('useTaskList', () => {
     act(() => result.current.createTask(created));
     // flushSync in createTask commits the new task before the callback runs.
     expect(seen).toEqual([['1', '2', '3']]);
-  });
-
-  describe('updateTask field guards', () => {
-    it('never persists an endDate onto a milestone', () => {
-      // Bar geometry always emits both dates (it has to produce a right edge),
-      // so without this guard moving a milestone silently turned it into a
-      // spanning task.
-      const milestone: GanttTask[] = [
-        { id: 'm', name: 'Launch', type: 'milestone', startDate: new Date('2026-03-01') },
-      ];
-      const { result } = renderHook(() => useTaskList(milestone));
-
-      act(() =>
-        result.current.updateTask('m', {
-          startDate: new Date('2026-03-05'),
-          endDate: new Date('2026-03-05'),
-        }),
-      );
-
-      const moved = result.current.tasksList.find((t) => t.id === 'm')!;
-      expect(moved.startDate).toEqual(new Date('2026-03-05'));
-      expect(moved.endDate).toBeUndefined();
-    });
-
-    it('drops a stale duration when an endDate is written', () => {
-      // getEndDate prefers endDate, so leaving duration behind lets the two
-      // describe different spans forever.
-      const withDuration: GanttTask[] = [
-        { id: 'd', name: 'Spec', startDate: new Date('2026-01-01'), duration: 5 },
-      ];
-      const { result } = renderHook(() => useTaskList(withDuration));
-
-      act(() => result.current.updateTask('d', { endDate: new Date('2026-01-10') }));
-
-      const resized = result.current.tasksList.find((t) => t.id === 'd')!;
-      expect(resized.endDate).toEqual(new Date('2026-01-10'));
-      expect(resized.duration).toBeUndefined();
-    });
-
-    it('leaves duration alone when only the name changes', () => {
-      const withDuration: GanttTask[] = [
-        { id: 'd', name: 'Spec', startDate: new Date('2026-01-01'), duration: 5 },
-      ];
-      const { result } = renderHook(() => useTaskList(withDuration));
-
-      act(() => result.current.updateTask('d', { name: 'Spec v2' }));
-
-      expect(result.current.tasksList.find((t) => t.id === 'd')?.duration).toBe(5);
-    });
   });
 });

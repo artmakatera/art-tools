@@ -9,7 +9,7 @@ import type {
   ZoomLevel,
 } from "@am/react-gantt"
 import "@am/react-gantt/style.css";
-import { generateMockData } from "./mockGenerator";
+import { generateMockData } from "@am/mock-data/generator";
 import { TaskEditModal } from "./TaskEditModal";
 
 // Code-split the Gantt into its own async chunk so the page shell paints
@@ -241,7 +241,6 @@ function GanttWithTaskList() {
           onZoomChange={handleZoomChange}
           zoomWheel
           zoomKeyboard
-          keyboardEditing
         />
       </Suspense>
       {editing && (

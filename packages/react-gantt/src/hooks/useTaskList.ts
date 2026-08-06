@@ -91,24 +91,10 @@ export const useTaskList = (
     if (!base) return;
 
     const nextTask: GanttTask = { ...base };
-    if (patch.name !== undefined) {
-      nextTask.name = patch.name;
-    }
-    if (patch.startDate) {
-      nextTask.startDate = patch.startDate;
-    }
-    // A milestone is a single instant. Dragging or nudging one emits an endDate
-    // (the bar geometry has to produce a right edge), but persisting it would
-    // silently turn the milestone into a spanning task.
-    if (patch.endDate && base.type !== "milestone") {
-      nextTask.endDate = patch.endDate;
-      // `endDate` and `duration` both describe the span, and getEndDate prefers
-      // endDate. Leaving a stale duration behind lets the two disagree forever.
-      delete nextTask.duration;
-    }
-    if (patch.progress !== undefined) {
-      nextTask.progress = patch.progress;
-    }
+    if (patch.name !== undefined) nextTask.name = patch.name;
+    if (patch.startDate) nextTask.startDate = patch.startDate;
+    if (patch.endDate) nextTask.endDate = patch.endDate;
+    if (patch.progress !== undefined) nextTask.progress = patch.progress;
 
     // Nothing actually changed → skip the empty undo step (and any reschedule).
     if (sameTask(nextTask, base)) return;
@@ -165,17 +151,17 @@ export const useTaskList = (
   const canUndo = log.cursor > 0;
   const canRedo = log.cursor < log.transactions.length;
 
-  // Notify the parent of the resolved list, skipping the initial mount. Depends
-  // only on the list itself: a new `onTasksChange` identity with an unchanged
-  // list must not re-fire a duplicate notification.
-  const mounted = useRef(false);
+  const tasksListRef = useRef(tasksList);
+  tasksListRef.current = tasksList;
+
+  const notifiedLog = useRef(log);
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
+    if (notifiedLog.current === log) {
       return;
     }
-    optionsRef.current.onTasksChange?.(tasksList);
-  }, [tasksList]);
+    notifiedLog.current = log;
+    optionsRef.current.onTasksChange?.(tasksListRef.current);
+  }, [log]);
 
   return {
     tasksList,

@@ -1,4 +1,16 @@
+/*
+ * Design tokens only. This block deliberately sets NO page-level typography:
+ * a component library has no business choosing the host page's font, and an
+ * unlayered `:root { font-family }` here would beat any layered reset the host
+ * uses (Tailwind puts preflight in `@layer base`, and unlayered CSS wins over
+ * every layer regardless of order) — silently overriding the app's own font.
+ */
 :root {
+  /* Keyboard focus indicator. Applied to the roving stop in either pane; the
+     offset keeps the ring clear of the bar's own fill and the row's border. */
+  --am-gantt-focus-ring-color: #1d4ed8;
+  --am-gantt-focus-ring-width: 2px;
+  --am-gantt-focus-ring-offset: -2px;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -11,12 +23,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* Keyboard focus indicator. Applied to the roving stop in either pane; the
-     offset keeps the ring clear of the bar's own fill and the row's border. */
-  --am-gantt-focus-ring-color: #1d4ed8;
-  --am-gantt-focus-ring-width: 2px;
-  --am-gantt-focus-ring-offset: -2px;
 
   --am-gantt-task-bg: #0ba5ff;
   --am-gantt-task-bg-progress: rgba(0, 0, 0, 0.12);

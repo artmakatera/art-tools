@@ -11,7 +11,7 @@ const tasks: GanttTask[] = [
 // elements (the task-list resize handle shares the class name).
 function renderGrid(onDependencyCreate: (dep: unknown) => void) {
   const { container } = render(
-    <Gantt tasks={tasks} hideTaskList onDependencyCreate={onDependencyCreate} />,
+    <Gantt tasks={tasks} height={400} hideTaskList onDependencyCreate={onDependencyCreate} />,
   );
   // Two handles per bar, in task order: [t1 start, t1 end, t2 start, t2 end].
   return container.querySelectorAll<HTMLDivElement>('.handle');
