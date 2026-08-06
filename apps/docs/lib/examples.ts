@@ -75,12 +75,6 @@ export const EXAMPLES: ExampleMeta[] = [
     group: "Customization",
   },
   {
-    slug: "keyboard",
-    title: "Keyboard & accessibility",
-    blurb: "Treegrid navigation, and keyboardEditing for nudging bars and drawing links.",
-    group: "Interaction",
-  },
-  {
     slug: "imperative-api",
     title: "Imperative API",
     blurb: "Drive the chart from outside via apiRef: create, update, undo, redo, scroll, zoom.",
