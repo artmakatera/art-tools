@@ -75,6 +75,67 @@ describe('useTaskList', () => {
     expect(first).toHaveBeenCalledTimes(1);
   });
 
+  it('settles when the consumer feeds the list straight back as `tasks`', () => {
+    // `onTasksChange={(t) => setTasks(t)}` is the shape consumers actually
+    // write. It used to hang: the notification re-seeded `tasks`, the re-seed
+    // produced a fresh tasksList identity with identical content, and that
+    // re-fired the notification ("Maximum update depth exceeded").
+    const onTasksChange = vi.fn();
+    let current = seed;
+    const { result, rerender } = renderHook(
+      ({ tasks }) =>
+        // Fresh inline callback every render, exactly as in the JSX form.
+        useTaskList(tasks, undefined, { onTasksChange: (t) => onTasksChange(t) }),
+      { initialProps: { tasks: current } },
+    );
+
+    act(() => result.current.updateTask('1', { name: 'Renamed' }));
+    expect(onTasksChange).toHaveBeenCalledTimes(1);
+
+    // The consumer re-seeds with what it was just handed, repeatedly. Each pass
+    // must be silent, or the real app spins.
+    for (let i = 0; i < 5; i += 1) {
+      current = onTasksChange.mock.calls.at(-1)![0] as GanttTask[];
+      rerender({ tasks: current });
+      expect(onTasksChange).toHaveBeenCalledTimes(1);
+    }
+
+    // The edit survived the round-trips rather than being replayed or lost.
+    expect(result.current.tasksList.find((t) => t.id === '1')?.name).toBe('Renamed');
+    expect(result.current.tasksList).toHaveLength(2);
+
+    // A genuine edit still notifies, and undo/redo do too.
+    act(() => result.current.updateTask('2', { name: 'Also renamed' }));
+    expect(onTasksChange).toHaveBeenCalledTimes(2);
+    act(() => result.current.undo());
+    expect(onTasksChange).toHaveBeenCalledTimes(3);
+    act(() => result.current.redo());
+    expect(onTasksChange).toHaveBeenCalledTimes(4);
+  });
+
+  it('re-seeding after a create neither duplicates nor drops the task', () => {
+    // Replaying the log against a seed that already contains the created task
+    // is safe because the resolved map is keyed by id — but assert it, since
+    // the round-trip above depends on it.
+    const onTasksChange = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ tasks }) => useTaskList(tasks, undefined, { onTasksChange }),
+      { initialProps: { tasks: seed } },
+    );
+
+    act(() =>
+      result.current.createTask(
+        { id: '3', name: 'QA', startDate: new Date(2026, 1, 16), endDate: new Date(2026, 1, 28) },
+        '2',
+      ),
+    );
+    const notified = onTasksChange.mock.calls.at(-1)![0] as GanttTask[];
+    expect(notified.map((t) => t.id)).toEqual(['1', '2', '3']);
+
+    rerender({ tasks: notified });
+    expect(result.current.tasksList.map((t) => t.id)).toEqual(['1', '2', '3']);
+  });
+
   it('fires onTaskCreate after the created task is committed', () => {
     const seen: GanttTask['id'][][] = [];
     const { result } = renderHook(() =>
