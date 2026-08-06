@@ -72,18 +72,10 @@ export function diffDays(from: Date, to: Date): number {
   return Math.round((b - a) / MS_PER_DAY);
 }
 
-/**
- * Midnight `days` calendar days from `date`.
- *
- * Steps the day-of-month rather than adding 24h chunks: a DST fall-back day is
- * 25 hours long, so `+ days * MS_PER_DAY` lands back inside the same day and
- * repeated calls stall there forever (verified: Nov 1 2026 in America/New_York).
- */
 export function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + days);
-  return d;
+  return new Date(d.getTime() + days * MS_PER_DAY);
 }
 
 /**

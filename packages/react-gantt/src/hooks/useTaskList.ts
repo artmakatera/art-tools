@@ -91,24 +91,10 @@ export const useTaskList = (
     if (!base) return;
 
     const nextTask: GanttTask = { ...base };
-    if (patch.name !== undefined) {
-      nextTask.name = patch.name;
-    }
-    if (patch.startDate) {
-      nextTask.startDate = patch.startDate;
-    }
-    // A milestone is a single instant. Dragging or nudging one emits an endDate
-    // (the bar geometry has to produce a right edge), but persisting it would
-    // silently turn the milestone into a spanning task.
-    if (patch.endDate && base.type !== "milestone") {
-      nextTask.endDate = patch.endDate;
-      // `endDate` and `duration` both describe the span, and getEndDate prefers
-      // endDate. Leaving a stale duration behind lets the two disagree forever.
-      delete nextTask.duration;
-    }
-    if (patch.progress !== undefined) {
-      nextTask.progress = patch.progress;
-    }
+    if (patch.name !== undefined) nextTask.name = patch.name;
+    if (patch.startDate) nextTask.startDate = patch.startDate;
+    if (patch.endDate) nextTask.endDate = patch.endDate;
+    if (patch.progress !== undefined) nextTask.progress = patch.progress;
 
     // Nothing actually changed → skip the empty undo step (and any reschedule).
     if (sameTask(nextTask, base)) return;

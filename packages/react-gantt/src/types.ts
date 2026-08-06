@@ -20,25 +20,6 @@ export type Scale = {
 
 export type Id = string | number;
 
-/** Which of the two coordinated treegrids a focus target belongs to. */
-export type GanttPane = "list" | "grid";
-
-/**
- * Which element within a row is the roving tab stop. `startHandle`/`endHandle`
- * are only ever current while a keyboard dependency link is being drawn.
- */
-export type GanttFocusSlot = "row" | "bar" | "startHandle" | "endHandle";
-
-/**
- * The keyboard cursor. Identified by task id rather than row index, because
- * indices are invalidated by collapsing a branch, deleting a task, or any
- * change to the `tasks` prop — while the id survives all three.
- */
-export interface GanttFocusTarget {
-  pane: GanttPane;
-  taskId: Id;
-  slot: GanttFocusSlot;
-}
 
 export interface GanttTask {
   id: Id;
@@ -115,15 +96,6 @@ export interface GanttProps {
   zoomWheel?: boolean;
   /** Enable +/- keyboard zoom when the grid is focused. */
   zoomKeyboard?: boolean;
-  /**
-   * Allow the keyboard to *modify* tasks from the timeline pane: arrow keys
-   * nudge a bar by one column, Shift/Alt + arrows resize its end/start edge, and
-   * Enter starts a dependency link. Off by default — a read-only chart must not
-   * reschedule itself because a stray arrow key landed in it.
-   *
-   * ARIA roles and keyboard *navigation* are always on and are not gated here.
-   */
-  keyboardEditing?: boolean;
   onTaskClick?: (task: GanttTask) => void;
   dependencies?: TaskDependency[];
   columns?: ColumnDef[];

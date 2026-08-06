@@ -1,12 +1,10 @@
 import {
   Fragment,
   useEffect,
-  useRef,
   useState,
   type ComponentProps,
   type ElementType,
 } from "react";
-import { isEditableTarget } from "../../core/keys";
 import { useDependencyLinks } from "./DependencyLinksContext";
 import {
   linkBounds,
@@ -186,7 +184,6 @@ export function DependencyLinks({
   const slotProps = slotPropsProp ?? ganttSlots.dependencies?.links?.slotProps;
 
   const links = useDependencyLinks();
-  const layerRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deletePos, setDeletePos] = useState<{ x: number; y: number } | null>(null);
 
@@ -197,28 +194,13 @@ export function DependencyLinks({
       return;
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Delete" && e.key !== "Backspace") {
-        return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedLink) {
+          onDependencyDelete?.(selectedLink.dep);
+        }
+        setSelectedId(null);
+        setDeletePos(null);
       }
-      // This has to be a window listener: the layer is aria-hidden and not
-      // focusable, so selecting a link leaves focus on <body> and there is no
-      // element to bind to. Scope it by hand instead, or Backspace in any field
-      // anywhere on the page deletes the selected link.
-      if (isEditableTarget(e.target)) {
-        return;
-      }
-      // Focus on <body> is the normal post-click state and must stay live. Bail
-      // only when focus has genuinely moved into a widget outside this Gantt.
-      const active = document.activeElement;
-      const host = layerRef.current?.closest('[role="treegrid"]');
-      if (host && active && active !== document.body && !host.contains(active)) {
-        return;
-      }
-      if (selectedLink) {
-        onDependencyDelete?.(selectedLink.dep);
-      }
-      setSelectedId(null);
-      setDeletePos(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -271,7 +253,7 @@ export function DependencyLinks({
   );
 
   return (
-    <Layer ref={layerRef} {...layerProps}>
+    <Layer {...layerProps}>
       {links.map((link) => {
         const isSelected = link.id === selectedId;
         // Cull links outside the viewport, but keep the selected one rendered.
