@@ -33,7 +33,10 @@ interface UseDependencyDragOptions {
 export function useDependencyDrag({ gridBodyRef, onDependencyCreate }: UseDependencyDragOptions): {
   drag: DependencyDragState | null;
   startDrag: (state: DependencyDragState) => void;
+  startKeyboardLink: (state: DependencyDragState) => void;
+  moveKeyboardLink: (currentX: number, currentY: number) => void;
   endDrag: (toTaskId: Id | null, toHandle?: ConnectorHandle) => void;
+  canCreateDependency: boolean;
 } {
   const onDependencyCreateRef = useLatestRef(onDependencyCreate);
 
@@ -60,6 +63,24 @@ export function useDependencyDrag({ gridBodyRef, onDependencyCreate }: UseDepend
 
   // The window listeners would leak if the owner unmounted mid-drag.
   useEffect(() => clearDragListeners, [clearDragListeners]);
+
+  /**
+   * Begin a link without installing any pointer listeners.
+   *
+   * The keyboard flow spans many keystrokes, and `startDrag`'s window `mouseup`
+   * unconditionally cancels the drag — so the first stray click anywhere on the
+   * page (including the one that gave the Gantt focus) would silently kill it.
+   * The mouse flow only survives that because its own React-delegated mouseup
+   * runs first.
+   */
+  const startKeyboardLink = useCallback((state: DependencyDragState) => {
+    setDrag(state);
+  }, []);
+
+  /** Reposition the rubber band's free end, in grid-body coordinates. */
+  const moveKeyboardLink = useCallback((currentX: number, currentY: number) => {
+    setDrag((prev) => (prev ? { ...prev, currentX, currentY } : null));
+  }, []);
 
   const startDrag = useCallback(
     (state: DependencyDragState) => {
@@ -114,5 +135,14 @@ export function useDependencyDrag({ gridBodyRef, onDependencyCreate }: UseDepend
     [clearDragListeners, dragRef, onDependencyCreateRef],
   );
 
-  return { drag, startDrag, endDrag };
+  return {
+    drag,
+    startDrag,
+    startKeyboardLink,
+    moveKeyboardLink,
+    endDrag,
+    // Lets the grid keep Enter free when the consumer never wired up links,
+    // instead of entering a link mode that can't produce anything.
+    canCreateDependency: onDependencyCreate !== undefined,
+  };
 }
