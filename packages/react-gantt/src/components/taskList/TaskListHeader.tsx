@@ -67,6 +67,9 @@ export function TaskListHeader({
     {
       className: styles.header,
       style: { minHeight: headerHeight, height: headerHeight },
+      // Row 1 of the enclosing treegrid; data rows start at 2.
+      role: "row",
+      "aria-rowindex": 1,
     },
     slotProps?.header,
     { columns, headerHeight },
@@ -83,6 +86,8 @@ export function TaskListHeader({
             style: col.width
               ? { width: col.width, flexShrink: 0 }
               : { flex: "1 1 auto", minWidth: 100 },
+            role: "columnheader",
+            "aria-colindex": index + 1,
           },
           slotProps?.headerCell,
           cellOwnerState,
@@ -91,6 +96,9 @@ export function TaskListHeader({
         const resizeHandleProps = mergeSlotProps(
           {
             className: styles.divider,
+            // Pointer-only affordance sitting inside a columnheader; exposing it
+            // would put a nameless node between the header text and the cell.
+            "aria-hidden": true,
             onMouseDown: (e: React.MouseEvent) => {
               // Read the rendered width from the DOM so flex (no explicit width)
               // columns snap cleanly to a fixed width on first drag.

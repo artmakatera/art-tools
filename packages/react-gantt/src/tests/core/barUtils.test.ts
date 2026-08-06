@@ -109,6 +109,64 @@ describe('computeTaskPixels', () => {
       expect(width).toBeCloseTo(COL, 6);
     });
   });
+
+  describe('duration-only tasks', () => {
+    const origin = new Date(2026, 0, 1);
+
+    it('sizes a task from `duration` when it has no endDate', () => {
+      // Regression: `duration` was ignored here while scheduling.ts honoured it,
+      // so a five-day task drew as a one-day bar.
+      const { left, width } = computeTaskPixels(
+        { id: 'd', name: 'd', startDate: new Date(2026, 0, 1), duration: 5 },
+        {},
+        origin,
+        COL,
+        'day',
+      );
+      expect(left).toBe(0);
+      expect(width).toBe(5 * COL); // duration is inclusive of the start day
+    });
+
+    it('prefers an explicit endDate over duration', () => {
+      const { width } = computeTaskPixels(
+        {
+          id: 'd',
+          name: 'd',
+          startDate: new Date(2026, 0, 1),
+          endDate: new Date(2026, 0, 2),
+          duration: 5,
+        },
+        {},
+        origin,
+        COL,
+        'day',
+      );
+      expect(width).toBe(2 * COL);
+    });
+
+    it('still collapses to one column when neither field is set', () => {
+      const { width } = computeTaskPixels(
+        { id: 'd', name: 'd', startDate: new Date(2026, 0, 1) },
+        {},
+        origin,
+        COL,
+        'day',
+      );
+      expect(width).toBe(COL);
+    });
+
+    it('lets a drag override win over duration', () => {
+      const { left, width } = computeTaskPixels(
+        { id: 'd', name: 'd', startDate: new Date(2026, 0, 1), duration: 5 },
+        { startDate: new Date(2026, 0, 3), endDate: new Date(2026, 0, 4) },
+        origin,
+        COL,
+        'day',
+      );
+      expect(left).toBe(2 * COL);
+      expect(width).toBe(2 * COL);
+    });
+  });
 });
 
 describe('pxToDate / pxToEndDate', () => {

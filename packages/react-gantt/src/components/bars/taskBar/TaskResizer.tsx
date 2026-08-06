@@ -94,6 +94,10 @@ export function TaskResizer({
     {
       type: "button" as const,
       "aria-label": "Resize task start",
+      // Pointer-only affordance: it has no key handler, so leaving it in the tab
+      // order gives every bar two dead stops. The keyboard path is Alt/Shift +
+      // Arrow on the focused bar.
+      tabIndex: -1,
       className: clsx(styles.resizer, styles.startResizer),
       onMouseDown: onStartHandleMouseDown,
     },
@@ -105,6 +109,7 @@ export function TaskResizer({
     {
       type: "button" as const,
       "aria-label": "Resize task end",
+      tabIndex: -1,
       className: clsx(styles.resizer, styles.endResizer),
       onMouseDown: onEndHandleMouseDown,
     },

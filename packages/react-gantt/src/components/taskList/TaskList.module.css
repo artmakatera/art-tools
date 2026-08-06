@@ -71,6 +71,17 @@
   background: var(--am-gantt-row-selected-bg, #e0f2fe);
 }
 
+/*
+ * Keyboard focus indicator for the roving stop. :focus-visible rather than
+ * :focus so a mouse click on a row doesn't draw a ring — clicking also moves
+ * the roving stop, and a persistent ring after every click reads as noise.
+ */
+.row:focus-visible {
+  outline: var(--am-gantt-focus-ring-width, 2px) solid
+    var(--am-gantt-focus-ring-color, #1d4ed8);
+  outline-offset: var(--am-gantt-focus-ring-offset, -2px);
+}
+
 .cell {
   display: flex;
   align-items: center;
