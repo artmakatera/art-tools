@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
 import { buildDatesFromTasks } from "../../core/dateUtils";
-import { resolveColumnStep, resolveColumnUnit } from "../../core/scales";
-import type { GanttFocusSlot, GanttTask, Id, TaskState } from "../../types";
-import type { ConnectorHandle } from "../../hooks/useDependencyDrag";
+import { resolveColumnUnit } from "../../core/scales";
+import type { GanttTask, Id, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
 import { Calendar } from "../calendar/Calendar";
@@ -15,33 +14,15 @@ import { GridColumns } from "./GridColumns";
 import styles from "./Grid.module.css";
 import { rangeFromOffset } from "../../core/virtualize";
 import { COL_OVERSCAN, ROW_OVERSCAN } from "../../core/constants";
-import { isEditableTarget } from "../../core/keys";
-import { useRovingFocus } from "../../hooks/useRovingFocus";
-import { useTreeGridKeyboard } from "../../hooks/useTreeGridKeyboard";
-import { useGridEditKeyboard } from "../../hooks/useGridEditKeyboard";
-import { useGridLinkKeyboard } from "../../hooks/useGridLinkKeyboard";
 import {
   useGanttConfig,
   useGanttDependency,
-  useGanttFocus,
   useGanttScroll,
-  useGanttSelectedId,
   useGanttTaskActions,
   useGanttTaskState,
   useGanttViewport,
   useGanttZoom,
 } from "../../context/GanttContext";
-
-/** The two focus slots that name a connector handle, mapped to its edge. */
-function handleSlotToConnector(slot: GanttFocusSlot): ConnectorHandle | null {
-  if (slot === "startHandle") {
-    return "start";
-  }
-  if (slot === "endHandle") {
-    return "end";
-  }
-  return null;
-}
 
 /** State passed to the function form of the Grid slotProps. */
 export interface GridOwnerState {
@@ -86,30 +67,21 @@ export function GanttGrid({
   const slots = slotsProp ?? ganttSlots.timeline?.grid?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.timeline?.grid?.slotProps;
 
-  const { visibleTasks, parentIds, expandedIds, treeMeta } = useGanttTaskState();
-  const selectedId = useGanttSelectedId();
-  const { focus, linkTarget } = useGanttFocus();
-  const { updateTask, onTaskClick, setSelectedId, toggleExpand } = useGanttTaskActions();
-  // The treegrid role sits on the slot-overridable Root, but focus and key
-  // handling live on this inner, non-slot div — a consumer passing
-  // slotProps.root.onKeyDown must not be able to delete the keyboard model.
-  const gridInnerRef = useRef<HTMLDivElement>(null);
+  const { visibleTasks } = useGanttTaskState();
+  const { updateTask, onTaskClick, setSelectedId } = useGanttTaskActions();
   const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
   const viewport = useGanttViewport();
   const { dependencies, onDependencyDelete } = useGanttDependency();
-  const { zoomAt, zoomIn, zoomOut, wheelEnabled, keyboardEnabled, editingEnabled } =
-    useGanttZoom();
+  const { zoomAt, zoomIn, zoomOut, wheelEnabled, keyboardEnabled } = useGanttZoom();
 
-  // Wheel zoom stays an imperative listener because it must be registered
-  // non-passive so Ctrl/Cmd+wheel can preventDefault the browser's page zoom —
-  // something React's onWheel prop cannot express. Keyboard zoom moved into the
-  // pane's keydown handler below: it no longer needs its own tab stop now that
-  // the roving cursor makes a bar focusable, and the old `grid.tabIndex = 0`
-  // was an imperative write React didn't know about (and never reset).
+  // Wire the optional wheel / keyboard zoom controls onto the scroll container.
+  // Wheel is non-passive so Ctrl/Cmd+wheel can preventDefault the page zoom, and
+  // anchors on the cursor; keyboard needs the grid focusable. Re-runs when the
+  // grid first gains rows (visibleTasks.length) so listeners attach once mounted.
   useEffect(() => {
     const grid = gridRef.current;
-    if (!grid || !wheelEnabled) {
+    if (!grid || (!wheelEnabled && !keyboardEnabled)) {
       return;
     }
     const onWheel = (e: WheelEvent) => {
@@ -121,9 +93,27 @@ export function GanttGrid({
       const focusPx = grid.scrollLeft + (e.clientX - rect.left);
       zoomAt(focusPx, e.deltaY < 0 ? 1 : -1);
     };
-    grid.addEventListener("wheel", onWheel, { passive: false });
-    return () => grid.removeEventListener("wheel", onWheel);
-  }, [gridRef, wheelEnabled, zoomAt]);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        zoomIn();
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        zoomOut();
+      }
+    };
+    if (wheelEnabled) {
+      grid.addEventListener("wheel", onWheel, { passive: false });
+    }
+    if (keyboardEnabled) {
+      grid.tabIndex = 0;
+      grid.addEventListener("keydown", onKeyDown);
+    }
+    return () => {
+      grid.removeEventListener("wheel", onWheel);
+      grid.removeEventListener("keydown", onKeyDown);
+    };
+  }, [gridRef, wheelEnabled, keyboardEnabled, zoomAt, zoomIn, zoomOut, visibleTasks.length]);
 
   const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
 
@@ -142,11 +132,6 @@ export function GanttGrid({
     });
   }, []);
 
-  // Pure functions of `scales`, resolved up here because the hooks below need
-  // them and there is an early return further down.
-  const unit = resolveColumnUnit(scales);
-  const columnStep = resolveColumnStep(scales);
-
   const dates = useMemo(
     () => buildDatesFromTasks(visibleTasks, padDays, scales),
     [visibleTasks, padDays, scales],
@@ -161,85 +146,10 @@ export function GanttGrid({
     () => (originMs == null ? undefined : new Date(originMs)),
     [originMs],
   );
-
-  const roving = useRovingFocus({
-    pane: "grid",
-    containerRef: gridInnerRef,
-    scrollerRef: gridRef,
-    visibleTasks,
-    treeMeta,
-    rowHeight,
-    defaultSlot: "bar",
-  });
-
-  const treeKeys = useTreeGridKeyboard({
-    roving,
-    visibleTasks,
-    parentIds,
-    expandedIds,
-    treeMeta,
-    toggleExpand,
-    onActivate: handleSelect,
-  });
-
-  const editKeys = useGridEditKeyboard({
-    enabled: editingEnabled,
-    roving,
-    visibleTasks,
-    parentIds,
-    unit,
-    step: columnStep,
-    updateTask,
-  });
-
-  const linkKeys = useGridLinkKeyboard({
-    enabled: editingEnabled,
-    roving,
-    visibleTasks,
-    overrides,
-    origin,
-    colWidth,
-    rowHeight,
-    unit,
-    snapToDay: true,
-  });
-
-  // Precedence: zoom, then editing, then the shared treegrid navigation.
-  // Editing must outrank navigation because both claim Left/Right — with
-  // `keyboardEditing` off they stay expand/collapse, which is the treegrid
-  // default; with it on they nudge, which is what the timeline's single column
-  // makes possible in the first place.
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (keyboardEnabled && !isEditableTarget(e.target)) {
-        if (e.key === "+" || e.key === "=") {
-          e.preventDefault();
-          zoomIn();
-          return;
-        }
-        if (e.key === "-" || e.key === "_") {
-          e.preventDefault();
-          zoomOut();
-          return;
-        }
-      }
-      // Linking comes first: while a link is half-built it owns every key, so
-      // an arrow can't nudge a bar out from under the rubber band.
-      if (linkKeys(e)) {
-        return;
-      }
-      if (editKeys(e)) {
-        return;
-      }
-      treeKeys(e);
-    },
-    [keyboardEnabled, zoomIn, zoomOut, linkKeys, editKeys, treeKeys],
-  );
-
-  // Every hook above must run unconditionally, so this bail-out lives here.
   if (!origin) return null;
 
   const snapToDay = true; // TODO: make this configurable per Gantt instance
+  const unit = resolveColumnUnit(scales);
   const totalWidth = dates.length * colWidth;
   const bodyHeight = visibleTasks.length * rowHeight;
 
@@ -261,33 +171,6 @@ export function GanttGrid({
     COL_OVERSCAN,
   );
 
-  // Exactly one bar per pane is tabbable; when the cursor is elsewhere that is
-  // the first bar of the current window, so tabbing in lands on something
-  // visible rather than jumping the viewport to row 0.
-  const rovingIndex = roving.focusedIndex >= 0 ? roving.focusedIndex : rowRange.start;
-
-  // Rows to render: the window, plus the cursor's row when it has scrolled out
-  // of it. Pinning keeps the focused element mounted so a wheel scroll can never
-  // drop focus to <body>. Bars are absolutely positioned, so an out-of-window
-  // index needs no special layout — but it must still be inserted in sorted
-  // order, so React updates the existing node in place instead of remounting it
-  // (a remount destroys the focused element, which is what pinning prevents).
-  const pinnedIndex =
-    roving.focusedIndex >= 0 &&
-    (roving.focusedIndex < rowRange.start || roving.focusedIndex >= rowRange.end)
-      ? roving.focusedIndex
-      : -1;
-  const barIndices: number[] = [];
-  if (pinnedIndex >= 0 && pinnedIndex < rowRange.start) {
-    barIndices.push(pinnedIndex);
-  }
-  for (let i = rowRange.start; i < rowRange.end; i += 1) {
-    barIndices.push(i);
-  }
-  if (pinnedIndex >= rowRange.end) {
-    barIndices.push(pinnedIndex);
-  }
-
   // Overscan-padded visible pixel rect, reused to cull dependency links. The
   // ranges already include overscan and are clamped to the content bounds.
   const visibleRect = {
@@ -307,13 +190,6 @@ export function GanttGrid({
       className: styles.gridWrapper,
       style: height !== undefined ? { height } : {},
       onScroll: onGridScroll,
-      // The timeline mirrors the task list's treegrid rather than being a bare
-      // region, so bars and their connector handles have row context. It has no
-      // header row (the calendar is decorative), so rowindex is 1-based on data.
-      role: "treegrid",
-      "aria-label": "Timeline",
-      "aria-rowcount": visibleTasks.length,
-      "aria-colcount": 1,
     },
     slotProps?.root,
     ownerState,
@@ -323,7 +199,6 @@ export function GanttGrid({
     {
       className: styles.body,
       style: { height: bodyHeight, width: totalWidth },
-      role: "rowgroup",
     },
     slotProps?.body,
     ownerState,
@@ -331,14 +206,7 @@ export function GanttGrid({
 
   return (
     <Root ref={gridRef} {...rootProps}>
-      <div
-        ref={gridInnerRef}
-        className={styles.grid}
-        style={{ width: totalWidth }}
-        role="presentation"
-        onKeyDown={onKeyDown}
-        {...roving.containerProps}
-      >
+      <div className={styles.grid} style={{ width: totalWidth }}>
         <Calendar
           colWidth={colWidth}
           rowHeight={rowHeight}
@@ -372,9 +240,8 @@ export function GanttGrid({
             />
             <DependencyPreview />
 
-            {barIndices.map((index) => {
-              const task = visibleTasks[index]!;
-              const meta = treeMeta.get(task.id);
+            {visibleTasks.slice(rowRange.start, rowRange.end).map((task, i) => {
+              const index = rowRange.start + i;
               return (
                 <Bar
                   key={task.id}
@@ -385,21 +252,6 @@ export function GanttGrid({
                   rowHeight={rowHeight}
                   snapToDay={snapToDay}
                   unit={unit}
-                  depth={meta?.depth ?? 0}
-                  posinset={meta?.posinset ?? 1}
-                  setsize={meta?.setsize ?? 1}
-                  isParent={parentIds.has(task.id)}
-                  isExpanded={expandedIds.has(task.id)}
-                  isSelected={selectedId === task.id}
-                  isFocused={index === rovingIndex}
-                  focusedHandle={
-                    focus?.pane === "grid" && focus.taskId === task.id
-                      ? handleSlotToConnector(focus.slot)
-                      : null
-                  }
-                  linkTargetHandle={
-                    linkTarget?.taskId === task.id ? linkTarget.handle : null
-                  }
                   onUpdate={updateTask}
                   override={overrides[task.id]}
                   onOverride={handleOverride}

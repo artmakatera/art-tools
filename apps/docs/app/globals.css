@@ -1,0 +1,69 @@
+/*
+ * Layer order is declared FIRST, before any @import, so it wins: Tailwind's own
+ * `@layer theme, base, components, utilities` (inside tailwindcss/index.css)
+ * then becomes a no-op re-declaration. Only @charset and @layer statements may
+ * precede @import, so this is the one legal place for it.
+ *
+ *   base  < gantt      preflight's `*{border:0}` must not erase the chart's
+ *                      own borders
+ *   gantt < site       the site can still assert page-level typography over
+ *                      anything the library sets
+ *   site  < utilities  Tailwind utilities always win where they are written
+ */
+@layer theme, base, gantt, site, components, utilities;
+
+@import "tailwindcss";
+@import "@am/react-gantt/style.css" layer(gantt);
+
+/* Pin content detection rather than relying on the process cwd. */
+@source "./";
+@source "../components";
+@source "../lib";
+
+/* Tailwind v4 has no `darkMode` config key; class-based dark mode is a variant. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+@layer site {
+  html {
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-white);
+    color: var(--color-slate-900);
+  }
+
+  .dark body {
+    background-color: var(--color-slate-950);
+    color: var(--color-slate-100);
+  }
+
+  /*
+   * Shiki emits both themes as CSS variables (defaultColor: false), so dark mode
+   * is a pure stylesheet swap with no client JavaScript.
+   */
+  .shiki {
+    background-color: var(--shiki-light-bg);
+    color: var(--shiki-light);
+  }
+  .shiki span {
+    color: var(--shiki-light);
+  }
+  .dark .shiki {
+    background-color: var(--shiki-dark-bg);
+    color: var(--shiki-dark);
+  }
+  .dark .shiki span {
+    color: var(--shiki-dark);
+  }
+}

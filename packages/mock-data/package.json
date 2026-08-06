@@ -1,0 +1,23 @@
+{
+  "name": "@am/mock-data",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Gantt fixtures: a hand-authored sample project and a deterministic large-dataset generator",
+  "type": "module",
+  "exports": {
+    "./generator": "./src/generator.ts",
+    "./sample": "./src/sample.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
+  },
+  "devDependencies": {
+    "@am/config-typescript": "workspace:*",
+    "@am/oxlint-config": "workspace:*",
+    "@am/react-gantt": "workspace:*",
+    "@types/react": "^19.2.14",
+    "typescript": "^6.0.3"
+  }
+}

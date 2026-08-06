@@ -10,18 +10,3 @@
 .row:last-child {
   border-bottom: none;
 }
-
-/*
- * The row's single gridcell. Covers the row exactly so it becomes the
- * containing block for the bars without shifting any of their coordinates.
- */
-.cell {
-  position: absolute;
-  inset: 0;
-}
-
-.cell:focus-visible {
-  outline: var(--am-gantt-focus-ring-width, 2px) solid
-    var(--am-gantt-focus-ring-color, #1d4ed8);
-  outline-offset: var(--am-gantt-focus-ring-offset, -2px);
-}

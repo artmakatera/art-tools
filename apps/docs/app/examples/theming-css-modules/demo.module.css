@@ -1,0 +1,36 @@
+/*
+ * Scoping the chart's design tokens to one instance.
+ *
+ * The class lands on a wrapper, so the `--am-gantt-*` values cascade into the
+ * chart below without touching any other chart on the page — unlike setting
+ * them on `:root`.
+ */
+.teal {
+  --am-gantt-task-bg: #0d9488;
+  --am-gantt-task-bg-progress: rgba(0, 0, 0, 0.18);
+  --am-gantt-task-border-radius: 2px;
+  --am-gantt-project-bg: #0f766e;
+  --am-gantt-project-bg-progress: rgba(153, 246, 228, 0.5);
+  --am-gantt-milestone-bg: #f43f5e;
+
+  --am-gantt-calendar-header-bg: #f0fdfa;
+  --am-gantt-calendar-header-color: #134e4a;
+  --am-gantt-calendar-border: #ccfbf1;
+  --am-gantt-calendar-weekend-bg: #f0fdfa;
+  --am-gantt-row-selected-bg: #ccfbf1;
+
+  --am-gantt-focus-ring-color: #0d9488;
+}
+
+/*
+ * Reaching past the tokens into the library's own class names.
+ *
+ * `:global` is required: those classes come from the library's stylesheet, so
+ * CSS Modules must not hash them. This couples you to internal class names —
+ * prefer the tokens above, and prefer `slots`/`slotProps` over both when you
+ * need to change structure rather than paint.
+ */
+.teal :global(.header) {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.04em;
+}

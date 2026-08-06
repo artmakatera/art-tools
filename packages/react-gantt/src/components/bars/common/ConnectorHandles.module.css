@@ -18,21 +18,3 @@
 .visible {
   opacity: 1;
 }
-
-/* The handle a keyboard link would attach to if confirmed right now. */
-.target {
-  background: var(--am-gantt-link-target-bg, #f59e0b);
-  box-shadow: 0 0 0 1px var(--am-gantt-link-target-bg, #f59e0b);
-  transform: scale(1.3);
-}
-
-/*
- * A handle is opacity:0 until its row is hovered, so a focused handle would be
- * invisible. Focus has to force it visible as well as ring it.
- */
-.handle:focus-visible {
-  opacity: 1;
-  outline: var(--am-gantt-focus-ring-width, 2px) solid
-    var(--am-gantt-focus-ring-color, #1d4ed8);
-  outline-offset: 1px;
-}

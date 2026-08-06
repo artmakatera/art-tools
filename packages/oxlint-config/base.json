@@ -9,6 +9,9 @@
     "style": "off",
     "pedantic": "off"
   },
+  "rules": {
+    "import/no-unassigned-import": "off"
+  },
   "env": {
     "browser": true,
     "node": true,
@@ -19,6 +22,8 @@
     "**/build/**",
     "**/.turbo/**",
     "**/node_modules/**",
-    "**/coverage/**"
+    "**/coverage/**",
+    "**/.next/**",
+    "**/next-env.d.ts"
   ]
 }

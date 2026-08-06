@@ -10,18 +10,9 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
-import type {
-  ColumnApi,
-  GanttFocusTarget,
-  GanttHandle,
-  GanttTask,
-  Id,
-  Scale,
-  TaskDependency,
-} from "../types";
-import { LiveRegion } from "../components/a11y/LiveRegion";
+import type { ColumnApi, GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
 import { useTaskList, EMPTY_DEPENDENCIES } from "../hooks/useTaskList";
-import { useExpand, type TreeNodeMeta } from "../hooks/useExpand";
+import { useExpand } from "../hooks/useExpand";
 import { useScrollSync, type ViewportMetrics } from "../hooks/useScrollSync";
 import { useEventCallback } from "../hooks/useEventCallback";
 import { useLatestRef } from "../hooks/useLatestRef";
@@ -75,8 +66,6 @@ interface GanttTaskStateValue {
   visibleTasks: GanttTask[];
   expandedIds: Set<Id>;
   parentIds: Set<Id>;
-  /** Tree depth / position of each visible row, for the ARIA treegrid. */
-  treeMeta: Map<Id, TreeNodeMeta>;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -173,12 +162,7 @@ interface GanttDependencyValue {
   dependencies: TaskDependency[];
   onDependencyDelete?: (dep: TaskDependency) => void;
   startDrag: (state: DependencyDragState) => void;
-  /** Pointer-listener-free variant, for the keyboard link flow. */
-  startKeyboardLink: (state: DependencyDragState) => void;
-  moveKeyboardLink: (currentX: number, currentY: number) => void;
   endDrag: (toTaskId: Id | null, toHandle?: ConnectorHandle) => void;
-  /** False when the consumer passed no `onDependencyCreate`. */
-  canCreateDependency: boolean;
 }
 
 const GanttDependencyContext = createContext<GanttDependencyValue | null>(null);
@@ -208,40 +192,6 @@ export function useGanttDependencyDrag(): DependencyDragState | null {
   return useContext(GanttDragContext);
 }
 
-// --- Focus ----------------------------------------------------------------
-
-interface GanttFocusValue {
-  /** The keyboard cursor, or null before either pane has been entered. */
-  focus: GanttFocusTarget | null;
-  /** Prospective link endpoint; non-null only during a keyboard link flow. */
-  linkTarget: { taskId: Id; handle: ConnectorHandle } | null;
-}
-
-// Hot: one update per keypress. Kept apart from selection so that moving the
-// cursor doesn't invalidate consumers that only care about the selected row.
-const GanttFocusContext = createContext<GanttFocusValue>({ focus: null, linkTarget: null });
-
-export function useGanttFocus(): GanttFocusValue {
-  return useContext(GanttFocusContext);
-}
-
-interface GanttFocusActionsValue {
-  setFocus: (target: GanttFocusTarget | null) => void;
-  setLinkTarget: (target: { taskId: Id; handle: ConnectorHandle } | null) => void;
-  /** Publish a message to the Gantt's polite live region. */
-  announce: (message: string) => void;
-}
-
-const GanttFocusActionsContext = createContext<GanttFocusActionsValue | null>(null);
-
-export function useGanttFocusActions(): GanttFocusActionsValue {
-  const ctx = useContext(GanttFocusActionsContext);
-  if (!ctx) {
-    throw new Error("useGanttFocusActions must be used within a <GanttProvider>");
-  }
-  return ctx;
-}
-
 // --- Zoom -----------------------------------------------------------------
 
 // Zoom controls exposed to the grid (for wheel/keyboard wiring). Identity-stable
@@ -252,8 +202,6 @@ interface GanttZoomValue {
   zoomAt: (focusPx: number, delta: number) => void;
   wheelEnabled: boolean;
   keyboardEnabled: boolean;
-  /** `keyboardEditing` prop: gates nudge/resize/link, never navigation. */
-  editingEnabled: boolean;
 }
 
 const GanttZoomContext = createContext<GanttZoomValue | null>(null);
@@ -285,8 +233,6 @@ export interface GanttProviderProps {
   zoomWheel?: boolean;
   /** Enable +/- keyboard zoom when the grid is focused. */
   zoomKeyboard?: boolean;
-  /** Allow the keyboard to move/resize bars and create links. See GanttProps. */
-  keyboardEditing?: boolean;
   dependencies?: TaskDependency[];
   onTaskClick?: (task: GanttTask) => void;
   onDependencyCreate?: (dep: TaskDependency) => void;
@@ -311,7 +257,6 @@ export function GanttProvider({
   onZoomChange,
   zoomWheel = false,
   zoomKeyboard = false,
-  keyboardEditing = false,
   dependencies = EMPTY_DEPENDENCIES,
   onTaskClick,
   onDependencyCreate,
@@ -324,18 +269,6 @@ export function GanttProvider({
   children,
 }: GanttProviderProps) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);
-  const [focus, setFocus] = useState<GanttFocusTarget | null>(null);
-  const [linkTarget, setLinkTarget] = useState<{
-    taskId: Id;
-    handle: ConnectorHandle;
-  } | null>(null);
-
-  // Filled by <LiveRegion> on mount. Dispatching through a ref keeps `announce`
-  // identity-stable and confines an announcement's re-render to that one leaf.
-  const announceRef = useRef<((message: string) => void) | null>(null);
-  const announce = useCallback((message: string) => {
-    announceRef.current?.(message);
-  }, []);
 
   // Latest-refs for consumer callbacks used internally at a single call site,
   // so the handlers that wrap them keep a stable identity even when the
@@ -362,18 +295,12 @@ export function GanttProvider({
     onTasksChange,
   });
 
-  const { visibleTasks, expandedIds, parentIds, treeMeta, toggleExpand, revealAncestors } =
+  const { visibleTasks, expandedIds, parentIds, toggleExpand } =
     useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
-  const scrollToTask = useScrollToTask({
-    taskListRef,
-    gridRef,
-    visibleTasks,
-    rowHeight,
-    revealAncestors,
-  });
+  const scrollToTask = useScrollToTask({ taskListRef, gridRef, visibleTasks, rowHeight });
 
   // Zoom owns the effective `scales`/`colWidth`: each ladder rung defines the
   // calendar rows and the column width. Standalone `scales`/`colWidth` props
@@ -443,8 +370,7 @@ export function GanttProvider({
     [createTask, updateTask, deleteTask, undo, redo, scrollToTask, zoomIn, zoomOut, setZoom, onTaskEditRef],
   );
 
-  const { drag, startDrag, startKeyboardLink, moveKeyboardLink, endDrag, canCreateDependency } =
-    useDependencyDrag({ gridBodyRef, onDependencyCreate });
+  const { drag, startDrag, endDrag } = useDependencyDrag({ gridBodyRef, onDependencyCreate });
 
   // --- Context values ---
   const configValue = useMemo<GanttConfigValue>(
@@ -458,18 +384,6 @@ export function GanttProvider({
     [rowHeight, zoom.level, padDays, height],
   );
 
-  const focusValue = useMemo<GanttFocusValue>(
-    () => ({ focus, linkTarget }),
-    [focus, linkTarget],
-  );
-
-  // All three members are stable (useState setters and a ref dispatcher), so
-  // this object is created exactly once.
-  const focusActionsValue = useMemo<GanttFocusActionsValue>(
-    () => ({ setFocus, setLinkTarget, announce }),
-    [announce],
-  );
-
   const zoomValue = useMemo<GanttZoomValue>(
     () => ({
       zoomIn,
@@ -477,14 +391,13 @@ export function GanttProvider({
       zoomAt,
       wheelEnabled: zoomWheel,
       keyboardEnabled: zoomKeyboard,
-      editingEnabled: keyboardEditing,
     }),
-    [zoomIn, zoomOut, zoomAt, zoomWheel, zoomKeyboard, keyboardEditing],
+    [zoomIn, zoomOut, zoomAt, zoomWheel, zoomKeyboard],
   );
 
   const taskStateValue = useMemo<GanttTaskStateValue>(
-    () => ({ tasksList, visibleTasks, expandedIds, parentIds, treeMeta, canUndo, canRedo }),
-    [tasksList, visibleTasks, expandedIds, parentIds, treeMeta, canUndo, canRedo],
+    () => ({ tasksList, visibleTasks, expandedIds, parentIds, canUndo, canRedo }),
+    [tasksList, visibleTasks, expandedIds, parentIds, canUndo, canRedo],
   );
 
   // `setSelectedId` is a useState setter — stable, safe to omit from deps.
@@ -515,20 +428,9 @@ export function GanttProvider({
       dependencies,
       onDependencyDelete: onDependencyDeleteStable,
       startDrag,
-      startKeyboardLink,
-      moveKeyboardLink,
       endDrag,
-      canCreateDependency,
     }),
-    [
-      dependencies,
-      onDependencyDeleteStable,
-      startDrag,
-      startKeyboardLink,
-      moveKeyboardLink,
-      endDrag,
-      canCreateDependency,
-    ],
+    [dependencies, onDependencyDeleteStable, startDrag, endDrag],
   );
 
   // `viewport`, `selectedId`, `drag`, and `drag !== null` are passed directly:
@@ -541,20 +443,13 @@ export function GanttProvider({
             <GanttDependencyContext.Provider value={dependencyValue}>
               <GanttTaskStateContext.Provider value={taskStateValue}>
                 <GanttSelectionContext.Provider value={selectedId}>
-                  <GanttFocusActionsContext.Provider value={focusActionsValue}>
-                    <GanttDragActiveContext.Provider value={drag !== null}>
-                      <GanttViewportContext.Provider value={viewport}>
-                        <GanttFocusContext.Provider value={focusValue}>
-                          <GanttDragContext.Provider value={drag}>
-                            {children}
-                            {/* Rendered as a sibling rather than in <Gantt>, so
-                                manual GanttProvider compositions get it too. */}
-                            <LiveRegion registerRef={announceRef} />
-                          </GanttDragContext.Provider>
-                        </GanttFocusContext.Provider>
-                      </GanttViewportContext.Provider>
-                    </GanttDragActiveContext.Provider>
-                  </GanttFocusActionsContext.Provider>
+                  <GanttDragActiveContext.Provider value={drag !== null}>
+                    <GanttViewportContext.Provider value={viewport}>
+                      <GanttDragContext.Provider value={drag}>
+                        {children}
+                      </GanttDragContext.Provider>
+                    </GanttViewportContext.Provider>
+                  </GanttDragActiveContext.Provider>
                 </GanttSelectionContext.Provider>
               </GanttTaskStateContext.Provider>
             </GanttDependencyContext.Provider>
