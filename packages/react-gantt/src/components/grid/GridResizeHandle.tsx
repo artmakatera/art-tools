@@ -50,6 +50,7 @@ export function GridResizeHandle({
       onMouseDown,
       role: "separator",
       "aria-orientation": "vertical" as const,
+      "aria-label": "Resize task list",
     },
     slotProps?.root,
     ownerState,

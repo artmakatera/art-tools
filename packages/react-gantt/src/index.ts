@@ -117,3 +117,9 @@ export type {
 } from './components/grid/GridResizeHandle';
 
 export type { GanttProps, GanttHandle, GanttTask, TaskPatch, Id, TaskDependency, TaskDependencyType, ColumnDef } from './types';
+
+// --- Keyboard & accessibility ---
+// The focus cursor's shape, exported so `ConnectorHandlesOwnerState` and other
+// slot owner states are fully nameable by consumers.
+export type { GanttPane, GanttFocusSlot, GanttFocusTarget } from './types';
+export type { ConnectorHandle } from './hooks/useDependencyDrag';

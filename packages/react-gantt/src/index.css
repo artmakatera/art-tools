@@ -12,6 +12,12 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
+  /* Keyboard focus indicator. Applied to the roving stop in either pane; the
+     offset keeps the ring clear of the bar's own fill and the row's border. */
+  --am-gantt-focus-ring-color: #1d4ed8;
+  --am-gantt-focus-ring-width: 2px;
+  --am-gantt-focus-ring-offset: -2px;
+
   --am-gantt-task-bg: #0ba5ff;
   --am-gantt-task-bg-progress: rgba(0, 0, 0, 0.12);
   --am-gantt-task-color: #fff;
