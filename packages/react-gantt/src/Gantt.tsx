@@ -21,7 +21,6 @@ export function Gantt({
   onZoomChange,
   zoomWheel,
   zoomKeyboard,
-  keyboardEditing,
   onTaskClick,
   columns = DEFAULT_COLUMNS,
   defaultTaskListWidth = 280,
@@ -64,7 +63,6 @@ export function Gantt({
       onZoomChange={onZoomChange}
       zoomWheel={zoomWheel}
       zoomKeyboard={zoomKeyboard}
-      keyboardEditing={keyboardEditing}
       onTaskClick={onTaskClick}
       onDependencyCreate={onDependencyCreate}
       onDependencyDelete={onDependencyDelete}

@@ -22,10 +22,6 @@ export interface ConnectorHandlesOwnerState {
   barCenterY: number;
   show: boolean;
   isDragging: boolean;
-  /** This handle is the source of an in-progress keyboard link. */
-  focusedHandle: ConnectorHandle | null;
-  /** This handle is the prospective target of an in-progress keyboard link. */
-  linkTargetHandle: ConnectorHandle | null;
 }
 
 export interface ConnectorHandlesSlots {
@@ -47,30 +43,20 @@ export type ConnectorHandlesSlotConfig = SlotConfig<
 
 interface ConnectorHandlesProps {
   taskId: Id;
-  /**
-   * Qualifies the handles' accessible names. Optional so the component stays
-   * renderable standalone; omitting it yields the unqualified "Link from start".
-   */
-  taskName?: string;
   barLeft: number;
   barWidth: number;
   barCenterY: number;
   show: boolean;
-  focusedHandle?: ConnectorHandle | null;
-  linkTargetHandle?: ConnectorHandle | null;
   slots?: ConnectorHandlesSlots;
   slotProps?: ConnectorHandlesSlotProps;
 }
 
 export function ConnectorHandles({
   taskId,
-  taskName,
   barLeft,
   barWidth,
   barCenterY,
   show,
-  focusedHandle = null,
-  linkTargetHandle = null,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: ConnectorHandlesProps) {
@@ -116,33 +102,18 @@ export function ConnectorHandles({
     barCenterY,
     show,
     isDragging,
-    focusedHandle,
-    linkTargetHandle,
   };
 
   const StartHandle = slots?.startHandle ?? "div";
   const EndHandle = slots?.endHandle ?? "div";
 
-  // Handles are invisible until their row is hovered, so a keyboard user needs
-  // them forced visible while a link involves them.
-  const isVisible =
-    show || isDragging || focusedHandle !== null || linkTargetHandle !== null;
+  const isVisible = show || isDragging;
 
   const startHandleProps = mergeSlotProps(
     {
       role: "button",
-      // Not a tab stop: with one handle pair per bar this contributed two dead
-      // stops per row. The keyboard link flow makes the handle the roving stop
-      // for exactly as long as a link is being drawn.
-      // Becomes the roving stop for exactly as long as it is the source of a
-      // keyboard link; otherwise it stays out of the tab order.
-      tabIndex: focusedHandle === "start" ? 0 : -1,
-      "aria-label": taskName ? `Link from start of ${taskName}` : "Link from start",
-      className: clsx(
-        styles.handle,
-        isVisible && styles.visible,
-        linkTargetHandle === "start" && styles.target,
-      ),
+      tabIndex: 0,
+      className: clsx(styles.handle, isVisible && styles.visible),
       style: { left: barLeft - CONNECTOR_HANDLE_SIZE, top: barCenterY - HANDLE_OFFSET },
       onMouseDown: (e: React.MouseEvent) => onMouseDown(e, "start"),
       onMouseUp: (e: React.MouseEvent) => onMouseUp(e, "start"),
@@ -154,13 +125,8 @@ export function ConnectorHandles({
   const endHandleProps = mergeSlotProps(
     {
       role: "button",
-      tabIndex: focusedHandle === "end" ? 0 : -1,
-      "aria-label": taskName ? `Link from end of ${taskName}` : "Link from end",
-      className: clsx(
-        styles.handle,
-        isVisible && styles.visible,
-        linkTargetHandle === "end" && styles.target,
-      ),
+      tabIndex: 0,
+      className: clsx(styles.handle, isVisible && styles.visible),
       style: { left: barLeft + barWidth, top: barCenterY - HANDLE_OFFSET },
       onMouseDown: (e: React.MouseEvent) => onMouseDown(e, "end"),
       onMouseUp: (e: React.MouseEvent) => onMouseUp(e, "end"),
@@ -169,12 +135,10 @@ export function ConnectorHandles({
     ownerState,
   );
 
-  // The data-* hooks go after the spread on purpose: they are how the roving
-  // focus effect finds a handle, so consumer slotProps must not displace them.
   return (
     <>
-      <StartHandle {...startHandleProps} data-task-id={taskId} data-gantt-slot="startHandle" />
-      <EndHandle {...endHandleProps} data-task-id={taskId} data-gantt-slot="endHandle" />
+      <StartHandle {...startHandleProps} />
+      <EndHandle {...endHandleProps} />
     </>
   );
 }
