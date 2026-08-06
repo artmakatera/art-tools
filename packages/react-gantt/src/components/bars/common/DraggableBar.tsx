@@ -45,7 +45,9 @@ export function DraggableBar({
       className={className}
       style={{ left, top, width, height, ...style }}
       title={title}
-      aria-label={title}
+      // No aria-label: the enclosing gridcell names the bar, and with the task
+      // name *plus* its dates and progress. Labelling this div too would put a
+      // second, poorer name for the same thing in the accessibility tree.
       onMouseDown={onMouseDown}
     >
       {children}

@@ -18,6 +18,7 @@ A high-performance, composable Gantt chart component library for React, built as
 - **Resizable panes** — draggable divider between the task list and the calendar/grid area.
 - **Virtualized rendering** — rows and columns are windowed on both axes with overscan, so charts with thousands of tasks stay smooth.
 - **Undo-friendly state model** — an insertion-ordered, cached resolution pipeline keeps undo/redo and edits fast regardless of history length.
+- **Keyboard & screen-reader support** — both panes are ARIA `treegrid`s with roving-tabindex focus; arrow keys navigate and expand/collapse, and with `keyboardEditing` they nudge, resize, and create dependency links without a pointer.
 - **Theming** — CSS custom properties for colors and sizing, importable via `@am/react-gantt/style.css`.
 
 ## Project structure

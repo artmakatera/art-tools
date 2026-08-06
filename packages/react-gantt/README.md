@@ -25,6 +25,7 @@ MUI-style slot system for deep customization.
 - [Dependencies & scheduling](#dependencies--scheduling)
 - [Columns](#columns)
 - [Imperative API](#imperative-api)
+- [Keyboard & accessibility](#keyboard--accessibility)
 - [Slots & theming](#slots--theming)
 - [Architecture (for contributors)](#architecture-for-contributors)
 - [Roadmap](#roadmap)
@@ -143,6 +144,7 @@ Defined in [`src/types.ts`](./src/types.ts).
 | Prop              | Type                   | Description |
 | ----------------- | ---------------------- | ----------- |
 | `apiRef`          | `React.Ref<GanttHandle>` | The [imperative API](#imperative-api) handle. |
+| `keyboardEditing` | `boolean`              | Allow the keyboard to move/resize bars and create links from the timeline. Default `false`; see [Keyboard & accessibility](#keyboard--accessibility). ARIA roles and keyboard *navigation* are always on and are not gated by this. |
 | `taskList`        | `GanttTaskListSlots`   | Slot overrides for the task-list pane (`treeCell`, `header`). |
 | `bars`            | `GanttBarsSlots`       | Slot overrides for timeline bars and their handles. |
 | `dependencySlots` | `GanttDependenciesSlots` | Slot overrides for dependency links (named to avoid colliding with `dependencies`). |
@@ -291,6 +293,95 @@ task is visible to consumers immediately.
 
 ---
 
+## Keyboard & accessibility
+
+Both panes are ARIA `treegrid`s — the task list (`aria-label="Tasks"`) and the timeline
+(`aria-label="Timeline"`). Rows carry `aria-level` / `aria-posinset` / `aria-setsize` /
+`aria-expanded` / `aria-selected`, and because rows are virtualized, `aria-rowcount` and
+`aria-rowindex` report the real list position rather than the DOM's. Decorative layers
+(calendar, column rules, link overlay) are `aria-hidden`.
+
+Each pane exposes exactly **one** tab stop, moved with a roving tabindex, so Tab goes
+task list → timeline → out. In the timeline the tab stop is the bar's `gridcell`, whose
+accessible name carries the schedule the bar conveys visually (`"Wireframes, 1/1/2026 to
+1/10/2026, 30% complete"`).
+
+Roles and navigation are always on. Keyboard **editing** is opt-in via `keyboardEditing`.
+
+### Navigation (always available)
+
+| Key | Action |
+| --- | ------ |
+| <kbd>↑</kbd> / <kbd>↓</kbd> | Previous / next row |
+| <kbd>Home</kbd> / <kbd>End</kbd> | First / last row |
+| <kbd>PageUp</kbd> / <kbd>PageDown</kbd> | One viewport of rows |
+| <kbd>→</kbd> | Expand a collapsed branch, else move to its first child |
+| <kbd>←</kbd> | Collapse an expanded branch, else move to the parent |
+| <kbd>Enter</kbd> | Activate the row (fires `onTaskClick`) |
+| <kbd>Space</kbd> | Toggle a branch; activate a leaf |
+| <kbd>+</kbd> / <kbd>-</kbd> | Zoom, when `zoomKeyboard` is set (timeline only) |
+
+Moving the cursor selects the row and scrolls it into view, but does **not** fire
+`onTaskClick` — arrowing past twenty rows must not look like twenty clicks.
+
+### Editing (timeline only, requires `keyboardEditing`)
+
+| Key | Action |
+| --- | ------ |
+| <kbd>←</kbd> / <kbd>→</kbd> | Move the bar by one column |
+| <kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Resize the end edge |
+| <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Resize the start edge |
+| <kbd>Enter</kbd> | Start a dependency link from the bar's **end** (FS / FF) |
+| <kbd>Shift</kbd> + <kbd>Enter</kbd> | Start a link from the bar's **start** (SS / SF) |
+
+With `keyboardEditing` on, <kbd>←</kbd>/<kbd>→</kbd> nudge instead of expanding — the
+timeline has a single column, so nothing else needs them. Each press is one `updateTask`
+and therefore **one undo step**, with any cascaded reschedule folded into the same
+transaction. Nudges are computed in date space (`addUnit`), not by inverting pixels, so
+they are exactly reversible at every zoom rung; at rungs finer than a day they clamp to
+one day, matching the day granularity tasks are stored at.
+
+Summary rows refuse to move (their dates roll up from their children) and milestones
+refuse to resize; both say so through the live region.
+
+### Creating a link without a pointer
+
+<kbd>Enter</kbd> puts focus on the source connector handle — they are `tabIndex="-1"` at
+every other moment — and starts a rubber band. Then:
+
+| Key | Action |
+| --- | ------ |
+| <kbd>↑</kbd> / <kbd>↓</kbd> | Choose the target task (skips the source) |
+| <kbd>←</kbd> / <kbd>→</kbd> | Choose the target's start / end edge (FS ↔ FF, SS ↔ SF) |
+| <kbd>Enter</kbd> | Create the link |
+| <kbd>Escape</kbd> | Cancel |
+
+Links that would duplicate an existing one or close a dependency cycle are refused and
+announced, leaving you in link mode to pick again.
+
+### Announcements
+
+One polite live region per `<Gantt>` reports what ARIA state cannot: nudge results,
+refusals and their reasons, and link progress. It deliberately stays silent about cursor
+movement, expand/collapse, and selection — `aria-expanded` and `aria-selected` already
+convey those, and repeating them makes screen readers say everything twice.
+
+### Theming focus
+
+`--am-gantt-focus-ring-color`, `--am-gantt-focus-ring-width`,
+`--am-gantt-focus-ring-offset`, and `--am-gantt-link-target-bg`.
+
+### Known gaps
+
+- Dependency links themselves are not keyboard-selectable or deletable; `Delete` is
+  deliberately unbound (link selection still lives in `DependencyLinks`' local state).
+- The pane splitter is a `separator` but is not focusable.
+- The `jsx-a11y/click-events-have-key-events` and `no-static-element-interactions` oxlint
+  rules stay disabled: rows are keyboard-operable through a handler delegated to the pane
+  container, which the rules cannot see.
+
+---
+
 ## Slots & theming
 
 ### CSS custom properties
@@ -392,20 +483,13 @@ current design and a sketch of how each would hook in.
 
 
 
-### 1. Keyboard navigation & accessibility
-
-There is no keyboard model today. Propose ARIA `treegrid` roles on the task list,
-roving-tabindex focus across rows and bars, keyboard move/resize (arrow keys nudge a
-selected bar by one column), Enter/Space to expand/collapse, and focus management for
-dependency connector handles so links can be created without a pointer.
-
-### 2. Export / print
+### 1. Export / print
 
 Propose export of the chart to PNG/SVG/PDF, plus a print-friendly render mode that
 temporarily disables virtualization and renders the full extent so browser print
 captures every row.
 
-### 3. Critical path
+### 2. Critical path
 
 The scheduling engine already builds the dependency graph
 (`buildDependencyGraph` in [`src/core/scheduling.ts`](./src/core/scheduling.ts)).

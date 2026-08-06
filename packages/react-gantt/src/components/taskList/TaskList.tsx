@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   useGanttConfig,
   useGanttScroll,
@@ -6,6 +6,8 @@ import {
   useGanttTaskActions,
   useGanttTaskState,
 } from "../../context/GanttContext";
+import { useRovingFocus } from "../../hooks/useRovingFocus";
+import { useTreeGridKeyboard } from "../../hooks/useTreeGridKeyboard";
 import type { ColumnDef, GanttTask, Id } from "../../types";
 import { TaskListHeader } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
@@ -27,12 +29,13 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [], taskList }: TaskListProps) {
-  const { visibleTasks, expandedIds, parentIds } =
+  const { visibleTasks, expandedIds, parentIds, treeMeta } =
     useGanttTaskState();
   const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
   const selectedId = useGanttSelectedId();
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
   const { taskListRef, onTaskListScroll, gridRef } = useGanttScroll();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { widths, onResizeStart } = useColumnWidths();
 
@@ -46,7 +49,9 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     [columns, widths],
   );
 
-  const scrollToTask = useCallback(
+  // Scroll the *grid* horizontally so the task's bar is on screen. Named for
+  // what it does: the vertical reveal is `scrollToTask` on the scroll context.
+  const revealHorizontally = useCallback(
     (task: GanttTask) => {
       const grid = gridRef.current;
       const range = getMinMaxDates(visibleTasks);
@@ -74,8 +79,25 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     [gridRef, visibleTasks, padDays, colWidth, scales],
   );
 
-  // Selecting a row drives both the built-in highlight and the consumer's
-  // onTaskClick, so external selection state (e.g. a "Delete selected" toolbar) stays in sync.
+  // Selection follows the cursor: moving focus highlights the row and reveals
+  // its bar, but does NOT fire onTaskClick — that is activation, and arrowing
+  // past twenty rows must not look like twenty clicks to the consumer.
+  const focusRow = useCallback(
+    (task: GanttTask) => {
+      setSelectedId(task.id);
+      revealHorizontally(task);
+    },
+    [setSelectedId, revealHorizontally],
+  );
+
+  const activateRow = useCallback(
+    (task: GanttTask) => {
+      onTaskClick?.(task);
+    },
+    [onTaskClick],
+  );
+
+  // The click path keeps doing both, so existing behaviour is unchanged.
   const handleSelect = useCallback(
     (id: Id) => {
       setSelectedId(id);
@@ -83,21 +105,11 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
       const task = visibleTasks.find((t) => t.id === id);
       if (task) {
         onTaskClick?.(task);
-        scrollToTask(task); // existing horizontal grid reveal — unchanged
+        revealHorizontally(task); // existing horizontal grid reveal — unchanged
       }
     },
-    [setSelectedId, visibleTasks, onTaskClick, scrollToTask],
+    [setSelectedId, visibleTasks, onTaskClick, revealHorizontally],
   );
-
-  // Depth map: how many levels deep each task is
-  const depthMap = useMemo(() => {
-    const map = new Map<Id, number>();
-    for (const t of visibleTasks) {
-      const parentDepth = t.parentId != null ? (map.get(t.parentId) ?? 0) : -1;
-      map.set(t.id, parentDepth + 1);
-    }
-    return map;
-  }, [visibleTasks]);
 
   // Measure this pane's own scroll viewport for row windowing. We can't reuse
   // the grid's viewport: the grid may not be mounted (e.g. task-list-only mode),
@@ -129,10 +141,77 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     ROW_OVERSCAN,
   );
 
+  const roving = useRovingFocus({
+    pane: "list",
+    containerRef,
+    scrollerRef: taskListRef,
+    visibleTasks,
+    treeMeta,
+    rowHeight,
+    defaultSlot: "row",
+    onFocusMove: focusRow,
+  });
+
+  const onKeyDown = useTreeGridKeyboard({
+    roving,
+    visibleTasks,
+    parentIds,
+    expandedIds,
+    treeMeta,
+    toggleExpand,
+    onActivate: activateRow,
+  });
+
+  // Exactly one row per pane is tabbable. When the cursor is elsewhere (or unset)
+  // that is the first row of the current window, so tabbing in always lands on
+  // something visible rather than scrolling the pane to row 0.
+  const rovingIndex = roving.focusedIndex >= 0 ? roving.focusedIndex : rowRange.start;
+
+  // Keep the cursor's row mounted even when scrolled out of the window, so its
+  // DOM node — and therefore focus — survives a wheel scroll.
+  //
+  // It has to stay in the SAME children array, in sorted order. Moving a row
+  // into a separate JSX slot makes React unmount and remount it, which destroys
+  // the focused node and drops focus to <body> — the exact failure pinning
+  // exists to prevent. Sorted, an out-of-window cursor is either below the
+  // window (first) or above it (last), which is also its natural position, so
+  // the element never even changes index.
+  const pinnedIndex =
+    roving.focusedIndex >= 0 &&
+    (roving.focusedIndex < rowRange.start || roving.focusedIndex >= rowRange.end)
+      ? roving.focusedIndex
+      : -1;
+
+  const rowIndices: number[] = [];
+  if (pinnedIndex >= 0 && pinnedIndex < rowRange.start) {
+    rowIndices.push(pinnedIndex);
+  }
+  for (let i = rowRange.start; i < rowRange.end; i += 1) {
+    rowIndices.push(i);
+  }
+  if (pinnedIndex >= rowRange.end) {
+    rowIndices.push(pinnedIndex);
+  }
+
   const bodyStyle = { flex: "1 1 auto", minHeight: 0 };
 
   return (
-    <div className={styles.taskList} style={{ height }}>
+    // The treegrid lives on this outer div rather than the scroller: it is not a
+    // slot, so consumer slotProps can never displace the role (or, later, the
+    // keydown handler), and it contains both the header row and the rowgroup.
+    // aria-rowcount/-rowindex are mandatory here — rows are virtualized, so DOM
+    // position tells assistive tech nothing about the real list size.
+    <div
+      ref={containerRef}
+      className={styles.taskList}
+      style={{ height }}
+      role="treegrid"
+      aria-label="Tasks"
+      aria-rowcount={visibleTasks.length + 1}
+      aria-colcount={resolvedColumns.length}
+      onKeyDown={onKeyDown}
+      {...roving.containerProps}
+    >
       <TaskListHeader
         columns={resolvedColumns}
         rowHeight={rowHeight}
@@ -146,23 +225,32 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
         className={styles.body}
         style={bodyStyle}
         onScroll={handleScroll}
+        role="rowgroup"
       >
-        <div className={styles.rows}>
+        <div className={styles.rows} role="presentation">
           {/* Spacer for the rows above the viewport, so the visible rows sit at
               the right scroll offset without absolute positioning. */}
-          <div style={{ height: rowRange.start * rowHeight }} />
-          {Array.from({ length: rowRange.end - rowRange.start }, (_, i) => {
-            const index = rowRange.start + i;
+          <div style={{ height: rowRange.start * rowHeight }} role="presentation" />
+          {rowIndices.map((index) => {
             const task = visibleTasks[index]!;
+            const meta = treeMeta.get(task.id);
             return (
               <TaskListRow
                 key={task.id}
                 task={task}
                 rowHeight={rowHeight}
-                depth={depthMap.get(task.id) ?? 0}
+                // +2: aria-rowindex is 1-based and the header occupies row 1.
+                rowIndex={index + 2}
+                depth={meta?.depth ?? 0}
+                posinset={meta?.posinset ?? 1}
+                setsize={meta?.setsize ?? 1}
                 isParent={parentIds.has(task.id)}
                 isExpanded={expandedIds.has(task.id)}
                 isSelected={selectedId === task.id}
+                isFocused={index === rovingIndex}
+                // Out-of-window rows leave the flow so the spacers, which size
+                // themselves from the window alone, stay correct.
+                offsetTop={index === pinnedIndex ? index * rowHeight : undefined}
                 onToggleExpand={toggleExpand}
                 onSelect={handleSelect}
                 columns={resolvedColumns}
@@ -174,6 +262,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
             style={{
               height: (visibleTasks.length - rowRange.end) * rowHeight,
             }}
+            role="presentation"
           />
         </div>
       </div>

@@ -241,6 +241,7 @@ function GanttWithTaskList() {
           onZoomChange={handleZoomChange}
           zoomWheel
           zoomKeyboard
+          keyboardEditing
         />
       </Suspense>
       {editing && (

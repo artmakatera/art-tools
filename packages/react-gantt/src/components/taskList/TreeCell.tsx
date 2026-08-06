@@ -74,6 +74,13 @@ export function TreeCell({
 
   const buttonProps = mergeSlotProps(
     {
+      // Without an explicit type a <button> defaults to "submit" and would post
+      // the surrounding form when a consumer embeds the Gantt in one.
+      type: "button" as const,
+      // The row itself carries aria-expanded and handles Left/Right/Space, so
+      // this button is a pointer affordance only — keeping it tabbable would add
+      // one dead stop per row and double-fire Enter (button click + row keydown).
+      tabIndex: -1,
       className: styles.expandBtn,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();

@@ -59,6 +59,8 @@ export function DependencyPreview({
   const rootProps = mergeSlotProps(
     {
       className: styles.preview,
+      // Transient drag affordance; progress is announced via the live region.
+      "aria-hidden": true,
       style: {
         left: drag.startX,
         top: drag.startY,

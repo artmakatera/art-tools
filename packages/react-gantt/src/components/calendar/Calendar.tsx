@@ -23,7 +23,9 @@ export function Calendar({
   const totalWidth = dates.length * colWidth;
 
   return (
-    <div className={styles.calendar} style={{ width: totalWidth }}>
+    // Decorative: the dates are already spoken as part of each bar's accessible
+    // name, and exposing thousands of virtualized column headers would bury it.
+    <div className={styles.calendar} style={{ width: totalWidth }} aria-hidden>
       {scales.map((scale) => (
         <CalendarRow
           key={`${scale.unit}-${scale.step}`}
