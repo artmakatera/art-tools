@@ -151,17 +151,17 @@ export const useTaskList = (
   const canUndo = log.cursor > 0;
   const canRedo = log.cursor < log.transactions.length;
 
-  // Notify the parent of the resolved list, skipping the initial mount. Depends
-  // only on the list itself: a new `onTasksChange` identity with an unchanged
-  // list must not re-fire a duplicate notification.
-  const mounted = useRef(false);
+  const tasksListRef = useRef(tasksList);
+  tasksListRef.current = tasksList;
+
+  const notifiedLog = useRef(log);
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
+    if (notifiedLog.current === log) {
       return;
     }
-    optionsRef.current.onTasksChange?.(tasksList);
-  }, [tasksList]);
+    notifiedLog.current = log;
+    optionsRef.current.onTasksChange?.(tasksListRef.current);
+  }, [log]);
 
   return {
     tasksList,

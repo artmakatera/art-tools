@@ -33,7 +33,7 @@ export function DependenciesDemo() {
       <Gantt
         tasks={tasks}
         dependencies={dependencies}
-        onTasksChange={setTasks}
+        onTasksChange={task => setTasks(task)}
         onDependencyCreate={handleCreate}
         onDependencyDelete={handleDelete}
         height={300}
