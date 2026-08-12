@@ -1,23 +1,11 @@
-/*
- * Design tokens only. This block deliberately sets NO page-level typography:
- * a component library has no business choosing the host page's font, and an
- * unlayered `:root { font-family }` here would beat any layered reset the host
- * uses (Tailwind puts preflight in `@layer base`, and unlayered CSS wins over
- * every layer regardless of order) — silently overriding the app's own font.
- */
+
 :root {
-  /* Keyboard focus indicator. Applied to the roving stop in either pane; the
-     offset keeps the ring clear of the bar's own fill and the row's border. */
   --am-gantt-focus-ring-color: #1d4ed8;
   --am-gantt-focus-ring-width: 2px;
   --am-gantt-focus-ring-offset: -2px;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  /* color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424; */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -52,7 +40,5 @@
 
   --am-gantt-links-z-index: 2;
   --am-gantt-task-bar-z-index: 3;
-  /* Pinned calendar header sits above bars, dependency links, and the drag
-     preview (z 20) so scrolling rows never paint over it. */
   --am-gantt-calendar-z-index: 30;
 }

@@ -16,6 +16,7 @@ export type Scale = {
   unit: CalendarUnit;
   step: number;
   format: (date: Date) => string;
+  ariaFormat?: (date: Date) => string;
 };
 
 export type Id = string | number;
@@ -74,7 +75,51 @@ export interface GanttHandle {
 export interface ColumnApi extends GanttHandle {
   /** Fires the consumer's `onTaskEdit` callback for this task. */
   editTask: (task: GanttTask) => void;
+  /** Resolved accessible strings, for labelling controls a column renders.
+   *  `ColumnDef.render` is a plain function, not a component, so it can't call
+   *  `useGanttLabels()` — this is its channel to the `labels` prop. */
+  labels: ResolvedGanttLabels;
 }
+
+/**
+ * Overrides for every accessible string the library emits. Pass any subset via
+ * `<Gantt labels={...} />`; omitted keys keep their English defaults (see
+ * `DEFAULT_LABELS` in `core/labels.ts`).
+ *
+ * NOTE: pass a referentially stable / memoized object — a fresh object each render
+ * invalidates the labels context and re-renders every row and bar.
+ */
+export interface GanttLabels {
+  /** Accessible name for the whole widget. Default: `"Gantt chart"`. */
+  gantt?: string;
+  /** Accessible name for the task-list treegrid. Default: `"Task list"`. */
+  taskList?: string;
+  /** Accessible name for the timeline grid. Default: `"Timeline"`. */
+  timeline?: string;
+  /** Expand toggle, collapsed state. Default: `"Expand"`. */
+  expand?: string;
+  /** Expand toggle, expanded state. Default: `"Collapse"`. */
+  collapse?: string;
+  /** The task-list / timeline splitter. Default: `"Resize task list"`. */
+  resizeTaskList?: string;
+  /** The dependency-link delete button. Default: `"Delete dependency"`. */
+  deleteDependency?: string;
+  /** Actions-column edit button. Default: `` `Edit ${task.name}` ``. */
+  editTask?: (task: GanttTask) => string;
+  /** Actions-column insert button. Default: `` `Add task after ${task.name}` ``. */
+  addTaskAfter?: (task: GanttTask) => string;
+  /** Actions-column delete button. Default: `` `Delete ${task.name}` ``. */
+  deleteTask?: (task: GanttTask) => string;
+  /**
+   * The single announcement for a timeline bar. The bar's inner subtree is
+   * `aria-hidden`, so this must carry everything the bar shows visually.
+   * Default: `"{name}, {type}, {start} to {end}, {progress}% complete"`.
+   */
+  bar?: (task: GanttTask, state: { progress: number }) => string;
+}
+
+/** `GanttLabels` with every key filled in from the defaults. */
+export type ResolvedGanttLabels = Required<GanttLabels>;
 
 export interface GanttProps {
   tasks: GanttTask[];
@@ -124,6 +169,11 @@ export interface GanttProps {
   dependencySlots?: GanttDependenciesSlots;
   /** Slot overrides for the calendar/grid timeline chrome. */
   timeline?: GanttTimelineSlots;
+  /**
+   * Overrides for the library's accessible strings (screen-reader names).
+   * Pass a referentially stable object — see `GanttLabels`.
+   */
+  labels?: GanttLabels;
 }
 
 

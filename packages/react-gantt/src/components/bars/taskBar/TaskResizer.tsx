@@ -93,7 +93,8 @@ export function TaskResizer({
   const startHandleProps = mergeSlotProps(
     {
       type: "button" as const,
-      "aria-label": "Resize task start",
+      "aria-hidden": true,
+      tabIndex: -1,
       className: clsx(styles.resizer, styles.startResizer),
       onMouseDown: onStartHandleMouseDown,
     },
@@ -104,7 +105,8 @@ export function TaskResizer({
   const endHandleProps = mergeSlotProps(
     {
       type: "button" as const,
-      "aria-label": "Resize task end",
+      "aria-hidden": true,
+      tabIndex: -1,
       className: clsx(styles.resizer, styles.endResizer),
       onMouseDown: onEndHandleMouseDown,
     },

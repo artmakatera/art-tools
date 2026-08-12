@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import {
   useGanttConfig,
+  useGanttLabels,
   useGanttScroll,
   useGanttSelectedId,
   useGanttTaskActions,
@@ -32,6 +33,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
   const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
   const selectedId = useGanttSelectedId();
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
+  const labels = useGanttLabels();
   const { taskListRef, onTaskListScroll, gridRef } = useGanttScroll();
 
   const { widths, onResizeStart } = useColumnWidths();
@@ -74,8 +76,6 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     [gridRef, visibleTasks, padDays, colWidth, scales],
   );
 
-  // Selecting a row drives both the built-in highlight and the consumer's
-  // onTaskClick, so external selection state (e.g. a "Delete selected" toolbar) stays in sync.
   const handleSelect = useCallback(
     (id: Id) => {
       setSelectedId(id);
@@ -99,13 +99,22 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     return map;
   }, [visibleTasks]);
 
-  // Measure this pane's own scroll viewport for row windowing. We can't reuse
-  // the grid's viewport: the grid may not be mounted (e.g. task-list-only mode),
-  // in which case its metrics never get measured and we'd render every row. The
-  // list body's scrollTop stays in sync with the grid when both are present, so
-  // self-measuring is correct either way. Horizontal tracking is off: the list
-  // body has `width: max-content`, so column/splitter resizes churn its width
-  // without affecting which rows are visible.
+  const siblingInfo = useMemo(() => {
+    const counts = new Map<Id | null, number>();
+    const map = new Map<Id, { posinset: number; setsize: number }>();
+    for (const t of visibleTasks) {
+      const parent = t.parentId ?? null;
+      const pos = (counts.get(parent) ?? 0) + 1;
+      counts.set(parent, pos);
+      map.set(t.id, { posinset: pos, setsize: 0 });
+    }
+    for (const t of visibleTasks) {
+      const entry = map.get(t.id)!;
+      entry.setsize = counts.get(t.parentId ?? null) ?? 1;
+    }
+    return map;
+  }, [visibleTasks]);
+
   const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(
     taskListRef,
     {
@@ -132,7 +141,14 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
   const bodyStyle = { flex: "1 1 auto", minHeight: 0 };
 
   return (
-    <div className={styles.taskList} style={{ height }}>
+    <div
+      className={styles.taskList}
+      style={{ height }}
+      role="treegrid"
+      aria-label={labels.taskList}
+      aria-rowcount={visibleTasks.length + 1}
+      aria-colcount={resolvedColumns.length}
+    >
       <TaskListHeader
         columns={resolvedColumns}
         rowHeight={rowHeight}
@@ -146,20 +162,23 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
         className={styles.body}
         style={bodyStyle}
         onScroll={handleScroll}
+        role="presentation"
       >
-        <div className={styles.rows}>
-          {/* Spacer for the rows above the viewport, so the visible rows sit at
-              the right scroll offset without absolute positioning. */}
-          <div style={{ height: rowRange.start * rowHeight }} />
+        <div className={styles.rows} role="rowgroup">
+          <div style={{ height: rowRange.start * rowHeight }} role="presentation" aria-hidden="true" />
           {Array.from({ length: rowRange.end - rowRange.start }, (_, i) => {
             const index = rowRange.start + i;
             const task = visibleTasks[index]!;
+            const siblings = siblingInfo.get(task.id);
             return (
               <TaskListRow
                 key={task.id}
                 task={task}
                 rowHeight={rowHeight}
+                rowIndex={index}
                 depth={depthMap.get(task.id) ?? 0}
+                posinset={siblings?.posinset ?? 1}
+                setsize={siblings?.setsize ?? 1}
                 isParent={parentIds.has(task.id)}
                 isExpanded={expandedIds.has(task.id)}
                 isSelected={selectedId === task.id}
@@ -174,6 +193,8 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
             style={{
               height: (visibleTasks.length - rowRange.end) * rowHeight,
             }}
+            role="presentation"
+            aria-hidden="true"
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
 import { buildDatesFromTasks } from "../../core/dateUtils";
-import { resolveColumnUnit } from "../../core/scales";
+import { DEFAULT_SCALES, resolveColumnUnit } from "../../core/scales";
 import type { GanttTask, Id, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
@@ -17,6 +17,7 @@ import { COL_OVERSCAN, ROW_OVERSCAN } from "../../core/constants";
 import {
   useGanttConfig,
   useGanttDependency,
+  useGanttLabels,
   useGanttScroll,
   useGanttTaskActions,
   useGanttTaskState,
@@ -70,15 +71,12 @@ export function GanttGrid({
   const { visibleTasks } = useGanttTaskState();
   const { updateTask, onTaskClick, setSelectedId } = useGanttTaskActions();
   const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
+  const labels = useGanttLabels();
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
   const viewport = useGanttViewport();
   const { dependencies, onDependencyDelete } = useGanttDependency();
   const { zoomAt, zoomIn, zoomOut, wheelEnabled, keyboardEnabled } = useGanttZoom();
 
-  // Wire the optional wheel / keyboard zoom controls onto the scroll container.
-  // Wheel is non-passive so Ctrl/Cmd+wheel can preventDefault the page zoom, and
-  // anchors on the cursor; keyboard needs the grid focusable. Re-runs when the
-  // grid first gains rows (visibleTasks.length) so listeners attach once mounted.
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid || (!wheelEnabled && !keyboardEnabled)) {
@@ -137,10 +135,6 @@ export function GanttGrid({
     [visibleTasks, padDays, scales],
   );
 
-  // `dates` rebuilds on every task change, so `dates[0]` is a fresh Date each
-  // time. Key a stable Date off its timestamp so the `origin` prop only changes
-  // identity when the earliest day actually moves — otherwise memoized Bars
-  // would all re-render on any unrelated update.
   const originMs = dates[0]?.getTime();
   const origin = useMemo(
     () => (originMs == null ? undefined : new Date(originMs)),
@@ -153,9 +147,9 @@ export function GanttGrid({
   const totalWidth = dates.length * colWidth;
   const bodyHeight = visibleTasks.length * rowHeight;
 
-  // Virtualization windows: render only the rows/columns intersecting the
-  // viewport (plus overscan). Container sizes above stay full so scrollbars
-  // and scroll-into-view are unaffected.
+  const resolvedScales = scales ?? DEFAULT_SCALES;
+  const headerRowCount = resolvedScales.length;
+
   const rowRange = rangeFromOffset(
     viewport.scrollTop,
     viewport.clientHeight,
@@ -190,6 +184,10 @@ export function GanttGrid({
       className: styles.gridWrapper,
       style: height !== undefined ? { height } : {},
       onScroll: onGridScroll,
+      role: "grid",
+      "aria-label": labels.timeline,
+      "aria-rowcount": headerRowCount + visibleTasks.length,
+      "aria-colcount": dates.length,
     },
     slotProps?.root,
     ownerState,
@@ -199,6 +197,7 @@ export function GanttGrid({
     {
       className: styles.body,
       style: { height: bodyHeight, width: totalWidth },
+      role: "rowgroup",
     },
     slotProps?.body,
     ownerState,
@@ -206,7 +205,7 @@ export function GanttGrid({
 
   return (
     <Root ref={gridRef} {...rootProps}>
-      <div className={styles.grid} style={{ width: totalWidth }}>
+      <div className={styles.grid} style={{ width: totalWidth }} role="presentation">
         <Calendar
           colWidth={colWidth}
           rowHeight={rowHeight}
@@ -256,6 +255,7 @@ export function GanttGrid({
                   override={overrides[task.id]}
                   onOverride={handleOverride}
                   onTaskClick={handleSelect}
+                  rowIndexOffset={headerRowCount}
                 />
               );
             })}
