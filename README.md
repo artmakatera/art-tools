@@ -24,14 +24,21 @@ A high-performance, composable Gantt chart component library for React, built as
 
 ```
 apps/
-  docs/                # Next.js examples gallery (port 3000)
+  docs/                # Next.js examples gallery (port 3000) — a running app
   playground/          # Vite app for manual testing + benchmarks (port 5173)
 packages/
   react-gantt/         # The Gantt chart library (@am/react-gantt)
   mock-data/           # Shared fixtures: a sample project + a large-dataset generator
   config-typescript/   # Shared TypeScript config
   oxlint-config/       # Shared lint config
+docs/                  # Written design docs — not an app, despite the name clash
+  adr/                 # Architecture decision records
+  glossary.md          # Terms with exactly one meaning across code, tests, and docs
 ```
+
+> **`docs/` vs `apps/docs/`** — `apps/docs` is the runnable examples gallery.
+> [`docs/`](docs/adr/README.md) is prose: why the library is shaped the way it is, what was
+> rejected, and which costs were accepted deliberately.
 
 ## Getting started
 
