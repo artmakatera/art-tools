@@ -1,7 +1,7 @@
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
-import { DraggableBar } from "../common/DraggableBar";
+import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./ProjectBar.module.css";
 
@@ -38,6 +38,7 @@ interface ProjectBarProps {
   top: number;
   colWidth: number;
   title: string;
+  a11y?: BarA11yProps;
   progress: number;
   onProgressChange: (newProgress: number) => void;
   onProgressEnd: (newProgress: number) => void;
@@ -54,6 +55,7 @@ export function ProjectBar({
   top,
   colWidth,
   title,
+  a11y,
   progress,
   onProgressChange,
   onProgressEnd,
@@ -76,13 +78,14 @@ export function ProjectBar({
     {
       className: styles.project,
       style: { lineHeight: `${height}px` },
+      ...a11y,
     },
     slotProps?.root,
     ownerState,
   );
 
   const innerProps = mergeSlotProps(
-    { className: styles.projectInner },
+    { className: styles.projectInner, "aria-hidden": true },
     slotProps?.inner,
     ownerState,
   );

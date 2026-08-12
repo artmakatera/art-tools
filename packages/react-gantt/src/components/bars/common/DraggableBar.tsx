@@ -1,7 +1,20 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
 import { useDrag } from "../../../hooks/useDrag";
 
-interface DraggableBarProps {
+export interface BarA11yProps {
+  role: string;
+  "aria-colindex": number;
+  "aria-colspan": number;
+  "aria-label": string;
+  "aria-selected": boolean | undefined;
+  title: string;
+}
+
+interface DraggableBarProps
+  extends Omit<
+    ComponentPropsWithoutRef<"div">,
+    "style" | "className" | "title" | "children" | "onMouseDown"
+  > {
   left: number;
   top: number;
   width: number;
@@ -29,6 +42,7 @@ export function DraggableBar({
   onMove,
   onMoveEnd,
   children,
+  ...rest
 }: DraggableBarProps) {
   const onMouseDown = useDrag({
     onStart: () => ({ start: dragAnchor }),
@@ -42,10 +56,10 @@ export function DraggableBar({
 
   return (
     <div
+      {...rest}
       className={className}
       style={{ left, top, width, height, ...style }}
       title={title}
-      aria-label={title}
       onMouseDown={onMouseDown}
     >
       {children}

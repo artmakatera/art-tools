@@ -6,6 +6,7 @@ import { BarProgressResizeHandle } from '../../../components/bars/progress/BarPr
 import { GridResizeHandle } from '../../../components/grid/GridResizeHandle';
 import { TaskListHeader } from '../../../components/taskList/TaskListHeader';
 import type { ColumnDef } from '../../../types';
+import { DEFAULT_LABELS } from '../../../core/labels';
 
 // ConnectorHandles pulls state from GanttContext hooks; stub them so it can be
 // rendered directly without a full <GanttProvider>.
@@ -15,6 +16,7 @@ vi.mock('../../../context/GanttContext', () => ({
   useGanttDependency: () => ({ startDrag, endDrag }),
   useGanttDragActive: () => false,
   useGanttScroll: () => ({ gridBodyRef: { current: document.createElement('div') } }),
+  useGanttLabels: () => DEFAULT_LABELS,
 }));
 
 // Imported after vi.mock so it resolves the mocked context module.
@@ -28,20 +30,24 @@ const CustomDiv = (props: React.ComponentProps<'div'>) => (
 );
 
 describe('<TaskResizer /> slots', () => {
+  // Resizing is mouse-only, so the grips are hidden from assistive tech and kept
+  // out of the tab order — query them by class, not by an accessible name.
   it('renders both default resize buttons with their style classes', () => {
-    const { getByLabelText } = render(
+    const { container } = render(
       <TaskResizer width={100} left={0} colWidth={30} onResize={vi.fn()} onResizeEnd={vi.fn()} />,
     );
-    const start = getByLabelText('Resize task start');
-    const end = getByLabelText('Resize task end');
+    const start = container.querySelector('.startResizer') as HTMLElement;
+    const end = container.querySelector('.endResizer') as HTMLElement;
     expect(start.className).toMatch(/resizer/);
-    expect(start.className).toMatch(/startResizer/);
     expect(end.className).toMatch(/resizer/);
-    expect(end.className).toMatch(/endResizer/);
+    for (const grip of [start, end]) {
+      expect(grip.getAttribute('aria-hidden')).toBe('true');
+      expect(grip.tabIndex).toBe(-1);
+    }
   });
 
   it('merges slotProps.startHandle.className with the internal classes', () => {
-    const { getByLabelText } = render(
+    const { container } = render(
       <TaskResizer
         width={100}
         left={0}
@@ -51,9 +57,25 @@ describe('<TaskResizer /> slots', () => {
         slotProps={{ startHandle: { className: 'mine' } }}
       />,
     );
-    const start = getByLabelText('Resize task start');
+    const start = container.querySelector('.startResizer') as HTMLElement;
     expect(start.className).toMatch(/startResizer/);
     expect(start.className).toMatch(/mine/);
+  });
+
+  it('lets a consumer restore an accessible name via slotProps', () => {
+    const { getByLabelText } = render(
+      <TaskResizer
+        width={100}
+        left={0}
+        colWidth={30}
+        onResize={vi.fn()}
+        onResizeEnd={vi.fn()}
+        slotProps={{
+          startHandle: { 'aria-hidden': undefined, tabIndex: 0, 'aria-label': 'Resize start' },
+        }}
+      />,
+    );
+    expect(getByLabelText('Resize start')).toBeTruthy();
   });
 
   it('replaces the end handle via slots and still fires the merged onMouseDown', () => {
@@ -90,17 +112,24 @@ describe('<TaskResizer /> slots', () => {
 });
 
 describe('<ConnectorHandles /> slots', () => {
-  it('renders both default handles with role=button', () => {
-    const { getAllByRole } = render(
+  // Dependency creation is a mouse-only drag and the handles only appear on hover,
+  // so they are aria-hidden and untabbable rather than advertised as buttons no key
+  // can activate.
+  it('renders both default handles hidden from assistive tech', () => {
+    const { container, queryAllByRole } = render(
       <ConnectorHandles taskId={1} barLeft={10} barWidth={100} barCenterY={20} show />,
     );
-    const handles = getAllByRole('button');
+    const handles = Array.from(container.querySelectorAll('.handle')) as HTMLElement[];
     expect(handles).toHaveLength(2);
-    handles.forEach((h) => expect(h.className).toMatch(/handle/));
+    expect(queryAllByRole('button')).toHaveLength(0);
+    for (const h of handles) {
+      expect(h.getAttribute('aria-hidden')).toBe('true');
+      expect(h.tabIndex).toBe(-1);
+    }
   });
 
   it('merges slotProps.startHandle.className with the internal class', () => {
-    const { getAllByRole } = render(
+    const { container } = render(
       <ConnectorHandles
         taskId={1}
         barLeft={10}
@@ -110,7 +139,7 @@ describe('<ConnectorHandles /> slots', () => {
         slotProps={{ startHandle: { className: 'mine' } }}
       />,
     );
-    const start = getAllByRole('button')[0]!;
+    const start = container.querySelector('.handle') as HTMLElement;
     expect(start.className).toMatch(/handle/);
     expect(start.className).toMatch(/mine/);
   });

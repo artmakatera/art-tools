@@ -61,6 +61,8 @@ export function BarProgressResizeHandle({
   const rootProps = mergeSlotProps(
     {
       className: styles.barProgressResizeHandle,
+      "aria-hidden": true,
+      tabIndex: -1,
       onMouseDown,
     },
     slotProps?.root,

@@ -1,6 +1,7 @@
 import type { ComponentProps, ElementType, ReactNode } from "react";
 import type { Id } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
+import { useGanttLabels } from "../../context/GanttContext";
 import styles from "./TaskList.module.css";
 
 const INDENT_PX = 16;
@@ -57,6 +58,7 @@ export function TreeCell({
   slots,
   slotProps,
 }: TreeCellProps) {
+  const labels = useGanttLabels();
   const ownerState: TreeCellOwnerState = { taskId, depth, isParent, isExpanded };
 
   const Root = slots?.root ?? "span";
@@ -75,11 +77,12 @@ export function TreeCell({
   const buttonProps = mergeSlotProps(
     {
       className: styles.expandBtn,
+      type: "button",
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
         onToggleExpand(taskId);
       },
-      "aria-label": isExpanded ? "Collapse" : "Expand",
+      "aria-label": isExpanded ? labels.collapse : labels.expand,
       children: isExpanded ? "▾" : "▸",
     },
     slotProps?.expandButton,
@@ -87,7 +90,7 @@ export function TreeCell({
   );
 
   const placeholderProps = mergeSlotProps(
-    { className: styles.expandPlaceholder },
+    { className: styles.expandPlaceholder, "aria-hidden": true },
     slotProps?.placeholder,
     ownerState,
   );

@@ -10,7 +10,17 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
-import type { ColumnApi, GanttHandle, GanttTask, Id, Scale, TaskDependency } from "../types";
+import type {
+  ColumnApi,
+  GanttHandle,
+  GanttLabels,
+  GanttTask,
+  Id,
+  ResolvedGanttLabels,
+  Scale,
+  TaskDependency,
+} from "../types";
+import { DEFAULT_LABELS, resolveLabels } from "../core/labels";
 import { useTaskList, EMPTY_DEPENDENCIES } from "../hooks/useTaskList";
 import { useExpand } from "../hooks/useExpand";
 import { useScrollSync, type ViewportMetrics } from "../hooks/useScrollSync";
@@ -57,6 +67,21 @@ export function useGanttConfig(): GanttConfigValue {
     throw new Error("useGanttConfig must be used within a <GanttProvider>");
   }
   return ctx;
+}
+
+// --- Labels ---------------------------------------------------------------
+
+// Kept out of the config context on purpose: config churns on every zoom step,
+// while labels only change when the consumer's `labels` prop does. Bars and rows
+// are memoized and read this directly, so it has to stay identity-stable.
+//
+// Unlike the other contexts this one does NOT throw without a provider: labels are
+// presentational defaults, not required wiring, so sub-components stay renderable
+// on their own (which is how the slot tests exercise them).
+const GanttLabelsContext = createContext<ResolvedGanttLabels>(DEFAULT_LABELS);
+
+export function useGanttLabels(): ResolvedGanttLabels {
+  return useContext(GanttLabelsContext);
 }
 
 // --- Task state -----------------------------------------------------------
@@ -242,6 +267,7 @@ export interface GanttProviderProps {
   onTaskEdit?: (task: GanttTask) => void;
   onTasksChange?: (tasks: GanttTask[]) => void;
   apiRef?: Ref<GanttHandle>;
+  labels?: GanttLabels;
   children: ReactNode;
 }
 
@@ -266,9 +292,12 @@ export function GanttProvider({
   onTaskEdit,
   onTasksChange,
   apiRef,
+  labels,
   children,
 }: GanttProviderProps) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);
+
+  const labelsValue = useMemo(() => resolveLabels(labels), [labels]);
 
   // Latest-refs for consumer callbacks used internally at a single call site,
   // so the handlers that wrap them keep a stable identity even when the
@@ -364,10 +393,11 @@ export function GanttProvider({
       zoomOut,
       setZoom,
       editTask: (task) => onTaskEditRef.current?.(task),
+      labels: labelsValue,
     }),
     // onTaskEditRef is identity-stable (useLatestRef); listed only to satisfy
     // exhaustive-deps.
-    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, zoomIn, zoomOut, setZoom, onTaskEditRef],
+    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, zoomIn, zoomOut, setZoom, onTaskEditRef, labelsValue],
   );
 
   const { drag, startDrag, endDrag } = useDependencyDrag({ gridBodyRef, onDependencyCreate });
@@ -437,6 +467,7 @@ export function GanttProvider({
   // primitives or already identity-stable when unchanged.
   return (
     <GanttConfigContext.Provider value={configValue}>
+      <GanttLabelsContext.Provider value={labelsValue}>
       <GanttZoomContext.Provider value={zoomValue}>
         <GanttScrollContext.Provider value={scrollValue}>
           <GanttTaskActionsContext.Provider value={taskActionsValue}>
@@ -456,6 +487,7 @@ export function GanttProvider({
           </GanttTaskActionsContext.Provider>
         </GanttScrollContext.Provider>
       </GanttZoomContext.Provider>
+      </GanttLabelsContext.Provider>
     </GanttConfigContext.Provider>
   );
 }
