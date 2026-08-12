@@ -116,4 +116,4 @@ export type {
   GridResizeHandleOwnerState,
 } from './components/grid/GridResizeHandle';
 
-export type { GanttProps, GanttHandle, GanttTask, TaskPatch, Id, TaskDependency, TaskDependencyType, ColumnDef } from './types';
+export type { GanttProps, GanttHandle, GanttTask, TaskPatch, Id, TaskDependency, TaskDependencyType, ColumnDef, ColumnApi, GanttLabels, ResolvedGanttLabels } from './types';

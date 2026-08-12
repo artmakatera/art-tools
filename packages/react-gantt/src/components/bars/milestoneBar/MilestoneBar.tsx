@@ -1,10 +1,9 @@
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
-import { DraggableBar } from "../common/DraggableBar";
+import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
 import styles from "./MilestoneBar.module.css";
 
-/** State passed to the function form of each MilestoneBar slotProps. */
 export interface MilestoneBarOwnerState {
   size: number;
   title: string;
@@ -22,7 +21,6 @@ export interface MilestoneBarSlotProps {
   shape?: SlotPropsInput<ComponentProps<"div">, MilestoneBarOwnerState>;
 }
 
-/** Slot config for the milestone bar. */
 export type MilestoneBarSlotConfig = SlotConfig<MilestoneBarSlots, MilestoneBarSlotProps>;
 
 interface MilestoneBarProps {
@@ -31,6 +29,7 @@ interface MilestoneBarProps {
   top: number;
   colWidth: number;
   title: string;
+  a11y?: BarA11yProps;
   onMove: (newCenterLeft: number) => void;
   onMoveEnd: (newCenterLeft: number) => void;
   slots?: MilestoneBarSlots;
@@ -43,6 +42,7 @@ export function MilestoneBar({
   top,
   colWidth,
   title,
+  a11y,
   onMove,
   onMoveEnd,
   slots: slotsProp,
@@ -58,13 +58,13 @@ export function MilestoneBar({
   const Shape = slots?.shape ?? "div";
 
   const rootProps = mergeSlotProps(
-    { className: styles.milestone, title },
+    { className: styles.milestone, title, ...a11y },
     slotProps?.root,
     ownerState,
   );
 
   const shapeProps = mergeSlotProps(
-    { className: styles.milestoneShape },
+    { className: styles.milestoneShape, "aria-hidden": true },
     slotProps?.shape,
     ownerState,
   );

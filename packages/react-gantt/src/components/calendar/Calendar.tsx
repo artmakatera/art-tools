@@ -23,8 +23,8 @@ export function Calendar({
   const totalWidth = dates.length * colWidth;
 
   return (
-    <div className={styles.calendar} style={{ width: totalWidth }}>
-      {scales.map((scale) => (
+    <div className={styles.calendar} style={{ width: totalWidth }} role="rowgroup">
+      {scales.map((scale, index) => (
         <CalendarRow
           key={`${scale.unit}-${scale.step}`}
           scale={scale}
@@ -33,6 +33,7 @@ export function Calendar({
           rowHeight={rowHeight}
           highlightWeekends={scale.unit === "day" && scale.step === 1}
           colRange={colRange}
+          rowIndex={index + 1}
         />
       ))}
     </div>

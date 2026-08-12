@@ -63,10 +63,13 @@ export function TaskListHeader({
   const HeaderCell = slots?.headerCell ?? "div";
   const ColumnResizeHandle = slots?.columnResizeHandle ?? "div";
 
+  // Row 1 of the enclosing treegrid.
   const headerProps = mergeSlotProps(
     {
       className: styles.header,
       style: { minHeight: headerHeight, height: headerHeight },
+      role: "row",
+      "aria-rowindex": 1,
     },
     slotProps?.header,
     { columns, headerHeight },
@@ -83,6 +86,8 @@ export function TaskListHeader({
             style: col.width
               ? { width: col.width, flexShrink: 0 }
               : { flex: "1 1 auto", minWidth: 100 },
+            role: "columnheader",
+            "aria-colindex": index + 1,
           },
           slotProps?.headerCell,
           cellOwnerState,
@@ -91,6 +96,7 @@ export function TaskListHeader({
         const resizeHandleProps = mergeSlotProps(
           {
             className: styles.divider,
+            "aria-hidden": true,
             onMouseDown: (e: React.MouseEvent) => {
               // Read the rendered width from the DOM so flex (no explicit width)
               // columns snap cleanly to a fixed width on first drag.
@@ -137,16 +143,20 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
     render: (task, api) => {
       return  <div style={{ display: "flex", gap: "8px"}}>
         <button
+          type="button"
           title="Edit"
+          aria-label={api.labels.editTask(task)}
           onClick={(e) => {
             e.stopPropagation();
             api.editTask(task);
           }}
         >
-          &#9998;
+          <span aria-hidden="true">&#9998;</span>
         </button>
         <button
+          type="button"
           title="Add after"
+          aria-label={api.labels.addTaskAfter(task)}
           onClick={(e) => {
             e.stopPropagation();
             const created = buildActionTask(task);
@@ -154,17 +164,19 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
             api.editTask(created);
           }}
         >
-          &#10133;
+          <span aria-hidden="true">&#10133;</span>
         </button>
         <button
+          type="button"
           title="Delete"
+          aria-label={api.labels.deleteTask(task)}
           style={{ fontSize: 9 }}
           onClick={(e) => {
             e.stopPropagation();
             api.deleteTask(task.id);
           }}
         >
-          &#10060;
+          <span aria-hidden="true">&#10060;</span>
         </button>
       </div>
     }

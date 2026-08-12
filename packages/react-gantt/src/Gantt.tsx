@@ -7,6 +7,7 @@ import { TaskList } from "./components/taskList/TaskList";
 import { useGridResize } from "./hooks/useGridResize";
 import type { GanttProps } from "./types";
 import { DEFAULT_COLUMNS } from "./components/taskList/TaskListHeader";
+import { DEFAULT_LABELS } from "./core/labels";
 
 export function Gantt({
   tasks,
@@ -35,7 +36,8 @@ export function Gantt({
   taskList,
   bars,
   dependencySlots,
-  timeline
+  timeline,
+  labels
 }: GanttProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -71,10 +73,16 @@ export function Gantt({
       onTaskEdit={onTaskEdit}
       onTasksChange={onTasksChange}
       apiRef={apiRef}
+      labels={labels}
     >
       <GanttSlotsProvider value={slotsValue}>
       {showTaskList ? (
-        <div ref={containerRef} style={{ position: "relative" }}>
+        <div
+          ref={containerRef}
+          role="group"
+          aria-label={labels?.gantt ?? DEFAULT_LABELS.gantt}
+          style={{ position: "relative" }}
+        >
             <TaskList columns={columns} taskList={taskList} />
           <div
             ref={overlayRef}

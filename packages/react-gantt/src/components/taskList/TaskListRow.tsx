@@ -7,7 +7,10 @@ import styles from "./TaskList.module.css";
 interface TaskListRowProps {
   task: GanttTask;
   rowHeight: number;
+  rowIndex: number;
   depth: number;
+  posinset: number;
+  setsize: number;
   isParent: boolean;
   isExpanded: boolean;
   isSelected: boolean;
@@ -22,7 +25,10 @@ const DEFAULT_COL_WIDTH = 100;
 export const TaskListRow = memo(function TaskListRow({
   task,
   rowHeight,
+  rowIndex,
   depth,
+  posinset,
+  setsize,
   isParent,
   isExpanded,
   isSelected,
@@ -37,13 +43,22 @@ export const TaskListRow = memo(function TaskListRow({
       className={`${styles.row} ${isSelected ? styles.selected : ""}`}
       style={{ height: rowHeight }}
       onClick={() => onSelect(task.id)}
+      role="row"
+      aria-rowindex={rowIndex + 2}
+      aria-level={depth + 1}
+      aria-posinset={posinset}
+      aria-setsize={setsize}
+      aria-expanded={isParent ? isExpanded : undefined}
+      aria-selected={isSelected || undefined}
     >
-      {columns.map((col) => {
+      {columns.map((col, index) => {
         return (
           <div
             key={col.key}
             className={`${styles.cell} ${col.isTreeColumn ? styles.treeCell : ""}`}
             style={{ width: col.width || DEFAULT_COL_WIDTH, flexShrink: 0 }}
+            role={col.isTreeColumn ? "rowheader" : "gridcell"}
+            aria-colindex={index + 1}
           >
             {col.isTreeColumn ? (
               <TreeCell

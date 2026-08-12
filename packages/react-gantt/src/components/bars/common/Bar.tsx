@@ -6,11 +6,13 @@ import {
   pxToEndDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
+import { useGanttLabels, useGanttSelectedId } from "../../../context/GanttContext";
 import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
 import { TaskBar } from "../taskBar/TaskBar";
 import { ConnectorHandles } from "./ConnectorHandles";
+import type { BarA11yProps } from "./DraggableBar";
 import styles from "./Bar.module.css";
 
 interface BarProps {
@@ -25,6 +27,7 @@ interface BarProps {
   override?: Partial<TaskState>;
   onOverride: (id: Id, patch: DatePatch | null) => void;
   onTaskClick?: (task: GanttTask) => void;
+  rowIndexOffset: number;
 }
 
 export const Bar = memo(function Bar({
@@ -39,7 +42,12 @@ export const Bar = memo(function Bar({
   onOverride,
   onUpdate,
   onTaskClick,
+  rowIndexOffset,
 }: BarProps) {
+  const labels = useGanttLabels();
+  const selectedId = useGanttSelectedId();
+  const isSelected = selectedId === task.id;
+
   const { left, width, progress } = computeTaskPixels(
     task,
     override || {},
@@ -74,6 +82,15 @@ export const Bar = memo(function Bar({
     onOverride(id, null);
   };
 
+  const a11y: BarA11yProps = {
+    role: "gridcell",
+    "aria-colindex": Math.max(1, Math.floor(visualLeft / colWidth) + 1),
+    "aria-colspan": Math.max(1, Math.round(width / colWidth)),
+    "aria-label": labels.bar(task, { progress }),
+    "aria-selected": isSelected || undefined,
+    title: task.name,
+  };
+
   return (
     <div
       className={styles.row}
@@ -81,6 +98,8 @@ export const Bar = memo(function Bar({
       onClick={onTaskClick ? () => onTaskClick(task) : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      role="row"
+      aria-rowindex={rowIndexOffset + index + 1}
     >
       <ConnectorHandles
         taskId={task.id}
@@ -97,6 +116,7 @@ export const Bar = memo(function Bar({
           top={TASK_VERTICAL_PADDING}
           colWidth={colWidth}
           title={task.name}
+          a11y={a11y}
           onMove={(newCenter) => handleOverride(moveAt(newCenter))}
           onMoveEnd={(newCenter) => handleUpdate(task.id, moveAt(newCenter))}
         />
@@ -109,6 +129,7 @@ export const Bar = memo(function Bar({
           height={barHeight}
           colWidth={colWidth}
           title={task.name}
+          a11y={a11y}
           progress={progress}
           onProgressChange={(p) => handleOverride({ progress: p })}
           onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
@@ -126,6 +147,7 @@ export const Bar = memo(function Bar({
           height={barHeight}
           colWidth={colWidth}
           title={task.name}
+          a11y={a11y}
           progress={progress}
           onProgressChange={(p) => handleOverride({ progress: p })}
           onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}

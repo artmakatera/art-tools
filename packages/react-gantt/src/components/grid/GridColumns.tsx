@@ -69,7 +69,7 @@ export function GridColumns({
   const Column = slots?.column ?? "div";
 
   return (
-    <div className={styles.cols} aria-hidden>
+    <div className={styles.cols} role="presentation" aria-hidden>
       {dates.slice(colRange.start, colRange.end).map((date, i) => {
         const index = colRange.start + i;
         const weekend = unit === "day" && isWeekend(date);
