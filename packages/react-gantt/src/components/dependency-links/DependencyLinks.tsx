@@ -16,6 +16,7 @@ import {
 import type { TaskDependency } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
+import { useGanttLabels } from "../../context/GanttContext";
 import styles from "./DependencyLinks.module.css";
 
 /** Stroke thickness of the link, in pixels. */
@@ -182,6 +183,7 @@ export function DependencyLinks({
   const ganttSlots = useGanttSlots();
   const slots = slotsProp ?? ganttSlots.dependencies?.links?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.dependencies?.links?.slotProps;
+  const labels = useGanttLabels();
 
   const links = useDependencyLinks();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -237,11 +239,11 @@ export function DependencyLinks({
   const Arrow = slots?.arrow ?? "div";
   const LagLabel = slots?.lagLabel ?? "div";
   const DeleteButton = slots?.deleteButton ?? "button";
-
   const layerProps = mergeSlotProps(
     {
       className: styles.layer,
       style: { width, height },
+      role: "presentation",
       "aria-hidden": true,
       onClick: () => {
         setSelectedId(null);
@@ -256,7 +258,6 @@ export function DependencyLinks({
     <Layer {...layerProps}>
       {links.map((link) => {
         const isSelected = link.id === selectedId;
-        // Cull links outside the viewport, but keep the selected one rendered.
         if (!isSelected && !linkInView(link.points, visibleRect)) {
           return null;
         }
@@ -323,15 +324,16 @@ export function DependencyLinks({
         );
       })}
 
-      {/* Delete button */}
       {selectedLink && deletePos && (
         <DeleteButton
           {...mergeSlotProps(
             {
               className: styles.deleteBtn,
+              type: "button",
+              tabIndex: -1,
               style: { left: deletePos.x, top: deletePos.y },
               onClick: handleDelete,
-              "aria-label": "Delete dependency",
+              "aria-label": labels.deleteDependency,
               children: "×",
             },
             slotProps?.deleteButton,

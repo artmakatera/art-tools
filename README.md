@@ -55,8 +55,8 @@ pnpm --filter @am/playground dev   # perf sandbox
 
 ## Examples
 
-`apps/docs` is a gallery of 14 runnable examples — custom columns, slots, theming
+`apps/docs` is a gallery of 13 runnable examples — custom columns, slots, theming
 (CSS variables *and* CSS Modules), dependencies, a custom zoom ladder, the
-imperative API, keyboard editing, and 100k-row virtualization. Each page renders a
+imperative API, task editing, and 100k-row virtualization. Each page renders a
 live chart beside the exact source file that produced it, read from disk at build
 time so the two can never drift.

@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 import type { ComponentProps, ElementType } from "react";
 import { isWeekend, periodKey } from "../../core/dateUtils";
+import { formatPeriodLabel } from "../../core/labels";
 import type { Scale } from "../../types";
 import type { IndexRange } from "../../core/virtualize";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
@@ -59,6 +60,8 @@ type CalendarRowProps = {
    * When omitted, every group is rendered.
    */
   colRange?: IndexRange;
+  /** 1-based row number within the enclosing grid, for `aria-rowindex`. */
+  rowIndex?: number;
   slots?: CalendarRowSlots;
   slotProps?: CalendarRowSlotProps;
 };
@@ -93,6 +96,7 @@ export function CalendarRow({
   rowHeight,
   highlightWeekends = false,
   colRange,
+  rowIndex,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: CalendarRowProps) {
@@ -113,7 +117,12 @@ export function CalendarRow({
   };
 
   const rowProps = mergeSlotProps(
-    { className: styles.row, style: { height: rowHeight } },
+    {
+      className: styles.row,
+      style: { height: rowHeight },
+      role: "row",
+      "aria-rowindex": rowIndex,
+    },
     slotProps?.row,
     rowOwnerState,
   );
@@ -121,7 +130,6 @@ export function CalendarRow({
   return (
     <Row {...rowProps}>
       {groups.map((group) => {
-        // Skip groups that fall entirely outside the visible column window.
         if (
           colRange &&
           (group.startIndex >= colRange.end ||
@@ -138,6 +146,7 @@ export function CalendarRow({
           isWeekend: weekend,
           colWidth,
         };
+
         const cellProps = mergeSlotProps(
           {
             className: clsx(styles.cell, weekend && styles.cellWeekend),
@@ -146,6 +155,12 @@ export function CalendarRow({
               width: group.count * colWidth,
             },
             children: scale.format(group.start),
+            role: "columnheader",
+            "aria-colindex": group.startIndex + 1,
+            "aria-colspan": group.count,
+            "aria-label": scale.ariaFormat
+              ? scale.ariaFormat(group.start)
+              : formatPeriodLabel(group.start, scale.unit, scale.step),
           },
           slotProps?.cell,
           cellOwnerState,

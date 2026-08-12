@@ -111,8 +111,8 @@ export function ConnectorHandles({
 
   const startHandleProps = mergeSlotProps(
     {
-      role: "button",
-      tabIndex: 0,
+      "aria-hidden": true,
+      tabIndex: -1,
       className: clsx(styles.handle, isVisible && styles.visible),
       style: { left: barLeft - CONNECTOR_HANDLE_SIZE, top: barCenterY - HANDLE_OFFSET },
       onMouseDown: (e: React.MouseEvent) => onMouseDown(e, "start"),
@@ -124,8 +124,8 @@ export function ConnectorHandles({
 
   const endHandleProps = mergeSlotProps(
     {
-      role: "button",
-      tabIndex: 0,
+      "aria-hidden": true,
+      tabIndex: -1,
       className: clsx(styles.handle, isVisible && styles.visible),
       style: { left: barLeft + barWidth, top: barCenterY - HANDLE_OFFSET },
       onMouseDown: (e: React.MouseEvent) => onMouseDown(e, "end"),

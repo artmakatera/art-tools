@@ -25,6 +25,7 @@ MUI-style slot system for deep customization.
 - [Dependencies & scheduling](#dependencies--scheduling)
 - [Columns](#columns)
 - [Imperative API](#imperative-api)
+- [Accessibility](#accessibility)
 - [Slots & theming](#slots--theming)
 - [Architecture (for contributors)](#architecture-for-contributors)
 - [Roadmap](#roadmap)
@@ -147,6 +148,7 @@ Defined in [`src/types.ts`](./src/types.ts).
 | `bars`            | `GanttBarsSlots`       | Slot overrides for timeline bars and their handles. |
 | `dependencySlots` | `GanttDependenciesSlots` | Slot overrides for dependency links (named to avoid colliding with `dependencies`). |
 | `timeline`        | `GanttTimelineSlots`   | Slot overrides for the calendar/grid chrome. |
+| `labels`          | `GanttLabels`          | Overrides for the [accessible strings](#accessibility). Pass a stable object. |
 
 ---
 
@@ -348,6 +350,76 @@ all exported from the package entry.
 
 ---
 
+## Accessibility
+
+The chart is fully readable by a screen reader in browse / table-navigation mode. It is
+**not yet keyboard-operable** — see [Roadmap](#1-keyboard-navigation).
+
+### Structure
+
+The two panes are exposed as two widgets under one labelled `group`:
+
+| Element | Role & state |
+| ------- | ------------ |
+| Widget root | `group` + `aria-label` (`labels.gantt`) |
+| Task-list pane | `treegrid` + `aria-label`, `aria-rowcount`, `aria-colcount` |
+| Header row | `row` `aria-rowindex="1"`, cells `columnheader` + `aria-colindex` |
+| Task row | `row` + `aria-rowindex`, `aria-level`, `aria-expanded`, `aria-posinset`, `aria-setsize`, `aria-selected` |
+| Task cells | `gridcell`, or `rowheader` for the tree column; each with `aria-colindex` |
+| Timeline pane | `grid` + `aria-label`, `aria-rowcount`, `aria-colcount` (one column per date) |
+| Calendar row | `row` + `aria-rowindex`, cells `columnheader` + `aria-colindex`/`aria-colspan` |
+| Bar | `gridcell` + `aria-label`, `aria-colindex`/`aria-colspan` for its span on the date axis |
+
+Both panes are virtualized, so `aria-rowcount` reports the **full** list while only a
+window is in the DOM, and every `aria-rowindex` is absolute. Counts and indices are
+1-based, and the timeline's task rows are offset by its calendar header rows.
+
+Two deliberate choices are worth knowing about:
+
+- **A bar is one announcement.** Its `aria-label` carries name, type, dates and progress
+  (`"Design phase, summary, 3 Mar 2026 to 12 Mar 2026, 40% complete"`), and its inner
+  subtree is `aria-hidden`. So a bar reads as one coherent unit instead of a pile of
+  nested `div`s — and the timeline stays usable on its own when `hideTaskList` is set.
+- **Pointer-only affordances are hidden.** Bar move, resize, progress and dependency
+  creation are mouse-only drags, so the connector handles, resize grips, progress grip
+  and dependency-link layer are `aria-hidden` with `tabIndex={-1}`. They are not
+  advertised as controls that no key can activate. Tab visits only the tree expand
+  toggles and whatever buttons your columns render. Restore any of them through
+  `slotProps` if you wire up your own keyboard handling.
+
+Calendar headers announce the full period rather than the abbreviated visible text
+(`"31 December 2021"`, not `"31"`). Override per scale with `Scale.ariaFormat`.
+
+### Labels
+
+Every accessible string is overridable — pass a **stable** (memoized) object, since rows
+and bars are memoized:
+
+```tsx
+const labels = useMemo(() => ({
+  gantt: "Projektplan",
+  taskList: "Aufgabenliste",
+  timeline: "Zeitachse",
+  expand: "Aufklappen",
+  collapse: "Zuklappen",
+  editTask: (task) => `${task.name} bearbeiten`,
+  bar: (task, { progress }) => `${task.name}, ${progress}% erledigt`,
+}), []);
+
+<Gantt tasks={tasks} height={400} labels={labels} />
+```
+
+Omitted keys keep their English defaults. `ColumnDef.render` receives the resolved set as
+`api.labels`, for naming controls a custom column renders.
+
+### Focus ring
+
+The one keyboard-focusable control the library owns (the tree expand toggle) draws a
+focus ring on `:focus-visible`, themeable via `--am-gantt-focus-ring-color`, `-width`
+and `-offset`.
+
+---
+
 ## Architecture (for contributors)
 
 - **Frequency-split contexts** —
@@ -392,12 +464,16 @@ current design and a sketch of how each would hook in.
 
 
 
-### 1. Keyboard navigation & accessibility
+### 1. Keyboard navigation
 
-There is no keyboard model today. Propose ARIA `treegrid` roles on the task list,
-roving-tabindex focus across rows and bars, keyboard move/resize (arrow keys nudge a
-selected bar by one column), Enter/Space to expand/collapse, and focus management for
-dependency connector handles so links can be created without a pointer.
+ARIA semantics are implemented (see [Accessibility](#accessibility)) — a screen reader
+can read the whole chart. What is still missing is a **keyboard model**: there is no way
+to move focus between rows and bars, and no way to edit without a pointer. Propose
+roving-tabindex focus across the two panes, keyboard move/resize (arrow keys nudge the
+selected bar by one column), Enter/Space to expand/collapse, and focus management for the
+dependency connector handles so links can be created without a pointer. Adding it means
+un-hiding the drag affordances that are currently `aria-hidden` precisely because no key
+can operate them.
 
 ### 2. Export / print
 

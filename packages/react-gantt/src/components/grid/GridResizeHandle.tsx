@@ -1,6 +1,7 @@
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
+import { useGanttLabels } from "../../context/GanttContext";
 import styles from "./GridResizeHandle.module.css";
 
 /** State passed to the function form of the GridResizeHandle slotProps. */
@@ -40,6 +41,7 @@ export function GridResizeHandle({
   const slots = slotsProp ?? ganttSlots.timeline?.gridResizeHandle?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.timeline?.gridResizeHandle?.slotProps;
 
+  const labels = useGanttLabels();
   const ownerState: GridResizeHandleOwnerState = { isResizing };
 
   const Root = slots?.root ?? "div";
@@ -50,6 +52,7 @@ export function GridResizeHandle({
       onMouseDown,
       role: "separator",
       "aria-orientation": "vertical" as const,
+      "aria-label": labels.resizeTaskList,
     },
     slotProps?.root,
     ownerState,

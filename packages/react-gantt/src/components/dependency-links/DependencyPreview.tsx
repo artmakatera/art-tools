@@ -54,8 +54,7 @@ export function DependencyPreview({
   const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
   const Root = slots?.root ?? "div";
-  // The positional transform stays as the internal default style so a consumer's
-  // `style` merges on top of it rather than replacing the rubber-band geometry.
+ 
   const rootProps = mergeSlotProps(
     {
       className: styles.preview,
@@ -65,6 +64,7 @@ export function DependencyPreview({
         width: length,
         transform: `rotate(${angle}deg)`,
       },
+      "aria-hidden": true,
     },
     slotProps?.root,
     { drag, length, angle },
