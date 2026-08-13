@@ -30,7 +30,6 @@ function renderLinks(
       origin={new Date("2026-01-01")}
       colWidth={30}
       rowHeight={40}
-      snapToDay
       unit="day"
       overrides={{}}
     >

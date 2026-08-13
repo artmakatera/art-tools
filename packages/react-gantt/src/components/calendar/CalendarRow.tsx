@@ -1,6 +1,8 @@
 import { clsx } from "clsx";
 import type { ComponentProps, ElementType } from "react";
-import { isWeekend, periodKey } from "../../core/dateUtils";
+import { addUnit, isWeekend, periodKey } from "../../core/dateUtils";
+import { nonWorkingInfo, type NonWorkingReason } from "../../core/workingTime";
+import { useGanttWorkCalendar } from "../../context/GanttContext";
 import { formatPeriodLabel } from "../../core/labels";
 import type { Scale } from "../../types";
 import type { IndexRange } from "../../core/virtualize";
@@ -25,6 +27,17 @@ export interface CalendarCellOwnerState {
   startIndex: number;
   /** Number of date columns the group spans. */
   count: number;
+  /**
+   * Whether the calendar excludes this cell from working time. Prefer this over
+   * {@link CalendarCellOwnerState.isWeekend} — it also covers holidays.
+   */
+  isNonWorking: boolean;
+  /** Why the cell is non-working, for styling weekends and holidays apart. */
+  nonWorkingReason?: NonWorkingReason;
+  /**
+   * @deprecated Use {@link CalendarCellOwnerState.isNonWorking}. Retained as an
+   * alias so existing slot code keeps working.
+   */
   isWeekend: boolean;
   colWidth: number;
 }
@@ -102,6 +115,7 @@ export function CalendarRow({
 }: CalendarRowProps) {
   const ganttSlots = useGanttSlots();
   const slots = slotsProp ?? ganttSlots.timeline?.calendarRow?.slots;
+  const { calendar } = useGanttWorkCalendar();
   const slotProps = slotPropsProp ?? ganttSlots.timeline?.calendarRow?.slotProps;
 
   const groups = groupDates(dates, scale);
@@ -137,19 +151,28 @@ export function CalendarRow({
         ) {
           return null;
         }
-        const weekend = highlightWeekends && isWeekend(group.start);
+        const info =
+          highlightWeekends && calendar
+            ? nonWorkingInfo(calendar, group.start, addUnit(group.start, scale.unit, scale.step))
+            : { isNonWorking: false, reason: undefined };
+        // With no calendar, keep the historical Sat/Sun-only behaviour exactly.
+        const nonWorking = calendar
+          ? info.isNonWorking
+          : highlightWeekends && isWeekend(group.start);
         const cellOwnerState: CalendarCellOwnerState = {
           scale,
           date: group.start,
           startIndex: group.startIndex,
           count: group.count,
-          isWeekend: weekend,
+          isNonWorking: nonWorking,
+          nonWorkingReason: nonWorking ? (info.reason ?? "weekend") : undefined,
+          isWeekend: nonWorking,
           colWidth,
         };
 
         const cellProps = mergeSlotProps(
           {
-            className: clsx(styles.cell, weekend && styles.cellWeekend),
+            className: clsx(styles.cell, nonWorking && styles.cellWeekend),
             style: {
               left: group.startIndex * colWidth,
               width: group.count * colWidth,

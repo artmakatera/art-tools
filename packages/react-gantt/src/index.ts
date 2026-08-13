@@ -117,3 +117,26 @@ export type {
 } from './components/grid/GridResizeHandle';
 
 export type { GanttProps, GanttHandle, GanttTask, TaskPatch, Id, TaskDependency, TaskDependencyType, ColumnDef, ColumnApi, GanttLabels, ResolvedGanttLabels } from './types';
+
+// Working-time calendar (see docs/adr/).
+export type {
+  GanttCalendar,
+  DayHours,
+  WorkTimeRange,
+  Weekday,
+  DurationUnit,
+} from './types';
+
+// `Scale` and `CalendarUnit` were referenced by `GanttProps.scales` but never
+// exported, so a consumer could not name that prop's type.
+export type { Scale, CalendarUnit } from './types';
+
+/**
+ * Convert between the stored EXCLUSIVE end instant and the inclusive last day a
+ * user expects to see or pick. Needed by any consumer bridging a task to a
+ * `<input type="date">` end-date editor.
+ */
+export { displayEndDate, endInstantFromDisplayDate } from './core/taskDates';
+
+/** Why a timeline column is shaded, surfaced on the grid/calendar ownerStates. */
+export type { NonWorkingReason } from './core/workingTime';

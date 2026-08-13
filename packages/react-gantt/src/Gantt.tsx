@@ -31,6 +31,9 @@ export function Gantt({
   onTaskDelete,
   onTaskEdit,
   onTasksChange,
+  calendar,
+  snapToWorking,
+  durationUnit,
   apiRef,
   hideTaskList,
   taskList,
@@ -74,6 +77,9 @@ export function Gantt({
       onTasksChange={onTasksChange}
       apiRef={apiRef}
       labels={labels}
+      calendar={calendar}
+      snapToWorking={snapToWorking}
+      durationUnit={durationUnit}
     >
       <GanttSlotsProvider value={slotsValue}>
       {showTaskList ? (

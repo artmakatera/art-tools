@@ -3,9 +3,15 @@
 - **Status:** Accepted
 - **Context:** Working time (days & hours) — see the [glossary](../glossary.md) and the [ADR index](./README.md).
 
-**Decision.** `getTaskList` emits a concrete exclusive `endDate` on every task, not just summaries.
-A task authored `{startDate, duration}` therefore comes back from `onTasksChange` carrying a
-resolved `endDate`, with its original `duration` untouched.
+**Decision.** `getTaskList` emits a concrete exclusive `endDate` on every task whose end is
+*derivable*, not just summaries. A task authored `{startDate, duration}` therefore comes back from
+`onTasksChange` carrying a resolved `endDate`, with its original `duration` untouched.
+
+**As implemented:** a task that is already an instant — no `endDate`, no `duration` — is left
+exactly as authored rather than given a redundant `endDate === startDate`. Materializing it would
+allocate a fresh object every render and defeat the identity preservation the memo chain depends
+on, and the `endDate ?? startDate` fallback downstream covers it. So the invariant is "every task
+whose end is derivable carries it", not "every task carries one".
 
 **Why.** This is the load-bearing architectural simplification: the calendar is applied **once**,
 at the `resolved → display list` boundary. Downstream, `computeTaskPixels`, `geometry.ts`,

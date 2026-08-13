@@ -21,6 +21,7 @@ MUI-style slot system for deep customization.
 - [Composable API](#composable-api)
 - [`GanttProps` reference](#ganttprops-reference)
 - [Data model](#data-model)
+- [Working time (calendars)](#working-time-calendars)
 - [Task bars](#task-bars)
 - [Dependencies & scheduling](#dependencies--scheduling)
 - [Columns](#columns)
@@ -55,11 +56,14 @@ import "@am/react-gantt/style.css";
 import { Gantt, type GanttTask } from "@am/react-gantt";
 import "@am/react-gantt/style.css";
 
+// Build dates with the (year, monthIndex, day) constructor, never an ISO string —
+// `new Date("2023-01-10")` parses as UTC midnight while the geometry reads local
+// civil instants. `endDate` is EXCLUSIVE: "Install Apache" occupies Jan 10 alone.
 const tasks: GanttTask[] = [
-  { id: 1000, name: "Launch SaaS Product", startDate: new Date("2023-01-10"), endDate: new Date("2023-01-21"), type: "summary" },
-  { id: 1,    name: "Setup web server",    startDate: new Date("2023-01-10"), endDate: new Date("2023-01-13"), progress: 33, parentId: 1000 },
-  { id: 11,   name: "Install Apache",      startDate: new Date("2023-01-10"), endDate: new Date("2023-01-10"), progress: 50, parentId: 1 },
-  { id: 12,   name: "Configure firewall",  startDate: new Date("2023-01-10"), endDate: new Date("2023-01-11"), progress: 50, parentId: 1 },
+  { id: 1000, name: "Launch SaaS Product", startDate: new Date(2023, 0, 10), endDate: new Date(2023, 0, 22), type: "summary" },
+  { id: 1,    name: "Setup web server",    startDate: new Date(2023, 0, 10), endDate: new Date(2023, 0, 14), progress: 33, parentId: 1000 },
+  { id: 11,   name: "Install Apache",      startDate: new Date(2023, 0, 10), endDate: new Date(2023, 0, 11), progress: 50, parentId: 1 },
+  { id: 12,   name: "Configure firewall",  startDate: new Date(2023, 0, 10), endDate: new Date(2023, 0, 12), progress: 50, parentId: 1 },
 ];
 
 export function App() {
@@ -114,6 +118,9 @@ Defined in [`src/types.ts`](./src/types.ts).
 | `tasks`        | `GanttTask[]`       | **Required.** Stable seed list (see the note in Quick start). |
 | `dependencies` | `TaskDependency[]`  | Links between tasks (FS/FF/SS/SF, optional lag). |
 | `columns`      | `ColumnDef[]`       | Task-list columns. Falls back to built-in default columns. |
+| `calendar`     | `GanttCalendar`     | Working-time definition. Supplying it opts into working-time scheduling — see [Working time](#working-time-calendars). |
+| `snapToWorking`| `boolean`           | Default `true`. `false` keeps non-working shading but leaves dates untouched. |
+| `durationUnit` | `"day" \| "hour" \| "minute"` | How an input `duration` is interpreted and displayed. Default `"day"`. |
 
 ### Layout
 
@@ -159,7 +166,7 @@ interface GanttTask {
   id: Id;                                   // string | number
   name: string;
   startDate: Date;
-  endDate?: Date;                           // inclusive last day (chart is day-granular)
+  endDate?: Date;                           // EXCLUSIVE — the instant work stops
   duration?: number;
   progress?: number;                        // 0–100
   type?: "task" | "milestone" | "summary";  // default: "task"
@@ -168,6 +175,16 @@ interface GanttTask {
 ```
 
 - **`Id`** — `string | number`.
+- **`endDate` is exclusive** — it is the instant work *stops*, not the last day
+  worked. A task running Monday through Friday is
+  `{ startDate: Mon, endDate: Sat }`, and a 9-to-5 Friday task is
+  `Fri 09:00 → Fri 17:00`. This is what makes interval arithmetic work without
+  scattered ±1 day corrections. To show a user the inclusive last day, use
+  `api.format.endDate(task)` inside a column, or the exported `displayEndDate`
+  / `endInstantFromDisplayDate` helpers when bridging a date input.
+- **`duration`** — interpreted in the chart's `durationUnit` and, when a
+  `calendar` is set, counted in *working* time. The library never writes this
+  field back; it derives dates from it and leaves your data alone.
 - **`type`** — `"task"` (default), `"milestone"` (a diamond at `startDate`), or
   `"summary"` (a parent whose dates and progress roll up from its children). See
   [Task bars](#task-bars).
@@ -182,7 +199,7 @@ type TaskDependency = {
   from: Id;
   to: Id;
   type: TaskDependencyType;
-  lag?: number;  // days
+  lag?: number;  // in `durationUnit`s; WORKING time when a calendar is set
 };
 ```
 
@@ -190,6 +207,66 @@ For the full seed → change-log → resolved-list pipeline (transactions, curso
 roll-up), see [`docs/data-structures.md`](./docs/data-structures.md).
 
 ---
+
+## Working time (calendars)
+
+By default the chart schedules in plain linear time: weekends are shaded but a
+five-day task dragged onto a Thursday simply ends on Monday. Pass a `calendar` to
+make non-working time real — for the scheduler, for drag, and for the dependency
+cascade.
+
+```tsx
+<Gantt
+  tasks={tasks}
+  height={480}
+  calendar={{
+    hours: ["8:00-12:00", "13:00-17:00"],  // lunch is the gap between ranges
+    days: {
+      0: false, 6: false,                  // weekends off (0 = Sunday)
+      5: ["8:00-12:00"],                   // short Friday
+    },
+    dates: {
+      "2026-01-01": false,                 // holiday
+      "2026-01-10": ["9:00-13:00"],        // half day
+    },
+  }}
+/>
+```
+
+Three scopes resolve in the order **`dates` → `days` → `hours`**, so a specific
+date beats a weekday rule, which beats the global default.
+
+| Prop | Meaning |
+| --- | --- |
+| `calendar` | The working-time definition. Supplying it *is* the opt-in. Safe to write inline — it is keyed by content, not identity. |
+| `snapToWorking` | Default `true`. Set `false` to keep the shading but leave dates untouched. |
+| `durationUnit` | `"day"` (default), `"hour"`, or `"minute"` — how an input `duration` is read and displayed. |
+
+Things worth knowing before you rely on it:
+
+- **Omitting `hours` means whole days, not business hours.** A calendar that only
+  marks weekends off stays day-granular, so `duration: 3` is still three whole
+  days rather than three 8-hour shifts.
+- **A day off is just a day with no hours** (`false`), so working *days* are the
+  degenerate case of working *time* — there is no separate concept.
+- **One `durationUnit: "day"` is the week's longest working day.** With
+  `{ hours: ["8:00-17:00"] }` that is 9 hours. Adding a single longer weekday
+  therefore redefines "a day" for the whole chart.
+- **Your data is never rewritten.** Snapping applies only to dates the library
+  authors — drag commits and cascade results. A task you author ending on a
+  Sunday renders where you put it until it is first edited.
+- **Moves preserve working time, resizes set it.** Drag a three-working-day task
+  onto a Thursday and it stays three working days, growing visually across the
+  weekend. Drag its edge onto a Sunday and it settles back onto Friday.
+- **Non-working time is shaded, not compressed.** The time axis stays linear.
+  Slot consumers get `isNonWorking` and `nonWorkingReason`
+  (`"weekend" | "holiday" | "offHours"`) on the grid-column and calendar-cell
+  ownerStates.
+- **Known gap:** the actions column's "add after" button creates a task without
+  snapping it, because a column's `render` has no access to the calendar.
+
+The reasoning behind each of these — including what was rejected — is recorded in
+[`docs/adr/`](../../docs/adr/README.md).
 
 ## Task bars
 

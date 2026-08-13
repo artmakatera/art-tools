@@ -15,7 +15,6 @@ interface DependencyLinksProviderProps {
   origin: Date;
   colWidth: number;
   rowHeight: number;
-  snapToDay: boolean;
   unit: CalendarUnit;
   children: ReactNode;
   overrides: Record<string, Partial<TaskState>>;
@@ -32,7 +31,6 @@ export function DependencyLinksProvider({
   origin,
   colWidth,
   rowHeight,
-  snapToDay,
   unit,
   children,
   overrides,
@@ -45,11 +43,10 @@ export function DependencyLinksProvider({
         origin,
         colWidth,
         rowHeight,
-        snapToDay,
         unit,
         overrides,
       }),
-    [tasks, dependencies, origin, colWidth, rowHeight, snapToDay, unit, overrides],
+    [tasks, dependencies, origin, colWidth, rowHeight, unit, overrides],
   );
 
   return (

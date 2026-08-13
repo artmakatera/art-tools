@@ -44,7 +44,7 @@ interface TaskBarProps {
   onProgressChange: (newProgress: number) => void;
   onProgressEnd: (newProgress: number) => void;
   onResize: (newWidth: number, newLeft: number) => void;
-  onResizeEnd: (newWidth: number, newLeft: number) => void;
+  onResizeEnd: (edge: "start" | "end", edgePx: number) => void;
   onMove: (newLeft: number) => void;
   onMoveEnd: (newLeft: number) => void;
   slots?: TaskBarSlots;

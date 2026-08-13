@@ -7,6 +7,9 @@ import type { GanttTask, TaskDependency } from "@am/react-gantt";
  * string, which parses as UTC midnight and would place bars a day off for
  * anyone west of Greenwich (the library's geometry reads local civil dates).
  *
+ * `endDate` is the EXCLUSIVE instant work stops: a task running Jan 5..8 stores
+ * Jan 9. Use `ColumnApi.format.endDate` when showing an end date to a user.
+ *
  * These are module-level constants on purpose: `<Gantt>` treats `tasks` as an
  * identity-stable seed for its change log, so a fresh array on every render
  * would discard edits.
@@ -18,28 +21,28 @@ export const simpleTasks: GanttTask[] = [
     id: "spec",
     name: "Write spec",
     startDate: new Date(2026, 0, 5),
-    endDate: new Date(2026, 0, 9),
+    endDate: new Date(2026, 0, 10),
     progress: 100,
   },
   {
     id: "build",
     name: "Build feature",
     startDate: new Date(2026, 0, 12),
-    endDate: new Date(2026, 0, 23),
+    endDate: new Date(2026, 0, 24),
     progress: 60,
   },
   {
     id: "review",
     name: "Code review",
     startDate: new Date(2026, 0, 26),
-    endDate: new Date(2026, 0, 28),
+    endDate: new Date(2026, 0, 29),
     progress: 20,
   },
   {
     id: "ship",
     name: "Ship it",
     startDate: new Date(2026, 0, 29),
-    endDate: new Date(2026, 0, 30),
+    endDate: new Date(2026, 0, 31),
     progress: 0,
   },
 ];
@@ -51,14 +54,14 @@ export const treeTasks: GanttTask[] = [
     name: "Discovery",
     type: "summary",
     startDate: new Date(2026, 0, 5),
-    endDate: new Date(2026, 0, 16),
+    endDate: new Date(2026, 0, 17),
   },
   {
     id: "interviews",
     name: "User interviews",
     parentId: "phase-1",
     startDate: new Date(2026, 0, 5),
-    endDate: new Date(2026, 0, 9),
+    endDate: new Date(2026, 0, 10),
     progress: 100,
   },
   {
@@ -66,7 +69,7 @@ export const treeTasks: GanttTask[] = [
     name: "Synthesis",
     parentId: "phase-1",
     startDate: new Date(2026, 0, 12),
-    endDate: new Date(2026, 0, 16),
+    endDate: new Date(2026, 0, 17),
     progress: 75,
   },
   {
@@ -74,14 +77,14 @@ export const treeTasks: GanttTask[] = [
     name: "Delivery",
     type: "summary",
     startDate: new Date(2026, 0, 19),
-    endDate: new Date(2026, 1, 6),
+    endDate: new Date(2026, 1, 7),
   },
   {
     id: "implement",
     name: "Implementation",
     parentId: "phase-2",
     startDate: new Date(2026, 0, 19),
-    endDate: new Date(2026, 1, 2),
+    endDate: new Date(2026, 1, 3),
     progress: 40,
   },
   {
@@ -89,7 +92,7 @@ export const treeTasks: GanttTask[] = [
     name: "QA pass",
     parentId: "phase-2",
     startDate: new Date(2026, 1, 3),
-    endDate: new Date(2026, 1, 6),
+    endDate: new Date(2026, 1, 7),
     progress: 0,
   },
   {
@@ -106,28 +109,28 @@ export const linkedTasks: GanttTask[] = [
     id: "a",
     name: "Design",
     startDate: new Date(2026, 0, 5),
-    endDate: new Date(2026, 0, 9),
+    endDate: new Date(2026, 0, 10),
     progress: 100,
   },
   {
     id: "b",
     name: "Build (FS from Design)",
     startDate: new Date(2026, 0, 12),
-    endDate: new Date(2026, 0, 20),
+    endDate: new Date(2026, 0, 21),
     progress: 50,
   },
   {
     id: "c",
     name: "Docs (SS with Build)",
     startDate: new Date(2026, 0, 12),
-    endDate: new Date(2026, 0, 16),
+    endDate: new Date(2026, 0, 17),
     progress: 30,
   },
   {
     id: "d",
     name: "Sign-off (FF with Build)",
     startDate: new Date(2026, 0, 15),
-    endDate: new Date(2026, 0, 20),
+    endDate: new Date(2026, 0, 21),
     progress: 0,
   },
 ];

@@ -1,7 +1,5 @@
 import type { CalendarUnit, GanttTask, TaskState } from "../types";
-import { dateAtOffset, startOfUnit, unitOffset } from "./dateUtils";
-
-const MS_PER_DAY = 86_400_000;
+import { dateAtOffset, unitOffset } from "./dateUtils";
 
 export interface TaskPixels {
   left: number;
@@ -15,21 +13,18 @@ export function computeTaskPixels(
   origin: Date,
   colWidth: number,
   unit: CalendarUnit = "day",
-  // Accepted but not yet honoured: bars are always positioned by their true
-  // day-granular dates (see the comment below). Callers already pass it, so the
-  // parameter stays to keep the signature stable for when snapping lands.
-  _options?: { snapToDay?: boolean },
 ): TaskPixels {
-  // Position by the task's true (day-granular) dates rather than snapping to the
-  // column unit, so a bar's size is proportional to its real duration. The bar
-  // fills through the END of endDate's day, so the right edge is measured at the
-  // exclusive next day. At a coarse unit (e.g. quarter) a one-day task is then a
-  // thin sliver — 1/90th of a column — not a whole column.
-  const startDate = override.startDate ?? startOfUnit(task.startDate, "day");
-  const endDate =
-    override.endDate ?? (task.endDate ? startOfUnit(task.endDate, "day") : startDate);
+  // Position by the task's true instants, never snapped to the column unit, so a
+  // bar's size is proportional to its real duration. `endDate` is exclusive
+  // (ADR-014), so it IS the right edge — no +1 day fudge. At a coarse unit (e.g.
+  // quarter) a one-day task is a thin sliver, 1/90th of a column, not a whole one.
+  //
+  // The display list materializes `endDate` on every task (ADR-019), so the
+  // fallback here only covers a task rendered straight from consumer data.
+  const startDate = override.startDate ?? task.startDate;
+  const endDate = override.endDate ?? task.endDate ?? startDate;
   const startOff = unitOffset(origin, startDate, unit);
-  const endOff = unitOffset(origin, new Date(endDate.getTime() + MS_PER_DAY), unit);
+  const endOff = unitOffset(origin, endDate, unit);
   const left = startOff * colWidth;
   const width = (endOff - startOff) * colWidth;
 
@@ -49,53 +44,26 @@ export function pxToDate(
   return dateAtOffset(origin, unit, pxOffset / colWidth);
 }
 
-/**
- * Inclusive end date whose bar right-edge lands at `rightEdgePx`. Inverse of the
- * {@link computeTaskPixels} width convention: the bar fills through the end of
- * endDate's day, so the stored endDate is the day before the exclusive edge.
- */
-export function pxToEndDate(
-  rightEdgePx: number,
-  origin: Date,
-  colWidth: number,
-  unit: CalendarUnit = "day",
-): Date {
-  return new Date(
-    pxToDate(rightEdgePx, origin, colWidth, unit).getTime() - MS_PER_DAY,
-  );
-}
-
 export interface DatePatch {
   startDate?: Date;
   endDate?: Date;
   progress?: number;
 }
 
-export function applyPatch(
-  task: GanttTask,
-  prevOverride: Partial<TaskState>,
-  patch: DatePatch,
-): Partial<TaskState> {
-  const next: Partial<TaskState> = { ...prevOverride };
-  if (patch.progress !== undefined) next.progress = patch.progress;
-
-  const isMilestone = task.type === "milestone";
-
-  if (patch.endDate !== undefined) {
-    if (patch.startDate !== undefined) next.startDate = patch.startDate;
-    if (!isMilestone) next.endDate = patch.endDate;
-    return next;
-  }
-
-  if (patch.startDate !== undefined) {
-    next.startDate = patch.startDate;
-    if (!isMilestone) {
-      const prevStart = prevOverride.startDate ?? task.startDate;
-      const prevEnd = prevOverride.endDate ?? task.endDate ?? prevStart;
-      const duration = prevEnd.getTime() - prevStart.getTime();
-      next.endDate = new Date(patch.startDate.getTime() + duration);
-    }
-  }
-  return next;
-}
+/**
+ * What a finished drag *meant*, rather than the two dates it happened to land on.
+ *
+ * The preview stays rigid and pixel-derived (ADR-008), so pixel width during a
+ * drag is preview state, not intent — a move that crosses a weekend must preserve
+ * the task's working time, which the pixels cannot express. Emitting an intent and
+ * resolving it once on drop is what keeps every calendar read out of the mousemove
+ * path by construction.
+ */
+export type BarCommit =
+  /** Whole bar dropped with its left edge here; the end is re-derived. */
+  | { kind: "move"; startDate: Date }
+  /** Start edge dragged here; the end is pinned. */
+  | { kind: "resizeStart"; startDate: Date }
+  /** End edge dragged here; the start is pinned. */
+  | { kind: "resizeEnd"; endDate: Date };
 

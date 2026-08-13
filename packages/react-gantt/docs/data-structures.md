@@ -24,8 +24,8 @@ interface GanttTask {
   id: string | number;
   name: string;
   startDate: Date;
-  endDate?: Date;          // inclusive last day (chart is day-granular)
-  duration?: number;
+  endDate?: Date;          // EXCLUSIVE — the instant work stops
+  duration?: number;       // interpreted in the chart's `durationUnit`
   progress?: number;       // 0–100
   type?: "task" | "milestone" | "summary";
   parentId?: Id | null;    // null/undefined = root
@@ -39,21 +39,21 @@ Example (a leaf task):
   "id": 12,
   "name": "Configure firewall",
   "startDate": "2022-01-10",
-  "endDate":   "2022-01-11",
+  "endDate":   "2022-01-12",
   "progress":  50,
   "parentId":  1
 }
 ```
 
 A task created by the playground "Add task" button — every field populated,
-1-day span (`endDate === startDate`), progress 0:
+1-day span (`endDate` is the next midnight, since it is exclusive), progress 0:
 
 ```jsonc
 {
   "id": "new-1718539200000",
   "name": "New task",
   "startDate": "2022-01-10",
-  "endDate":   "2022-01-10",
+  "endDate":   "2022-01-11",
   "duration":  1,
   "progress":  0,
   "type":      "task",
@@ -70,12 +70,12 @@ edits live in the change log layered on top of it. The active mock:
 
 ```jsonc
 [
-  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-21", "progress": 27, "type": "summary" },
-  { "id": 1,    "name": "Setup web server",    "startDate": "2022-01-10", "endDate": "2022-01-13", "progress": 33.3, "parentId": 1000 },
-  { "id": 11,   "name": "Install Apache",      "startDate": "2022-01-10", "endDate": "2022-01-10", "progress": 50,   "parentId": 1 },
-  { "id": 12,   "name": "Configure firewall",  "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1 },
-  { "id": 333,  "name": "Application tests",   "startDate": "2022-01-01", "endDate": "2022-01-02", "progress": 0 },
-  { "id": 334,  "name": "Monkey tests",        "startDate": "2022-01-20", "endDate": "2022-01-22", "progress": 0 }
+  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-22", "progress": 27, "type": "summary" },
+  { "id": 1,    "name": "Setup web server",    "startDate": "2022-01-10", "endDate": "2022-01-14", "progress": 33.3, "parentId": 1000 },
+  { "id": 11,   "name": "Install Apache",      "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1 },
+  { "id": 12,   "name": "Configure firewall",  "startDate": "2022-01-10", "endDate": "2022-01-12", "progress": 50,   "parentId": 1 },
+  { "id": 333,  "name": "Application tests",   "startDate": "2022-01-01", "endDate": "2022-01-03", "progress": 0 },
+  { "id": 334,  "name": "Monkey tests",        "startDate": "2022-01-20", "endDate": "2022-01-23", "progress": 0 }
 ]
 ```
 
@@ -129,8 +129,8 @@ One transaction, two commands → **one** undo step:
 {
   "transactions": [
     [
-      { "type": "update", "task": { "id": 11, "name": "Install Apache",     "startDate": "2022-01-12", "endDate": "2022-01-12", "progress": 50, "parentId": 1 } },
-      { "type": "update", "task": { "id": 12, "name": "Configure firewall", "startDate": "2022-01-12", "endDate": "2022-01-13", "progress": 50, "parentId": 1 } }
+      { "type": "update", "task": { "id": 11, "name": "Install Apache",     "startDate": "2022-01-12", "endDate": "2022-01-13", "progress": 50, "parentId": 1 } },
+      { "type": "update", "task": { "id": 12, "name": "Configure firewall", "startDate": "2022-01-12", "endDate": "2022-01-14", "progress": 50, "parentId": 1 } }
     ]
   ],
   "cursor": 1
@@ -143,7 +143,7 @@ One transaction, two commands → **one** undo step:
 {
   "transactions": [
     [ /* the drag above */ ],
-    [ { "type": "create", "task": { "id": "new-1", "name": "New task", "startDate": "2022-01-12", "endDate": "2022-01-12", "duration": 1, "progress": 0, "type": "task", "parentId": 1 }, "afterId": 12 } ],
+    [ { "type": "create", "task": { "id": "new-1", "name": "New task", "startDate": "2022-01-12", "endDate": "2022-01-13", "duration": 1, "progress": 0, "type": "task", "parentId": 1 }, "afterId": 12 } ],
     [ { "type": "delete", "id": 334 } ]
   ],
   "cursor": 3
@@ -178,12 +178,12 @@ Given the empty log, the seed above resolves & flattens to:
 ```jsonc
 [
   // 1000 rolled up from child {1}, which is rolled up from {11,12}
-  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-13", "progress": 50, "type": "summary" },
-  { "id": 1,    "name": "Setup web server",    "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1000 },
-  { "id": 11,   "name": "Install Apache",      "startDate": "2022-01-10", "endDate": "2022-01-10", "progress": 50,   "parentId": 1 },
-  { "id": 12,   "name": "Configure firewall",  "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1 },
-  { "id": 333,  "name": "Application tests",   "startDate": "2022-01-01", "endDate": "2022-01-02", "progress": 0 },
-  { "id": 334,  "name": "Monkey tests",        "startDate": "2022-01-20", "endDate": "2022-01-22", "progress": 0 }
+  { "id": 1000, "name": "Launch SaaS Product", "startDate": "2022-01-10", "endDate": "2022-01-14", "progress": 50, "type": "summary" },
+  { "id": 1,    "name": "Setup web server",    "startDate": "2022-01-10", "endDate": "2022-01-12", "progress": 50,   "parentId": 1000 },
+  { "id": 11,   "name": "Install Apache",      "startDate": "2022-01-10", "endDate": "2022-01-11", "progress": 50,   "parentId": 1 },
+  { "id": 12,   "name": "Configure firewall",  "startDate": "2022-01-10", "endDate": "2022-01-12", "progress": 50,   "parentId": 1 },
+  { "id": 333,  "name": "Application tests",   "startDate": "2022-01-01", "endDate": "2022-01-03", "progress": 0 },
+  { "id": 334,  "name": "Monkey tests",        "startDate": "2022-01-20", "endDate": "2022-01-23", "progress": 0 }
 ]
 ```
 
