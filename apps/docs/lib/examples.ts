@@ -45,6 +45,12 @@ export const EXAMPLES: ExampleMeta[] = [
     group: "Core",
   },
   {
+    slug: "working-time",
+    title: "Working time",
+    blurb: "Weekends, holidays and business hours that the scheduler, drag and cascade all honour.",
+    group: "Core",
+  },
+  {
     slug: "composable",
     title: "Composable API",
     blurb: "Assemble GanttProvider, TaskList and GanttGrid yourself for full layout control.",

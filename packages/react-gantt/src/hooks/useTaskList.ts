@@ -7,7 +7,9 @@ import {
   resolveCommittedTasksCached,
   type ResolveCache,
 } from "../core/prepareData";
-import { buildDependencyGraph, scheduleDependents } from "../core/scheduling";
+import { buildDependencyGraph, resolveCommit, scheduleDependents } from "../core/scheduling";
+import type { BarCommit } from "../core/barUtils";
+import { LINEAR_CONTEXT, type SchedulingContext } from "../core/taskDates";
 
 const EMPTY_LOG: ChangeLog = { transactions: [], cursor: 0 };
 
@@ -49,12 +51,20 @@ export const useTaskList = (
   tasks: GanttTask[],
   dependencies: TaskDependency[] = EMPTY_DEPENDENCIES,
   options: UseTaskListOptions = {},
+  ctx: SchedulingContext = LINEAR_CONTEXT,
 ) => {
   // Latest-ref so the returned mutators stay identity-stable even when the
   // caller passes inline callbacks; handlers read the current options at call
   // time. Updated during render, same pattern as `resolvedRef` below.
   const optionsRef = useRef(options);
   optionsRef.current = options;
+
+  // Same treatment for the scheduling context: event handlers need it fresh, but
+  // must not gain a new identity when it changes, because `columnApi` and the
+  // task-actions context memo on them. Memos below take it as a real dependency
+  // instead — they need invalidation, not freshness.
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
   const [log, setLog] = useState<ChangeLog>(EMPTY_LOG);
 
   // Built once per dependency list and reused across every commit.
@@ -80,10 +90,44 @@ export const useTaskList = (
   const resolvedRef = useRef(resolvedById);
   resolvedRef.current = resolvedById;
 
+  // Depends on the calendar: the roll-up resolves duration-only children through
+  // it, so a calendar change must recompute or every summary bar goes stale.
   const tasksList = useMemo(
-    () => getTaskList(resolvedById),
-    [resolvedById],
+    () => getTaskList(resolvedById, ctx),
+    [resolvedById, ctx],
   );
+
+  /**
+   * Commit a finished drag. Unlike `updateTask` — which writes consumer-supplied
+   * dates verbatim — this is the library authoring dates, so it is the only path
+   * that snaps onto working time (ADR-012).
+   */
+  const commitTask = useCallback((id: Id, commit: BarCommit) => {
+    const base = resolvedRef.current.get(id);
+    if (!base) {
+      return;
+    }
+    const { startDate, endDate } = resolveCommit(base, commit, ctxRef.current);
+    const nextTask: GanttTask = { ...base, startDate, endDate };
+
+    // A drag that resolves back to where it started records no undo step, which is
+    // also what makes a bar dropped in non-working time visibly settle back: the
+    // transient override is cleared unconditionally and nothing replaces it.
+    if (sameTask(nextTask, base)) {
+      return;
+    }
+
+    const commands: TaskCommand[] = [{ type: "update", task: nextTask }];
+    if (dependencyGraph.size > 0) {
+      const current = new Map(resolvedRef.current);
+      current.set(id, nextTask);
+      const rescheduled = scheduleDependents(current, dependencyGraph, id, ctxRef.current);
+      for (const task of rescheduled.values()) {
+        commands.push({ type: "update", task });
+      }
+    }
+    setLog((prev) => appendTransaction(prev, commands));
+  }, [dependencyGraph]);
 
   const updateTask = useCallback((id: Id, patch: TaskPatch) => {
     // Build on the latest committed task (pre-roll-up) from the resolved map.
@@ -109,7 +153,7 @@ export const useTaskList = (
       // Clone so scheduling doesn't mutate the shared resolved map.
       const current = new Map(resolvedRef.current);
       current.set(id, nextTask);
-      const rescheduled = scheduleDependents(current, dependencyGraph, id);
+      const rescheduled = scheduleDependents(current, dependencyGraph, id, ctxRef.current);
       for (const task of rescheduled.values()) {
         commands.push({ type: "update", task });
       }
@@ -166,6 +210,7 @@ export const useTaskList = (
   return {
     tasksList,
     updateTask,
+    commitTask,
     createTask,
     deleteTask,
     undo,

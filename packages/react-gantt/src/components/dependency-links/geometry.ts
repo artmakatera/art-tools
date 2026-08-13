@@ -67,7 +67,7 @@ interface Box {
   centerY: number;
 }
 
-/** Maps a task to its horizontal pixel span; captures origin/colWidth/snapToDay. */
+/** Maps a task to its horizontal pixel span; captures origin/colWidth/unit. */
 type PixelFn = (task: GanttTask) => { left: number; width: number };
 
 /**
@@ -181,7 +181,6 @@ export interface DependencyLinkParams {
   origin: Date;
   colWidth: number;
   rowHeight: number;
-  snapToDay: boolean;
   unit: CalendarUnit;
   overrides: Record<string, Partial<TaskState>>;
 }
@@ -199,12 +198,11 @@ export function computeDependencyLinks({
   origin,
   colWidth,
   rowHeight,
-  snapToDay,
   unit,
   overrides
 }: DependencyLinkParams): DependencyLink[] {
   const boxes = buildBoxes(tasks, rowHeight, (task) =>
-    computeTaskPixels(task, overrides[task.id] || {}, origin, colWidth, unit, { snapToDay }),
+    computeTaskPixels(task, overrides[task.id] || {}, origin, colWidth, unit),
   );
   const links: DependencyLink[] = [];
 

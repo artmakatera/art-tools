@@ -190,7 +190,9 @@ export function generateMockData(
     baseDate = new Date(firstYear, 0, 1);
     spreadDays = Math.max(0, daysBetween(baseDate, new Date(lastYear, 11, 31)));
   } else {
-    baseDate = options.startDate ?? new Date("2022-01-03");
+    // Local civil constructor, never an ISO string: `new Date("2022-01-03")`
+    // parses as UTC midnight, which lands a day early west of Greenwich.
+    baseDate = options.startDate ?? new Date(2022, 0, 3);
   }
 
   let nextId = 1;
@@ -315,7 +317,7 @@ export function generateMockData(
 
       const start: Date = runParallel && prevLeafStart ? prevLeafStart : cursor;
       const duration = isMilestone ? 0 : randInt(1, 5);
-      const end = isMilestone ? start : addDays(start, duration - 1);
+      const end = isMilestone ? start : addDays(start, duration);
       const id = nextId++;
 
       const leaf: GanttTask = {
@@ -345,8 +347,8 @@ export function generateMockData(
       prevAnchor = id;
       prevLeafStart = start;
 
-      // Next sibling starts the day after this leaf finishes (clean FS hand-off).
-      const nextFree = addDays(end, 1);
+      // `end` is exclusive, so the next sibling starts exactly there (clean FS hand-off).
+      const nextFree = end;
       if (nextFree > cursor) {
         cursor = nextFree;
       }

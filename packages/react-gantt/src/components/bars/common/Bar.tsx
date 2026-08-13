@@ -1,9 +1,9 @@
 import { memo, useState } from "react";
 import {
+  type BarCommit,
   computeTaskPixels,
   type DatePatch,
   pxToDate,
-  pxToEndDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
 import { useGanttLabels, useGanttSelectedId } from "../../../context/GanttContext";
@@ -21,9 +21,9 @@ interface BarProps {
   origin: Date;
   colWidth: number;
   rowHeight: number;
-  snapToDay: boolean;
   unit: CalendarUnit;
   onUpdate: (id: Id, patch: DatePatch) => void;
+  onCommit: (id: Id, commit: BarCommit) => void;
   override?: Partial<TaskState>;
   onOverride: (id: Id, patch: DatePatch | null) => void;
   onTaskClick?: (task: GanttTask) => void;
@@ -36,11 +36,11 @@ export const Bar = memo(function Bar({
   origin,
   colWidth,
   rowHeight,
-  snapToDay,
   unit,
   override,
   onOverride,
   onUpdate,
+  onCommit,
   onTaskClick,
   rowIndexOffset,
 }: BarProps) {
@@ -54,7 +54,6 @@ export const Bar = memo(function Bar({
     origin,
     colWidth,
     unit,
-    { snapToDay },
   );
   const top = index * rowHeight;
   const visualLeft = left;
@@ -63,14 +62,16 @@ export const Bar = memo(function Bar({
 
   const [hovered, setHovered] = useState(false);
 
+  // `endDate` is exclusive (ADR-014), so the bar's right edge maps straight to it —
+  // no day subtracted back off.
   const moveAt = (newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth, unit),
-    endDate: pxToEndDate(newLeft + width, origin, colWidth, unit),
+    endDate: pxToDate(newLeft + width, origin, colWidth, unit),
   });
 
   const resizeAt = (newWidth: number, newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth, unit),
-    endDate: pxToEndDate(newLeft + newWidth, origin, colWidth, unit),
+    endDate: pxToDate(newLeft + newWidth, origin, colWidth, unit),
   });
 
   const handleOverride = (patch: DatePatch) => {
@@ -81,6 +82,20 @@ export const Bar = memo(function Bar({
     onUpdate(id, patch);
     onOverride(id, null);
   };
+
+  // Commits carry INTENT, not the two dates the pixels happened to land on: a move
+  // must preserve working time, which pixel width cannot express once a calendar
+  // exists. Clearing the override unconditionally is also what makes a bar dropped
+  // in non-working time visibly settle back.
+  const handleCommit = (commit: BarCommit) => {
+    onCommit(task.id, commit);
+    onOverride(task.id, null);
+  };
+
+  const commitMoveAt = (newLeft: number): BarCommit => ({
+    kind: "move",
+    startDate: pxToDate(newLeft, origin, colWidth, unit),
+  });
 
   const a11y: BarA11yProps = {
     role: "gridcell",
@@ -118,7 +133,7 @@ export const Bar = memo(function Bar({
           title={task.name}
           a11y={a11y}
           onMove={(newCenter) => handleOverride(moveAt(newCenter))}
-          onMoveEnd={(newCenter) => handleUpdate(task.id, moveAt(newCenter))}
+          onMoveEnd={(newCenter) => handleCommit(commitMoveAt(newCenter))}
         />
       )}
       {task.type === "summary" && (
@@ -134,9 +149,7 @@ export const Bar = memo(function Bar({
           onProgressChange={(p) => handleOverride({ progress: p })}
           onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
           onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
-          onMoveEnd={(newVisualLeft) =>
-            handleUpdate(task.id, moveAt(newVisualLeft))
-          }
+          onMoveEnd={(newVisualLeft) => handleCommit(commitMoveAt(newVisualLeft))}
         />
       )}
       {task.type === "task" || !task.type ? (
@@ -152,14 +165,16 @@ export const Bar = memo(function Bar({
           onProgressChange={(p) => handleOverride({ progress: p })}
           onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
           onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
-          onMoveEnd={(newVisualLeft) =>
-            handleUpdate(task.id, moveAt(newVisualLeft))
-          }
+          onMoveEnd={(newVisualLeft) => handleCommit(commitMoveAt(newVisualLeft))}
           onResize={(newWidth, newVisualLeft) =>
             handleOverride(resizeAt(newWidth, newVisualLeft))
           }
-          onResizeEnd={(newWidth, newVisualLeft) =>
-            handleUpdate(task.id, resizeAt(newWidth, newVisualLeft))
+          onResizeEnd={(edge, edgePx) =>
+            handleCommit(
+              edge === "start"
+                ? { kind: "resizeStart", startDate: pxToDate(edgePx, origin, colWidth, unit) }
+                : { kind: "resizeEnd", endDate: pxToDate(edgePx, origin, colWidth, unit) },
+            )
           }
         />
       ) : null}

@@ -59,9 +59,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
       // boundary containing min, padded outward by whole columns.
       const unit = resolveColumnUnit(scales);
       const origin = resolveOrigin(range.min, unit, padDays, resolveColumnStep(scales));
-      const { left, width } = computeTaskPixels(task, {}, origin, colWidth, unit, {
-        snapToDay: true, // TODO: make this configurable per Gantt instance
-      });
+      const { left, width } = computeTaskPixels(task, {}, origin, colWidth, unit);
       const nextLeft = scrollOffsetToReveal(
         left,
         width,

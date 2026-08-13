@@ -119,15 +119,24 @@ export function TaskListHeader({
   );
 }
 
-/** Builds the task inserted by the actions-column "add after" button: a blank
- *  one-day task starting the day after the clicked row, under the same parent. */
+/**
+ * Builds the task inserted by the actions-column "add after" button: a blank
+ * one-day task starting the day after the clicked row, under the same parent.
+ *
+ * `endDate` is exclusive, so a one-day task ends at the following midnight.
+ *
+ * Known gap (ADR-012): this is a library-authored date that does NOT snap onto
+ * working time, because a column's `render` is a plain function with no access to
+ * the calendar. A task added after a Friday row can therefore land on a Saturday
+ * until it is first dragged.
+ */
 function buildActionTask(task: GanttTask): GanttTask {
   const start = addDays(task.startDate, 1);
   return {
     id: `task-${Date.now()}`,
     name: "New task",
     startDate: start,
-    endDate: start,
+    endDate: addDays(start, 1),
     duration: 1,
     progress: 0,
     type: "task",
@@ -198,7 +207,9 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
     key: "__end",
     header: "End",
     width: 90,
-    render: (task: GanttTask) => task.endDate?.toLocaleDateString() ?? "—",
+    // Stored ends are exclusive instants, so format through the api rather than
+    // reading `task.endDate` — otherwise a Mon–Fri task reads as ending Saturday.
+    render: (task: GanttTask, api) => api.format.endDate(task)?.toLocaleDateString() ?? "—",
   },
   {
     key: "__progress",

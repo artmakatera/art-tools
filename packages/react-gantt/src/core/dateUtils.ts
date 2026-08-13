@@ -66,10 +66,26 @@ export function isWeekend(date: Date): boolean {
   return dow === 0 || dow === 6;
 }
 
+/**
+ * Index of the local *civil* day containing `date` — days since 1970-01-01 by
+ * calendar date, ignoring time of day and immune to DST because it is computed
+ * from the civil fields rather than the epoch instant.
+ *
+ * The working-time calendar keys every day off this, so identical civil dates
+ * in different timezones map to the same index.
+ */
+export function civilDayIndex(date: Date): number {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / MS_PER_DAY;
+}
+
+/** Local midnight starting the civil day at `dayIndex`. Inverse of {@link civilDayIndex}. */
+export function dateFromCivilDayIndex(dayIndex: number): Date {
+  const utc = new Date(dayIndex * MS_PER_DAY);
+  return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
+}
+
 export function diffDays(from: Date, to: Date): number {
-  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-  const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
-  return Math.round((b - a) / MS_PER_DAY);
+  return civilDayIndex(to) - civilDayIndex(from);
 }
 
 export function addDays(date: Date, days: number): Date {
@@ -272,8 +288,3 @@ export function buildDatesFromTasks(
 }
 
 
-export function getEndDate(startDate: Date, endDate?: Date, duration?: number, ): Date {
-  if (endDate) return endDate;
-  if (duration === undefined) return startDate;
-  return addDays(startDate, duration - 1);
-}

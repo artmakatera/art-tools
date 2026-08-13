@@ -179,6 +179,53 @@ describe("getTaskList", () => {
     expect(parent!.progress).toBe(60);
   });
 
+  it("widens the parent for a child defined only by duration", () => {
+    // Regression: the roll-up used to widen only for children carrying an
+    // explicit endDate, so a `{ startDate, duration }` child contributed just its
+    // start and the parent silently under-reported its own span.
+    const resolved = resolveCommittedTasks(
+      [
+        task("p", { type: "summary", startDate: new Date(2026, 0, 5), endDate: undefined }),
+        task("c1", { parentId: "p", startDate: new Date(2026, 0, 5), endDate: undefined, duration: 10 }),
+      ],
+      log([]),
+    );
+    const [parent] = getTaskList(resolved);
+    expect(parent!.startDate).toEqual(new Date(2026, 0, 5));
+    expect(parent!.endDate).toEqual(new Date(2026, 0, 15));
+  });
+
+  it("materializes an exclusive endDate on every task in the display list", () => {
+    // ADR-019: the calendar is applied once, here, so the whole render path
+    // downstream reads plain dates and needs no calendar awareness.
+    const resolved = resolveCommittedTasks(
+      [
+        task("p", { type: "summary", startDate: new Date(2026, 0, 5), endDate: undefined }),
+        task("c1", { parentId: "p", startDate: new Date(2026, 0, 5), endDate: undefined, duration: 2 }),
+        task("c2", { parentId: "p", startDate: new Date(2026, 0, 7), endDate: undefined }),
+      ],
+      log([]),
+    );
+    const [, c1, c2] = getTaskList(resolved);
+    expect(c1!.endDate).toEqual(new Date(2026, 0, 7));
+    // A task that is already an instant is left alone rather than given a
+    // redundant endDate — materializing it would allocate a fresh object every
+    // render and defeat the identity preservation the memo chain depends on.
+    // The `endDate ?? startDate` fallback downstream covers it.
+    expect(c2!.endDate).toBeUndefined();
+  });
+
+  it("preserves task identity when nothing needs materializing", () => {
+    const resolved = resolveCommittedTasks(
+      [task("a"), task("b", { endDate: undefined })],
+      log([]),
+    );
+    const first = getTaskList(resolved);
+    const second = getTaskList(resolved);
+    expect(second[0]).toBe(first[0]);
+    expect(second[1]).toBe(first[1]);
+  });
+
   it("excludes milestone progress from the parent roll-up", () => {
     const resolved = resolveCommittedTasks(
       [
