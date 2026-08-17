@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { ComponentProps, ElementType } from "react";
+import { useMemo, type ComponentProps, type ElementType } from "react";
 import { addUnit, isWeekend, periodKey } from "../../core/dateUtils";
 import { nonWorkingInfo, type NonWorkingReason } from "../../core/workingTime";
 import { useGanttWorkCalendar } from "../../context/GanttContext";
@@ -102,6 +102,34 @@ function groupDates(dates: Date[], scale: Scale): Group[] {
   return groups;
 }
 
+/**
+ * Half-open slice of `groups` overlapping `colRange`. Groups tile the date axis
+ * in order and without gaps, so the first visible one is a binary search away
+ * and the last is a short walk from there — no pass over the full list, which
+ * at day scale is one entry per rendered date.
+ */
+function groupRange(groups: Group[], colRange: IndexRange | undefined): IndexRange {
+  if (!colRange) {
+    return { start: 0, end: groups.length };
+  }
+  let lo = 0;
+  let hi = groups.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    const group = groups[mid]!;
+    if (group.startIndex + group.count <= colRange.start) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  let end = lo;
+  while (end < groups.length && groups[end]!.startIndex < colRange.end) {
+    end += 1;
+  }
+  return { start: lo, end };
+}
+
 export function CalendarRow({
   scale,
   dates,
@@ -118,7 +146,11 @@ export function CalendarRow({
   const { calendar } = useGanttWorkCalendar();
   const slotProps = slotPropsProp ?? ganttSlots.timeline?.calendarRow?.slotProps;
 
-  const groups = groupDates(dates, scale);
+  // Grouping walks every date, so it must not ride along with the scroll frames
+  // that change `colRange`: `dates` only changes when the task range or zoom
+  // level does.
+  const groups = useMemo(() => groupDates(dates, scale), [dates, scale]);
+  const visible = groupRange(groups, colRange);
 
   const Row = slots?.row ?? "div";
   const Cell = slots?.cell ?? "div";
@@ -143,14 +175,7 @@ export function CalendarRow({
 
   return (
     <Row {...rowProps}>
-      {groups.map((group) => {
-        if (
-          colRange &&
-          (group.startIndex >= colRange.end ||
-            group.startIndex + group.count <= colRange.start)
-        ) {
-          return null;
-        }
+      {groups.slice(visible.start, visible.end).map((group) => {
         const info =
           highlightWeekends && calendar
             ? nonWorkingInfo(calendar, group.start, addUnit(group.start, scale.unit, scale.step))

@@ -16,6 +16,8 @@ export interface DependencyLink {
   type: TaskDependencyType;
   /** Orthogonal polyline from the source edge to the target edge. */
   points: Point[];
+  /** Bounding box of {@link DependencyLink.points}, precomputed for culling. */
+  bounds: Bounds;
   /** The original dependency for callbacks. */
   dep: TaskDependency;
 }
@@ -211,10 +213,15 @@ export function computeDependencyLinks({
     const to = boxes.get(dep.to);
     if (!from || !to) continue;
 
+    // Bounds are computed here, not at render time: the renderer culls on every
+    // scroll frame, and the geometry it culls against only changes when this
+    // memo re-runs.
+    const points = routeLink(dep.type, from, to);
     links.push({
       id: `${dep.from}->${dep.to}`,
       type: dep.type,
-      points: routeLink(dep.type, from, to),
+      points,
+      bounds: linkBounds(points),
       dep,
     });
   }

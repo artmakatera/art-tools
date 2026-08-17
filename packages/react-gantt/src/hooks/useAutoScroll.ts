@@ -111,7 +111,9 @@ export function useAutoScroll({
       if (container) {
         s.scrollTarget =
           container === document.scrollingElement ? window : container;
-        s.scrollTarget.addEventListener("scroll", handleScroll);
+        // Passive: the handler only re-fires the drag, it never preventDefaults,
+        // so the browser must not wait on it to scroll.
+        s.scrollTarget.addEventListener("scroll", handleScroll, { passive: true });
         s.rafId = requestAnimationFrame(tick);
       }
     },
