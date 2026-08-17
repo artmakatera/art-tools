@@ -122,7 +122,9 @@ export function GridColumns({
           slotProps?.column,
           ownerState,
         );
-        return <Column key={date.toISOString()} {...columnProps} />;
+        // Keyed by instant, not ISO string: the dates are distinct by
+        // construction and this runs for every column on every scroll frame.
+        return <Column key={date.getTime()} {...columnProps} />;
       })}
     </div>
   );

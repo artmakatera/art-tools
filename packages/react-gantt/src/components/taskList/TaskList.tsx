@@ -18,8 +18,12 @@ import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
 import { useColumnWidths } from "../../hooks/useColumnWidths";
+import { useLatestRef } from "../../hooks/useLatestRef";
 import { useViewportMeasure } from "../../hooks/useViewportMeasure";
 import styles from "./TaskList.module.css";
+
+/** Static, so it is hoisted out of the render path rather than re-allocated. */
+const BODY_STYLE = { flex: "1 1 auto", minHeight: 0 } as const;
 
 interface TaskListProps {
   columns?: ColumnDef[];
@@ -48,44 +52,43 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     [columns, widths],
   );
 
-  const scrollToTask = useCallback(
-    (task: GanttTask) => {
-      const grid = gridRef.current;
-      const range = getMinMaxDates(visibleTasks);
-      if (!grid || !range) {
-        return;
-      }
-      // Matches the grid's origin: buildDatesFromTasks aligns to the unit
-      // boundary containing min, padded outward by whole columns.
-      const unit = resolveColumnUnit(scales);
-      const origin = resolveOrigin(range.min, unit, padDays, resolveColumnStep(scales));
-      const { left, width } = computeTaskPixels(task, {}, origin, colWidth, unit);
-      const nextLeft = scrollOffsetToReveal(
-        left,
-        width,
-        grid.scrollLeft,
-        grid.clientWidth,
-        colWidth, // keep one column of padding
-      );
-      if (nextLeft !== grid.scrollLeft) {
-        grid.scrollLeft = nextLeft;
-      }
-    },
-    [gridRef, visibleTasks, padDays, colWidth, scales],
-  );
+  const scrollToTask = (task: GanttTask) => {
+    const grid = gridRef.current;
+    const range = getMinMaxDates(visibleTasks);
+    if (!grid || !range) {
+      return;
+    }
+    // Matches the grid's origin: buildDatesFromTasks aligns to the unit
+    // boundary containing min, padded outward by whole columns.
+    const unit = resolveColumnUnit(scales);
+    const origin = resolveOrigin(range.min, unit, padDays, resolveColumnStep(scales));
+    const { left, width } = computeTaskPixels(task, {}, origin, colWidth, unit);
+    const nextLeft = scrollOffsetToReveal(
+      left,
+      width,
+      grid.scrollLeft,
+      grid.clientWidth,
+      colWidth, // keep one column of padding
+    );
+    if (nextLeft !== grid.scrollLeft) {
+      grid.scrollLeft = nextLeft;
+    }
+  };
 
-  const handleSelect = useCallback(
-    (id: Id) => {
-      setSelectedId(id);
+  // Dispatched through a latest-ref so `handleSelect` is identity-stable
+  // forever: it is handed to every memoized row, and closing over `visibleTasks`
+  // directly would re-render the whole window on every edit, expand or zoom.
+  // (Same pattern as `useScrollToTask`.)
+  const selectRef = useLatestRef((id: Id) => {
+    setSelectedId(id);
 
-      const task = visibleTasks.find((t) => t.id === id);
-      if (task) {
-        onTaskClick?.(task);
-        scrollToTask(task); // existing horizontal grid reveal — unchanged
-      }
-    },
-    [setSelectedId, visibleTasks, onTaskClick, scrollToTask],
-  );
+    const task = visibleTasks.find((t) => t.id === id);
+    if (task) {
+      onTaskClick?.(task);
+      scrollToTask(task); // existing horizontal grid reveal — unchanged
+    }
+  });
+  const handleSelect = useCallback((id: Id) => selectRef.current(id), [selectRef]);
 
   // Depth map: how many levels deep each task is
   const depthMap = useMemo(() => {
@@ -136,7 +139,6 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     ROW_OVERSCAN,
   );
 
-  const bodyStyle = { flex: "1 1 auto", minHeight: 0 };
 
   return (
     <div
@@ -158,7 +160,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
       <div
         ref={taskListRef}
         className={styles.body}
-        style={bodyStyle}
+        style={BODY_STYLE}
         onScroll={handleScroll}
         role="presentation"
       >

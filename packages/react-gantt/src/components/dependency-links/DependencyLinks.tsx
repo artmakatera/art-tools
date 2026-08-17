@@ -7,7 +7,6 @@ import {
 } from "react";
 import { useDependencyLinks } from "./DependencyLinksContext";
 import {
-  linkBounds,
   midpoint,
   type Bounds,
   type DependencyLink,
@@ -102,11 +101,10 @@ interface DependencyLinksProps {
 }
 
 /** True when a link's bounding box overlaps the visible rect (or no rect set). */
-function linkInView(points: Point[], rect: Bounds | undefined): boolean {
+function linkInView(b: Bounds, rect: Bounds | undefined): boolean {
   if (!rect) {
     return true;
   }
-  const b = linkBounds(points);
   return (
     b.minX <= rect.maxX &&
     b.maxX >= rect.minX &&
@@ -261,7 +259,7 @@ export function DependencyLinks({
     <Layer {...layerProps}>
       {links.map((link) => {
         const isSelected = link.id === selectedId;
-        if (!isSelected && !linkInView(link.points, visibleRect)) {
+        if (!isSelected && !linkInView(link.bounds, visibleRect)) {
           return null;
         }
         const head = arrow(link.points);
