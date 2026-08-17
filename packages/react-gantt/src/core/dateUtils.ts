@@ -271,6 +271,28 @@ export const getMinMaxDates = memoize(getMinMaxDatesNonCached, 3);
 
 
 
+/**
+ * The column axis spanning `[min, max]`, padded outward by `pad` whole columns.
+ *
+ * Split out from {@link buildDatesFromTasks} so callers can key their memo on
+ * the range instants rather than the task array: the axis only moves when the
+ * project's outer bounds move, and an edit that leaves them alone (renaming a
+ * task, nudging progress) must not rebuild — and thus re-render — the header.
+ */
+export function buildDatesForRange(
+  min: Date,
+  max: Date,
+  pad = 0,
+  scales?: Scale[],
+): Date[] {
+  const unit = resolveColumnUnit(scales);
+  const step = resolveColumnStep(scales);
+  const start = resolveOrigin(min, unit, pad, step);
+  const end = addUnit(startOfUnit(max, unit), unit, pad * step);
+  const count = Math.round(unitOffset(start, end, unit) / step) + 1;
+  return buildDates(start, count, unit, step);
+}
+
 export function buildDatesFromTasks(
   tasks: readonly TaskDates[],
   pad = 0,
@@ -278,13 +300,7 @@ export function buildDatesFromTasks(
 ): Date[] {
   const range = getMinMaxDates(tasks);
   if (!range) return [];
-
-  const unit = resolveColumnUnit(scales);
-  const step = resolveColumnStep(scales);
-  const start = resolveOrigin(range.min, unit, pad, step);
-  const end = addUnit(startOfUnit(range.max, unit), unit, pad * step);
-  const count = Math.round(unitOffset(start, end, unit) / step) + 1;
-  return buildDates(start, count, unit, step);
+  return buildDatesForRange(range.min, range.max, pad, scales);
 }
 
 

@@ -1,4 +1,7 @@
 import type { CalendarUnit, Scale } from "../types";
+import { dateFormatter } from "./intl";
+
+const formatMonthYear = dateFormatter({ month: "long", year: "numeric" });
 
 /**
  * Single source of truth for the default calendar scales. The Calendar renders
@@ -10,8 +13,7 @@ export const DEFAULT_SCALES: Scale[] = [
   {
     unit: "month",
     step: 1,
-    format: (d: Date) =>
-      d.toLocaleString(undefined, { month: "long", year: "numeric" }),
+    format: formatMonthYear,
   },
   {
     unit: "day",

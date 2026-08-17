@@ -1,4 +1,5 @@
 import type { Scale } from "../types";
+import { dateFormatter } from "./intl";
 
 /**
  * One rung of the zoom ladder: the calendar `scales` to render and the pixel
@@ -12,12 +13,10 @@ export interface ZoomLevel {
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const yearLabel = (d: Date) => String(d.getFullYear());
 const quarterLabel = (d: Date) => `Q${Math.floor(d.getMonth() / 3) + 1}`;
-const monthLong = (d: Date) =>
-  d.toLocaleString(undefined, { month: "long", year: "numeric" });
-const monthShort = (d: Date) => d.toLocaleString(undefined, { month: "short" });
+const monthLong = dateFormatter({ month: "long", year: "numeric" });
+const monthShort = dateFormatter({ month: "short" });
 const dayOfMonth = (d: Date) => String(d.getDate());
-const weekdayDay = (d: Date) =>
-  d.toLocaleString(undefined, { weekday: "short", day: "numeric" });
+const weekdayDay = dateFormatter({ weekday: "short", day: "numeric" });
 const hourLabel = (d: Date) => `${pad2(d.getHours())}:00`;
 
 /**

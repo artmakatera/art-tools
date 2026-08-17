@@ -1,4 +1,5 @@
 import type { CalendarUnit, GanttLabels, GanttTask, ResolvedGanttLabels } from "../types";
+import { dateFormatter } from "./intl";
 
 
 export const DEFAULT_LABELS: ResolvedGanttLabels = {
@@ -22,9 +23,7 @@ export function resolveLabels(labels: GanttLabels | undefined): ResolvedGanttLab
   return { ...DEFAULT_LABELS, ...labels };
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString(undefined, { dateStyle: "medium" });
-}
+const formatDate = dateFormatter({ dateStyle: "medium" });
 
 const TYPE_NAMES: Record<NonNullable<GanttTask["type"]>, string> = {
   task: "task",
@@ -48,17 +47,21 @@ export function formatBarLabel(task: GanttTask, progress: number): string {
   return parts.join(", ");
 }
 
+const formatDateTimeLong = dateFormatter({ dateStyle: "long", timeStyle: "short" });
+const formatDateLong = dateFormatter({ dateStyle: "long" });
+const formatMonthYear = dateFormatter({ month: "long", year: "numeric" });
+
 export function formatPeriodLabel(date: Date, unit: CalendarUnit, step: number): string {
   switch (unit) {
     case "minute":
     case "hour":
-      return date.toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
+      return formatDateTimeLong(date);
     case "day":
-      return date.toLocaleDateString(undefined, { dateStyle: "long" });
+      return formatDateLong(date);
     case "week":
-      return `Week of ${date.toLocaleDateString(undefined, { dateStyle: "long" })}`;
+      return `Week of ${formatDateLong(date)}`;
     case "month":
-      return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+      return formatMonthYear(date);
     case "quarter": {
       const quarter = Math.floor(date.getMonth() / 3) + 1;
       return `Q${quarter} ${date.getFullYear()}`;

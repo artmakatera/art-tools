@@ -280,6 +280,18 @@ export function getParentTaskData(
   const progress =
     notMilestoneCount === 0 ? 0 : Math.round(progressSum / notMilestoneCount);
 
+  // Identity is preserved when the roll-up lands on what the task already says,
+  // exactly as `materializeEnd` does for leaves. Without this every summary row
+  // and bar got a fresh object on every edit and re-rendered, even for an edit
+  // in a different branch of the tree.
+  if (
+    task.startDate.getTime() === startDate.getTime() &&
+    task.endDate?.getTime() === endDate.getTime() &&
+    task.progress === progress
+  ) {
+    return task;
+  }
+
   return {
     ...task,
     startDate,

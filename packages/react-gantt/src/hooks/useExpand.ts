@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { GanttTask, Id } from "../types";
 
 export function useExpand(tasksList: GanttTask[]) {
@@ -21,37 +21,37 @@ export function useExpand(tasksList: GanttTask[]) {
     });
   }, []);
 
-  const taskById = useMemo(() => {
-    const map = new Map<Id, GanttTask>();
-    for (const t of tasksList) {
-      map.set(t.id, t);
-    }
-    return map;
-  }, [tasksList]);
+  // Built on demand rather than per render: this map exists only to walk an
+  // ancestor chain in `revealAncestors`, which fires on a scroll-to at most,
+  // while the memo would rebuild a full-size map on every edit. The latest-ref
+  // keeps `revealAncestors` identity-stable for memoized consumers.
+  const tasksListRef = useRef(tasksList);
+  tasksListRef.current = tasksList;
 
   // Expand every collapsed ancestor of `id` so the task becomes visible. Walks
   // the parentId chain and removes those ids from the collapsed set. Returns the
   // previous set unchanged when nothing was collapsed, to avoid needless renders.
-  const revealAncestors = useCallback(
-    (id: Id) => {
-      setCollapsedIds((prev) => {
-        if (prev.size === 0) {
-          return prev;
+  const revealAncestors = useCallback((id: Id) => {
+    setCollapsedIds((prev) => {
+      if (prev.size === 0) {
+        return prev;
+      }
+      const taskById = new Map<Id, GanttTask>();
+      for (const t of tasksListRef.current) {
+        taskById.set(t.id, t);
+      }
+      const next = new Set(prev);
+      let changed = false;
+      let cur = taskById.get(id);
+      while (cur && cur.parentId != null) {
+        if (next.delete(cur.parentId)) {
+          changed = true;
         }
-        const next = new Set(prev);
-        let changed = false;
-        let cur = taskById.get(id);
-        while (cur && cur.parentId != null) {
-          if (next.delete(cur.parentId)) {
-            changed = true;
-          }
-          cur = taskById.get(cur.parentId);
-        }
-        return changed ? next : prev;
-      });
-    },
-    [taskById],
-  );
+        cur = taskById.get(cur.parentId);
+      }
+      return changed ? next : prev;
+    });
+  }, []);
 
   const expandedIds = useMemo(() => {
     const expanded = new Set<Id>();

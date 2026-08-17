@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
-import { buildDatesFromTasks } from "../../core/dateUtils";
+import { buildDatesForRange, getMinMaxDates } from "../../core/dateUtils";
 import { DEFAULT_SCALES, resolveColumnStep, resolveColumnUnit } from "../../core/scales";
 import type { GanttTask, Id, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
@@ -54,6 +54,9 @@ export interface GridSlotProps {
  * is not defeated by a fresh object each render.
  */
 export type GridSlotConfig = SlotConfig<GridSlots, GridSlotProps>;
+
+/** Module-level so the empty timeline keeps a stable identity too. */
+const EMPTY_DATES: Date[] = [];
 
 interface GanttGridProps {
   slots?: GridSlots;
@@ -130,9 +133,20 @@ export function GanttGrid({
     });
   }, []);
 
+  // Keyed on the range *instants*, not the task array: every edit produces a new
+  // `visibleTasks` identity, but the column axis only moves when the project's
+  // outer bounds do. Holding this array stable is what lets the memoized header
+  // and background columns skip an edit entirely — they are the most expensive
+  // part of the tree and the least likely to actually change.
+  const range = useMemo(() => getMinMaxDates(visibleTasks), [visibleTasks]);
+  const minMs = range?.min.getTime();
+  const maxMs = range?.max.getTime();
   const dates = useMemo(
-    () => buildDatesFromTasks(visibleTasks, padDays, scales),
-    [visibleTasks, padDays, scales],
+    () =>
+      minMs == null || maxMs == null
+        ? EMPTY_DATES
+        : buildDatesForRange(new Date(minMs), new Date(maxMs), padDays, scales),
+    [minMs, maxMs, padDays, scales],
   );
 
   const originMs = dates[0]?.getTime();
@@ -140,6 +154,33 @@ export function GanttGrid({
     () => (originMs == null ? undefined : new Date(originMs)),
     [originMs],
   );
+
+  // Memoized on their scalar inputs so the window objects keep their identity
+  // across renders that do not move the viewport — otherwise every child taking
+  // a range would re-render on each edit no matter how well it is memoized.
+  const rowRange = useMemo(
+    () =>
+      rangeFromOffset(
+        viewport.scrollTop,
+        viewport.clientHeight,
+        rowHeight,
+        visibleTasks.length,
+        ROW_OVERSCAN,
+      ),
+    [viewport.scrollTop, viewport.clientHeight, rowHeight, visibleTasks.length],
+  );
+  const colRange = useMemo(
+    () =>
+      rangeFromOffset(
+        viewport.scrollLeft,
+        viewport.clientWidth,
+        colWidth,
+        dates.length,
+        COL_OVERSCAN,
+      ),
+    [viewport.scrollLeft, viewport.clientWidth, colWidth, dates.length],
+  );
+
   if (!origin) return null;
 
   const unit = resolveColumnUnit(scales);
@@ -148,21 +189,6 @@ export function GanttGrid({
 
   const resolvedScales = scales ?? DEFAULT_SCALES;
   const headerRowCount = resolvedScales.length;
-
-  const rowRange = rangeFromOffset(
-    viewport.scrollTop,
-    viewport.clientHeight,
-    rowHeight,
-    visibleTasks.length,
-    ROW_OVERSCAN,
-  );
-  const colRange = rangeFromOffset(
-    viewport.scrollLeft,
-    viewport.clientWidth,
-    colWidth,
-    dates.length,
-    COL_OVERSCAN,
-  );
 
   // Overscan-padded visible pixel rect, reused to cull dependency links. The
   // ranges already include overscan and are clamped to the content bounds.

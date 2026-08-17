@@ -5,6 +5,9 @@ import type { CalendarUnit, GanttTask, Id, TaskDependency, TaskDependencyType, T
 /** Length of the horizontal stub that leaves a bar before the link turns. */
 const STUB = 12;
 
+/** Shared so a chart without dependencies keeps a stable links identity. */
+const EMPTY_LINKS: DependencyLink[] = [];
+
 export interface Point {
   x: number;
   y: number;
@@ -84,11 +87,16 @@ function buildBoxes(
   tasks: GanttTask[],
   rowHeight: number,
   toPixels: PixelFn,
+  /** Only these tasks get a box; the rest can never be an endpoint. */
+  wanted: Set<Id>,
 ): Map<Id, Box> {
   const boxes = new Map<Id, Box>();
   const half = (rowHeight - TASK_VERTICAL_PADDING * 2) / 2;
 
   tasks.forEach((task, index) => {
+    if (!wanted.has(task.id)) {
+      return;
+    }
     const { left, width } = toPixels(task);
     const centerY = index * rowHeight + rowHeight / 2;
 
@@ -203,8 +211,23 @@ export function computeDependencyLinks({
   unit,
   overrides
 }: DependencyLinkParams): DependencyLink[] {
-  const boxes = buildBoxes(tasks, rowHeight, (task) =>
-    computeTaskPixels(task, overrides[task.id] || {}, origin, colWidth, unit),
+  // Only endpoints need geometry. This used to price every visible task, so a
+  // 10k-row chart with no dependencies at all still paid 10k pixel conversions
+  // on every edit.
+  if (dependencies.length === 0) {
+    return EMPTY_LINKS;
+  }
+  const endpoints = new Set<Id>();
+  for (const dep of dependencies) {
+    endpoints.add(dep.from);
+    endpoints.add(dep.to);
+  }
+
+  const boxes = buildBoxes(
+    tasks,
+    rowHeight,
+    (task) => computeTaskPixels(task, overrides[task.id] || {}, origin, colWidth, unit),
+    endpoints,
   );
   const links: DependencyLink[] = [];
 

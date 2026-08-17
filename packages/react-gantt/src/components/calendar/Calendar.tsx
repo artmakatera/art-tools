@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Scale } from "../../types";
 import type { IndexRange } from "../../core/virtualize";
 import styles from "./Calendar.module.css";
@@ -13,7 +14,13 @@ type CalendarProps = {
   colRange: IndexRange;
 };
 
-export function Calendar({
+/**
+ * Memoized: the header is the most expensive part of the chart to render (a
+ * locale format call per cell) and the least volatile — it only changes when the
+ * timeline, the zoom level, or the horizontal scroll window does, never when a
+ * task's own fields do. Every prop here is held identity-stable by `GanttGrid`.
+ */
+export const Calendar = memo(function Calendar({
   colWidth,
   rowHeight,
   scales = DEFAULT_SCALES,
@@ -38,4 +45,6 @@ export function Calendar({
       ))}
     </div>
   );
-}
+});
+
+Calendar.displayName = "Calendar";

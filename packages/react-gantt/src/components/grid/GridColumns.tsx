@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { ComponentProps, ElementType } from "react";
+import { memo, type ComponentProps, type ElementType } from "react";
 import { addUnit, isWeekend } from "../../core/dateUtils";
 import { nonWorkingInfo, type NonWorkingReason } from "../../core/workingTime";
 import { useGanttWorkCalendar } from "../../context/GanttContext";
@@ -69,8 +69,12 @@ interface GridColumnsProps {
  * Purely decorative — `aria-hidden` and non-interactive. Only the columns
  * inside `colRange` are rendered; each is absolutely positioned at its date
  * offset so the windowed subset still aligns with the full-width grid.
+ *
+ * Memoized for the same reason as the calendar header: it depends on the
+ * timeline and the scroll window, never on task fields, so an edit should not
+ * repaint it. `GanttGrid` keeps `dates` and `colRange` identity-stable.
  */
-export function GridColumns({
+export const GridColumns = memo(function GridColumns({
   dates,
   colWidth,
   bodyHeight,
@@ -128,6 +132,6 @@ export function GridColumns({
       })}
     </div>
   );
-}
+});
 
 GridColumns.displayName = "GridColumns";
