@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, startTransition, useState } from "react";
 import {
   type BarCommit,
   computeTaskPixels,
@@ -84,17 +84,23 @@ export const Bar = memo(function Bar({
   };
 
   const handleUpdate = (id: Id, patch: DatePatch) => {
-    onUpdate(id, patch);
-    onOverride(id, null);
+    startTransition(() => {
+      onUpdate(id, patch);
+      onOverride(id, null);
+    });
   };
 
   // Commits carry INTENT, not the two dates the pixels happened to land on: a move
   // must preserve working time, which pixel width cannot express once a calendar
   // exists. Clearing the override unconditionally is also what makes a bar dropped
-  // in non-working time visibly settle back.
+  // in non-working time visibly settle back — a commit that resolves to no change
+  // schedules no log update, so the preview clear is the only thing in the
+  // transition and the bar settles on the next render.
   const handleCommit = (commit: BarCommit) => {
-    onCommit(task.id, commit);
-    onOverride(task.id, null);
+    startTransition(() => {
+      onCommit(task.id, commit);
+      onOverride(task.id, null);
+    });
   };
 
   const commitMoveAt = (newLeft: number): BarCommit => ({

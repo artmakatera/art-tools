@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { ChangeLog, GanttTask, Id, TaskCommand, TaskDependency, TaskPatch } from "../types";
 import {
@@ -16,6 +16,11 @@ const EMPTY_LOG: ChangeLog = { transactions: [], cursor: 0 };
 // Module-level so an omitted `dependencies` prop keeps a stable identity and
 // the dependency graph isn't rebuilt on every render.
 export const EMPTY_DEPENDENCIES: TaskDependency[] = [];
+
+
+function scheduleLogUpdate(update: () => void): void {
+  startTransition(update);
+}
 
 /** Drop any redo branch, append `commands` as one transaction, advance the cursor. */
 function appendTransaction(log: ChangeLog, commands: TaskCommand[]): ChangeLog {
@@ -126,7 +131,7 @@ export const useTaskList = (
         commands.push({ type: "update", task });
       }
     }
-    setLog((prev) => appendTransaction(prev, commands));
+    scheduleLogUpdate(() => setLog((prev) => appendTransaction(prev, commands)));
   }, [dependencyGraph]);
 
   const updateTask = useCallback((id: Id, patch: TaskPatch) => {
@@ -159,7 +164,7 @@ export const useTaskList = (
       }
     }
 
-    setLog((prev) => appendTransaction(prev, commands));
+    scheduleLogUpdate(() => setLog((prev) => appendTransaction(prev, commands)));
   }, [dependencyGraph]);
 
   const createTask = useCallback((task: GanttTask, afterId?: Id | null) => {
@@ -174,21 +179,25 @@ export const useTaskList = (
   }, []);
 
   const deleteTask = useCallback((id: Id) => {
-    setLog((prev) => appendTransaction(prev, [{ type: "delete", id }]));
+    scheduleLogUpdate(() =>
+      setLog((prev) => appendTransaction(prev, [{ type: "delete", id }])),
+    );
     optionsRef.current.onTaskDelete?.(id);
   }, []);
 
   const undo = useCallback(() => {
-    setLog((prev) =>
-      prev.cursor > 0 ? { ...prev, cursor: prev.cursor - 1 } : prev,
+    scheduleLogUpdate(() =>
+      setLog((prev) => (prev.cursor > 0 ? { ...prev, cursor: prev.cursor - 1 } : prev)),
     );
   }, []);
 
   const redo = useCallback(() => {
-    setLog((prev) =>
-      prev.cursor < prev.transactions.length
-        ? { ...prev, cursor: prev.cursor + 1 }
-        : prev,
+    scheduleLogUpdate(() =>
+      setLog((prev) =>
+        prev.cursor < prev.transactions.length
+          ? { ...prev, cursor: prev.cursor + 1 }
+          : prev,
+      ),
     );
   }, []);
 
