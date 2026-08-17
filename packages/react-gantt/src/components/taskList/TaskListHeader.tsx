@@ -144,9 +144,12 @@ function buildActionTask(task: GanttTask): GanttTask {
   };
 }
 
+/** Key of the built-in edit/add/delete column, dropped when `readOnly` is set. */
+const ACTION_COLUMN_KEY = "__action";
+
 export const DEFAULT_COLUMNS: ColumnDef[] = [
     {
-    key: "__action",
+    key: ACTION_COLUMN_KEY,
     header: "  ",
     width: 120,
     render: (task, api) => {
@@ -219,3 +222,8 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
   },
 
 ];
+
+/** {@link DEFAULT_COLUMNS} without the actions column — the `readOnly` default. */
+export const READ_ONLY_COLUMNS: ColumnDef[] = DEFAULT_COLUMNS.filter(
+  (col) => col.key !== ACTION_COLUMN_KEY,
+);

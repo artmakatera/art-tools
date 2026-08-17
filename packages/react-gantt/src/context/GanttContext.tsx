@@ -109,6 +109,19 @@ export function useGanttWorkCalendar(): SchedulingContext {
   return useContext(GanttCalendarContext);
 }
 
+// --- Read-only ------------------------------------------------------------
+
+// Primitive context, its own provider because it is read by memoized leaves
+// (bars, connector handles, links) and must not ride along with anything that
+// churns. Like labels it does NOT throw without a provider: `false` — fully
+// interactive — is the historical default, which is what keeps sub-components
+// renderable bare in the slot tests.
+const GanttReadOnlyContext = createContext<boolean>(false);
+
+export function useGanttReadOnly(): boolean {
+  return useContext(GanttReadOnlyContext);
+}
+
 // --- Task state -----------------------------------------------------------
 
 interface GanttTaskStateValue {
@@ -309,6 +322,12 @@ export interface GanttProviderProps {
   snapToWorking?: boolean;
   /** How an input `duration` is interpreted and displayed. Defaults to `"day"`. */
   durationUnit?: DurationUnit;
+  /**
+   * Remove every editing affordance (bar drag/resize, progress handle,
+   * dependency connectors and link deletion). Viewing and `apiRef` are
+   * untouched — see ADR-021.
+   */
+  readOnly?: boolean;
   children: ReactNode;
 }
 
@@ -337,6 +356,7 @@ export function GanttProvider({
   calendar,
   snapToWorking = true,
   durationUnit = "day",
+  readOnly = false,
   children,
 }: GanttProviderProps) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);
@@ -445,6 +465,7 @@ export function GanttProvider({
       zoomOut,
       setZoom,
       editTask: (task) => onTaskEditRef.current?.(task),
+      readOnly,
       labels: labelsValue,
       format: {
         endDate: (task) => {
@@ -464,7 +485,7 @@ export function GanttProvider({
     }),
     // onTaskEditRef is identity-stable (useLatestRef); listed only to satisfy
     // exhaustive-deps.
-    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, zoomIn, zoomOut, setZoom, onTaskEditRef, labelsValue, schedulingContext],
+    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, zoomIn, zoomOut, setZoom, onTaskEditRef, readOnly, labelsValue, schedulingContext],
   );
 
   const { drag, startDrag, endDrag } = useDependencyDrag({ gridBodyRef, onDependencyCreate });
@@ -535,6 +556,7 @@ export function GanttProvider({
   // primitives or already identity-stable when unchanged.
   return (
     <GanttConfigContext.Provider value={configValue}>
+      <GanttReadOnlyContext.Provider value={readOnly}>
       <GanttLabelsContext.Provider value={labelsValue}>
       <GanttCalendarContext.Provider value={schedulingContext}>
       <GanttZoomContext.Provider value={zoomValue}>
@@ -558,6 +580,7 @@ export function GanttProvider({
       </GanttZoomContext.Provider>
       </GanttCalendarContext.Provider>
       </GanttLabelsContext.Provider>
+      </GanttReadOnlyContext.Provider>
     </GanttConfigContext.Provider>
   );
 }

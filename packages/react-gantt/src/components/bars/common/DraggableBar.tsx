@@ -24,8 +24,9 @@ interface DraggableBarProps
   className?: string;
   title?: string;
   style?: CSSProperties;
-  onMove: (newAnchor: number) => void;
-  onMoveEnd: (newAnchor: number) => void;
+  /** Omitted on a read-only chart; without it the bar carries no drag listener. */
+  onMove?: (newAnchor: number) => void;
+  onMoveEnd?: (newAnchor: number) => void;
   children?: ReactNode;
 }
 
@@ -44,23 +45,28 @@ export function DraggableBar({
   children,
   ...rest
 }: DraggableBarProps) {
+  const readOnly = !onMove && !onMoveEnd;
   const onMouseDown = useDrag({
     onStart: () => ({ start: dragAnchor }),
-    onDrag: (deltaX, { start }) => onMove(start + deltaX),
+    onDrag: (deltaX, { start }) => onMove?.(start + deltaX),
     onEnd: (deltaX, { start }) => {
       const snapped = Math.round((start + deltaX) / colWidth) * colWidth;
-      onMoveEnd(snapped);
+      onMoveEnd?.(snapped);
     },
     autoScroll: true,
   });
+
+  // Hooks cannot be skipped, so the handler is always built and simply not
+  // attached when the bar is not movable.
+  const movable = Boolean(onMove || onMoveEnd);
 
   return (
     <div
       {...rest}
       className={className}
-      style={{ left, top, width, height, ...style }}
+      style={{ left, top, width, height, cursor: readOnly ? "default" : "move", ...style }}
       title={title}
-      onMouseDown={onMouseDown}
+      onMouseDown={movable ? onMouseDown : undefined}
     >
       {children}
     </div>

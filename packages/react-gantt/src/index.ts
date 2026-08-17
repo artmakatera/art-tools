@@ -1,6 +1,6 @@
 import './index.css';
 export { Gantt } from './Gantt';
-export { GanttProvider } from './context/GanttContext';
+export { GanttProvider, useGanttReadOnly } from './context/GanttContext';
 export { GanttGrid } from './components/grid/Grid';
 export { TaskList } from './components/taskList/TaskList';
 export { TaskBar } from './components/bars/taskBar/TaskBar';

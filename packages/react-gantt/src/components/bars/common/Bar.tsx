@@ -6,7 +6,11 @@ import {
   pxToDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
-import { useGanttLabels, useGanttSelectedId } from "../../../context/GanttContext";
+import {
+  useGanttLabels,
+  useGanttReadOnly,
+  useGanttSelectedId,
+} from "../../../context/GanttContext";
 import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
@@ -45,6 +49,7 @@ export const Bar = memo(function Bar({
   rowIndexOffset,
 }: BarProps) {
   const labels = useGanttLabels();
+  const readOnly = useGanttReadOnly();
   const selectedId = useGanttSelectedId();
   const isSelected = selectedId === task.id;
 
@@ -97,6 +102,37 @@ export const Bar = memo(function Bar({
     startDate: pxToDate(newLeft, origin, colWidth, unit),
   });
 
+  // A read-only bar is handed no editing handlers at all, rather than handlers
+  // that decline: each affordance (drag listener, resizer, progress handle)
+  // renders only when its callbacks arrive, so omitting them removes the
+  // affordance itself — nothing to grab, nothing to explain away.
+  const moveHandlers = readOnly
+    ? {}
+    : {
+        onMove: (newVisualLeft: number) => handleOverride(moveAt(newVisualLeft)),
+        onMoveEnd: (newVisualLeft: number) => handleCommit(commitMoveAt(newVisualLeft)),
+      };
+
+  const progressHandlers = readOnly
+    ? {}
+    : {
+        onProgressChange: (p: number) => handleOverride({ progress: p }),
+        onProgressEnd: (p: number) => handleUpdate(task.id, { progress: p }),
+      };
+
+  const resizeHandlers = readOnly
+    ? {}
+    : {
+        onResize: (newWidth: number, newVisualLeft: number) =>
+          handleOverride(resizeAt(newWidth, newVisualLeft)),
+        onResizeEnd: (edge: "start" | "end", edgePx: number) =>
+          handleCommit(
+            edge === "start"
+              ? { kind: "resizeStart", startDate: pxToDate(edgePx, origin, colWidth, unit) }
+              : { kind: "resizeEnd", endDate: pxToDate(edgePx, origin, colWidth, unit) },
+          ),
+      };
+
   const a11y: BarA11yProps = {
     role: "gridcell",
     "aria-colindex": Math.max(1, Math.floor(visualLeft / colWidth) + 1),
@@ -116,13 +152,15 @@ export const Bar = memo(function Bar({
       role="row"
       aria-rowindex={rowIndexOffset + index + 1}
     >
-      <ConnectorHandles
-        taskId={task.id}
-        barLeft={visualLeft}
-        barWidth={width}
-        barCenterY={barCenterY}
-        show={hovered}
-      />
+      {!readOnly && (
+        <ConnectorHandles
+          taskId={task.id}
+          barLeft={visualLeft}
+          barWidth={width}
+          barCenterY={barCenterY}
+          show={hovered}
+        />
+      )}
 
       {task.type === "milestone" && (
         <MilestoneBar
@@ -132,8 +170,7 @@ export const Bar = memo(function Bar({
           colWidth={colWidth}
           title={task.name}
           a11y={a11y}
-          onMove={(newCenter) => handleOverride(moveAt(newCenter))}
-          onMoveEnd={(newCenter) => handleCommit(commitMoveAt(newCenter))}
+          {...moveHandlers}
         />
       )}
       {task.type === "summary" && (
@@ -146,10 +183,8 @@ export const Bar = memo(function Bar({
           title={task.name}
           a11y={a11y}
           progress={progress}
-          onProgressChange={(p) => handleOverride({ progress: p })}
-          onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
-          onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
-          onMoveEnd={(newVisualLeft) => handleCommit(commitMoveAt(newVisualLeft))}
+          {...progressHandlers}
+          {...moveHandlers}
         />
       )}
       {task.type === "task" || !task.type ? (
@@ -162,20 +197,9 @@ export const Bar = memo(function Bar({
           title={task.name}
           a11y={a11y}
           progress={progress}
-          onProgressChange={(p) => handleOverride({ progress: p })}
-          onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
-          onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
-          onMoveEnd={(newVisualLeft) => handleCommit(commitMoveAt(newVisualLeft))}
-          onResize={(newWidth, newVisualLeft) =>
-            handleOverride(resizeAt(newWidth, newVisualLeft))
-          }
-          onResizeEnd={(edge, edgePx) =>
-            handleCommit(
-              edge === "start"
-                ? { kind: "resizeStart", startDate: pxToDate(edgePx, origin, colWidth, unit) }
-                : { kind: "resizeEnd", endDate: pxToDate(edgePx, origin, colWidth, unit) },
-            )
-          }
+          {...progressHandlers}
+          {...moveHandlers}
+          {...resizeHandlers}
         />
       ) : null}
     </div>

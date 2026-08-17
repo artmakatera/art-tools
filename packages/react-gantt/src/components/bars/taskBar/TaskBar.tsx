@@ -41,12 +41,16 @@ interface TaskBarProps {
   title: string;
   a11y?: BarA11yProps;
   progress: number;
-  onProgressChange: (newProgress: number) => void;
-  onProgressEnd: (newProgress: number) => void;
-  onResize: (newWidth: number, newLeft: number) => void;
-  onResizeEnd: (edge: "start" | "end", edgePx: number) => void;
-  onMove: (newLeft: number) => void;
-  onMoveEnd: (newLeft: number) => void;
+  /**
+   * Editing handlers. All optional: a read-only chart omits them, and each
+   * affordance is only rendered/wired when its handlers are present.
+   */
+  onProgressChange?: (newProgress: number) => void;
+  onProgressEnd?: (newProgress: number) => void;
+  onResize?: (newWidth: number, newLeft: number) => void;
+  onResizeEnd?: (edge: "start" | "end", edgePx: number) => void;
+  onMove?: (newLeft: number) => void;
+  onMoveEnd?: (newLeft: number) => void;
   slots?: TaskBarSlots;
   slotProps?: TaskBarSlotProps;
 }
@@ -122,13 +126,15 @@ export function TaskBar({
           onProgressEnd={onProgressEnd}
         />
         <Label {...labelProps} />
-        <TaskResizer
-          width={width}
-          left={left}
-          colWidth={colWidth}
-          onResize={onResize}
-          onResizeEnd={onResizeEnd}
-        />
+        {onResize && onResizeEnd && (
+          <TaskResizer
+            width={width}
+            left={left}
+            colWidth={colWidth}
+            onResize={onResize}
+            onResizeEnd={onResizeEnd}
+          />
+        )}
       </Inner>
     </Root>
   );

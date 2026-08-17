@@ -30,8 +30,9 @@ interface MilestoneBarProps {
   colWidth: number;
   title: string;
   a11y?: BarA11yProps;
-  onMove: (newCenterLeft: number) => void;
-  onMoveEnd: (newCenterLeft: number) => void;
+  /** Editing handlers; omitted on a read-only chart (see `TaskBar`). */
+  onMove?: (newCenterLeft: number) => void;
+  onMoveEnd?: (newCenterLeft: number) => void;
   slots?: MilestoneBarSlots;
   slotProps?: MilestoneBarSlotProps;
 }
