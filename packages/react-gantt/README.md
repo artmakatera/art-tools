@@ -25,6 +25,7 @@ MUI-style slot system for deep customization.
 - [Task bars](#task-bars)
 - [Dependencies & scheduling](#dependencies--scheduling)
 - [Columns](#columns)
+- [Read-only](#read-only)
 - [Imperative API](#imperative-api)
 - [Accessibility](#accessibility)
 - [Slots & theming](#slots--theming)
@@ -118,6 +119,7 @@ Defined in [`src/types.ts`](./src/types.ts).
 | `tasks`        | `GanttTask[]`       | **Required.** Stable seed list (see the note in Quick start). |
 | `dependencies` | `TaskDependency[]`  | Links between tasks (FS/FF/SS/SF, optional lag). |
 | `columns`      | `ColumnDef[]`       | Task-list columns. Falls back to built-in default columns. |
+| `readOnly`     | `boolean`           | Remove every editing affordance — see [Read-only](#read-only). |
 | `calendar`     | `GanttCalendar`     | Working-time definition. Supplying it opts into working-time scheduling — see [Working time](#working-time-calendars). |
 | `snapToWorking`| `boolean`           | Default `true`. `false` keeps non-working shading but leaves dates untouched. |
 | `durationUnit` | `"day" \| "hour" \| "minute"` | How an input `duration` is interpreted and displayed. Default `"day"`. |
@@ -345,6 +347,44 @@ When `columns` is omitted, `TaskList` renders `DEFAULT_COLUMNS`
 an `__action` column (edit / add-after / delete), a `__name` tree column, `__start`,
 `__end`, and `__progress`. Columns are resizable via a header divider (widths are
 tracked as session-local overrides).
+
+---
+
+## Read-only
+
+```tsx
+<Gantt tasks={tasks} height={500} readOnly />
+```
+
+`readOnly` removes every editing affordance rather than disabling one:
+
+| Gone | Kept |
+| ---- | ---- |
+| Bar move, resize, progress drag | Row/bar selection, `onTaskClick` |
+| Dependency connector handles | Dependency links themselves (drawn as usual) |
+| Link selection + its `×` / Delete-key deletion | Expand/collapse, scroll, zoom, column resize |
+| The built-in `__action` column | The `__name` / `__start` / `__end` / `__progress` columns |
+
+Nothing is rendered-but-inert: each affordance only exists when its handlers are
+wired, so there is no grabbable dead element and no disabled styling.
+
+`apiRef` keeps working — `readOnly` is about the pointer, not the data ([ADR-021](../../docs/adr/021-readonly-removes-affordances-not-the-api.md)).
+Drive an otherwise-frozen chart from your own toolbar:
+
+```tsx
+<Gantt tasks={tasks} height={500} readOnly apiRef={ref} />;
+ref.current?.updateTask(id, { progress: 80 });   // still applies
+```
+
+Custom `columns` are yours to gate — `render` receives `api.readOnly`:
+
+```tsx
+render: (task, api) =>
+  api.readOnly ? null : <button onClick={() => api.editTask(task)}>✎</button>,
+```
+
+`GanttProvider` takes the same prop, so the [composable API](#composable-api) behaves
+identically.
 
 ---
 

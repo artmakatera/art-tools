@@ -16,7 +16,7 @@ import {
 import type { TaskDependency } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
-import { useGanttLabels } from "../../context/GanttContext";
+import { useGanttLabels, useGanttReadOnly } from "../../context/GanttContext";
 import styles from "./DependencyLinks.module.css";
 
 /** Stroke thickness of the link, in pixels. */
@@ -184,6 +184,9 @@ export function DependencyLinks({
   const slots = slotsProp ?? ganttSlots.dependencies?.links?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.dependencies?.links?.slotProps;
   const labels = useGanttLabels();
+  // A read-only chart drops the hit areas, so no link can become selected —
+  // which is also what keeps the Delete/Backspace shortcut below unreachable.
+  const readOnly = useGanttReadOnly();
 
   const links = useDependencyLinks();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -278,7 +281,7 @@ export function DependencyLinks({
         return (
           <Fragment key={link.id}>
             {/* Transparent hit-area divs to capture clicks */}
-            {segs.map(([a, b]) => (
+            {!readOnly && segs.map(([a, b]) => (
               <div
                 key={`hit-${a.x},${a.y}-${b.x},${b.y}`}
                 className={styles.hitArea}
@@ -324,7 +327,7 @@ export function DependencyLinks({
         );
       })}
 
-      {selectedLink && deletePos && (
+      {!readOnly && selectedLink && deletePos && (
         <DeleteButton
           {...mergeSlotProps(
             {

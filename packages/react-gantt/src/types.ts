@@ -123,6 +123,12 @@ export interface GanttHandle {
 export interface ColumnApi extends GanttHandle {
   /** Fires the consumer's `onTaskEdit` callback for this task. */
   editTask: (task: GanttTask) => void;
+  /**
+   * The chart's `readOnly` prop. The mutating members above still work (they are
+   * the imperative API — see ADR-021), so a column that renders edit/delete
+   * controls should check this and render nothing instead.
+   */
+  readOnly: boolean;
   /** Resolved accessible strings, for labelling controls a column renders.
    *  `ColumnDef.render` is a plain function, not a component, so it can't call
    *  `useGanttLabels()` — this is its channel to the `labels` prop. */
@@ -229,6 +235,16 @@ export interface GanttProps {
   snapToWorking?: boolean;
   /** How an input `duration` is interpreted and displayed. Defaults to `"day"`. */
   durationUnit?: DurationUnit;
+  /**
+   * Remove every editing affordance: bars stop moving/resizing, the progress
+   * handle and dependency connectors disappear, links can no longer be selected
+   * or deleted, and the built-in actions column is dropped.
+   *
+   * Viewing is untouched — selection, expand/collapse, scroll and zoom all still
+   * work — and so is `apiRef`: `readOnly` is about the pointer, not the data (see
+   * ADR-021). Custom `columns` are yours to gate; read `api.readOnly` in `render`.
+   */
+  readOnly?: boolean;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
   hideTaskList?: boolean;

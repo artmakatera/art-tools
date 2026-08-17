@@ -28,6 +28,7 @@ in particular documents an *intentional* asymmetry that reads like a bug.
 | [ADR-018](./018-one-durationunit-day-is-the-week-s-longest-working-day.md) | One `durationUnit: 'day'` is the week's longest working day | Accepted |
 | [ADR-019](./019-the-display-list-materializes-enddate-for-every-task.md) | The display list materializes `endDate` for every task | Accepted |
 | [ADR-020](./020-starts-always-snap-forward.md) | Starts always snap forward | Accepted |
+| [ADR-021](./021-readonly-removes-affordances-not-the-api.md) | `readOnly` removes affordances, not the API | Accepted |
 
 ## Settled without a full ADR
 
