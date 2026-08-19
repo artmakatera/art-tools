@@ -9,7 +9,9 @@ interface TaskEditModalProps {
 
 // Local-time safe conversions so the date inputs don't drift by a day.
 function toInputValue(date: Date | undefined): string {
-  if (!date) return "";
+  if (!date) {
+    return "";
+  }
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
@@ -17,8 +19,12 @@ function toInputValue(date: Date | undefined): string {
 }
 
 function fromInputValue(value: string | Date): Date | undefined {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
+  if (!value) {
+    return undefined;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
   const [y, m, d] = value.split("-").map(Number) as [number, number, number];
   return new Date(y, m - 1, d); // local midnight
 }
@@ -31,7 +37,9 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
 
   const handleSave = useCallback(() => {
     const patch: TaskPatch = {};
-    if (name !== task.name) patch.name = name;
+    if (name !== task.name) {
+      patch.name = name;
+    }
 
     const nextStart = fromInputValue(startDate);
     if (nextStart && nextStart.getTime() !== task.startDate.getTime()) {
@@ -43,7 +51,9 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
       patch.endDate = nextEnd;
     }
 
-    if (progress !== (task.progress ?? 0)) patch.progress = progress;
+    if (progress !== (task.progress ?? 0)) {
+      patch.progress = progress;
+    }
 
     onSave(patch);
   }, [name, startDate, endDate, progress, task, onSave]);
@@ -64,10 +74,7 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
     (e: React.ChangeEvent<HTMLInputElement>) => setProgress(Number(e.target.value)),
     [],
   );
-  const stopPropagation = useCallback(
-    (e: React.MouseEvent) => e.stopPropagation(),
-    [],
-  );
+  const stopPropagation = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
 
   return (
     <div style={overlayStyle} onClick={onClose}>
@@ -76,43 +83,22 @@ export function TaskEditModal({ task, onSave, onClose }: TaskEditModalProps) {
 
         <label style={fieldStyle}>
           <span style={labelStyle}>Name</span>
-          <input
-            type="text"
-            value={name}
-            onChange={handleNameChange}
-            style={inputStyle}
-          />
+          <input type="text" value={name} onChange={handleNameChange} style={inputStyle} />
         </label>
 
         <label style={fieldStyle}>
           <span style={labelStyle}>Start date</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={handleStartChange}
-            style={inputStyle}
-          />
+          <input type="date" value={startDate} onChange={handleStartChange} style={inputStyle} />
         </label>
 
         <label style={fieldStyle}>
           <span style={labelStyle}>End date</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={handleEndChange}
-            style={inputStyle}
-          />
+          <input type="date" value={endDate} onChange={handleEndChange} style={inputStyle} />
         </label>
 
         <label style={fieldStyle}>
           <span style={labelStyle}>Progress: {progress}%</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={progress}
-            onChange={handleProgressChange}
-          />
+          <input type="range" min={0} max={100} value={progress} onChange={handleProgressChange} />
         </label>
 
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>

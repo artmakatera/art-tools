@@ -10,9 +10,9 @@ scheduling is **on**. `snapToWorking={false}` keeps shading and disables date sn
 chart's cascade output); scheduling as a separate opt-in on top of the calendar (a flag that does
 nothing until a second prop is set).
 
-**Why.** Opting into the calendar *is* the opt-in signal. Requiring a second prop to get the
+**Why.** Opting into the calendar _is_ the opt-in signal. Requiring a second prop to get the
 behaviour the first prop implies is a trap. The second prop survives only as an escape hatch for
 shade-but-don't-schedule.
 
 **Note.** The package is `0.0.0`, `private: true`, unpublished, with no changelog — so this was
-*not* forced by backward-compatibility pressure. It stands on its own merits.
+_not_ forced by backward-compatibility pressure. It stands on its own merits.

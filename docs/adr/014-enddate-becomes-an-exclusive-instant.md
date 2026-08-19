@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Context:** Working time (days & hours) — see the [glossary](../glossary.md) and the [ADR index](./README.md).
 
-**Decision.** `endDate` is the instant work stops, public *and* internal. A Mon–Fri all-day task is
+**Decision.** `endDate` is the instant work stops, public _and_ internal. A Mon–Fri all-day task is
 `startDate: Mon 00:00, endDate: Sat 00:00`. A 9-to-5 Friday task is `Fri 09:00 → Fri 17:00`. A
 display-layer formatter renders inclusive dates in task-list columns and tooltips; stored and
 emitted dates are always exclusive instants.
@@ -22,10 +22,10 @@ passing `endDate: Friday` may mean "through end of Friday" or "at midnight start
 both are legal — the library cannot tell. `Fri 17:00` has no inclusive-day representation at all,
 so any task with real hours cannot round-trip. dhtmlx hit this exact problem and resolved it the
 same way: store exclusive, expose exclusive, convert only in the display template, warning
-explicitly *"you'd better not"* adjust stored dates instead.
+explicitly _"you'd better not"_ adjust stored dates instead.
 
 **Why this is cheaper than it looks.** The `+1`/`−1` day adjustments scattered through
-`constrainedStart` exist *because* the end is inclusive; exclusive ends are what makes interval
+`constrainedStart` exist _because_ the end is inclusive; exclusive ends are what makes interval
 arithmetic clean, so they disappear rather than being ported.
 
 **Cost accepted.** Every `endDate` in `packages/mock-data` (21 occurrences) and the docs examples

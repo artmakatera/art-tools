@@ -15,8 +15,8 @@ a brand-new field into every `{type:'update', task}` snapshot in the change log 
 `onTasksChange` payload, and would force `sameTask` (`hooks/useTaskList.ts:100`) — the gate
 deciding whether a drag records an undo step at all — to learn about it.
 
-**Held against dhtmlx.** dhtmlx *does* store integer durations
-(*"Internally Gantt always stores the duration of tasks in integer values"*). That is right for
+**Held against dhtmlx.** dhtmlx _does_ store integer durations
+(_"Internally Gantt always stores the duration of tasks in integer values"_). That is right for
 dhtmlx, which owns its data; this library treats consumer tasks as an immutable seed replayed
 through a change log, so the same choice would be wrong here. ADR-013's `durationUnit` therefore
-governs interpretation of *input* duration and *display* only.
+governs interpretation of _input_ duration and _display_ only.

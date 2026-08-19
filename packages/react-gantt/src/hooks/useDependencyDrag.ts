@@ -41,7 +41,10 @@ export function useDependencyDrag({ gridBodyRef, onDependencyCreate }: UseDepend
   // Mirror for handlers (endDrag) so they can read the current drag without
   // subscribing to it; drag is committed at mousedown, well before any mouseup.
   const dragRef = useLatestRef(drag);
-  const dragListenersRef = useRef<{ move: (e: MouseEvent) => void; up: (e: MouseEvent) => void } | null>(null);
+  const dragListenersRef = useRef<{
+    move: (e: MouseEvent) => void;
+    up: (e: MouseEvent) => void;
+  } | null>(null);
   const dragFrameRef = useRef<number | null>(null);
   const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -82,9 +85,7 @@ export function useDependencyDrag({ gridBodyRef, onDependencyCreate }: UseDepend
           }
           const rect = body.getBoundingClientRect();
           setDrag((prev) =>
-            prev
-              ? { ...prev, currentX: last.x - rect.left, currentY: last.y - rect.top }
-              : null,
+            prev ? { ...prev, currentX: last.x - rect.left, currentY: last.y - rect.top } : null,
           );
         });
       };

@@ -41,7 +41,7 @@ export function Gantt({
   bars,
   dependencySlots,
   timeline,
-  labels
+  labels,
 }: GanttProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -87,38 +87,38 @@ export function Gantt({
       readOnly={readOnly}
     >
       <GanttSlotsProvider value={slotsValue}>
-      {showTaskList ? (
-        <div
-          ref={containerRef}
-          role="group"
-          aria-label={labels?.gantt ?? DEFAULT_LABELS.gantt}
-          style={{ position: "relative" }}
-        >
-            <TaskList columns={columns} taskList={taskList} />
+        {showTaskList ? (
           <div
-            ref={overlayRef}
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              zIndex: 1,
-              display: "flex",
-              flexDirection: "row",
-              background: "var(--am-gantt-grid-bg, #ffffff)",
-              ...(gridWidth !== undefined
-                ? { width: gridWidth }
-                : { left: defaultTaskListWidth }),
-            }}
+            ref={containerRef}
+            role="group"
+            aria-label={labels?.gantt ?? DEFAULT_LABELS.gantt}
+            style={{ position: "relative" }}
           >
-            <GridResizeHandle onMouseDown={onHandleMouseDown} />
-            <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-              <GanttGrid />
+            <TaskList columns={columns} taskList={taskList} />
+            <div
+              ref={overlayRef}
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                zIndex: 1,
+                display: "flex",
+                flexDirection: "row",
+                background: "var(--am-gantt-grid-bg, #ffffff)",
+                ...(gridWidth !== undefined
+                  ? { width: gridWidth }
+                  : { left: defaultTaskListWidth }),
+              }}
+            >
+              <GridResizeHandle onMouseDown={onHandleMouseDown} />
+              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+                <GanttGrid />
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <GanttGrid />
-      )}
+        ) : (
+          <GanttGrid />
+        )}
       </GanttSlotsProvider>
     </GanttProvider>
   );

@@ -24,7 +24,7 @@ export const mockTasks: GanttTask[] = [
     type: "summary",
   },
 
-//   // ── Setup web server ────────────────────────────────────────
+  //   // ── Setup web server ────────────────────────────────────────
   {
     id: 1,
     name: "Setup web server",
@@ -186,7 +186,6 @@ export const mockTasks: GanttTask[] = [
     // parentId: 33,
   },
 ];
-
 
 // Bryntum dependencies with no `type` default to finish-to-start (FS).
 export const mockDependencies: TaskDependency[] = [

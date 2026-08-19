@@ -1,26 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import type { GanttTask, Id, TaskDependency } from "../../types";
-import {
-  buildDependencyGraph,
-  scheduleDependents,
-} from "../../core/scheduling";
+import { buildDependencyGraph, scheduleDependents } from "../../core/scheduling";
 
 /** A local-midnight day in January 2022 (matches the scheduler's day math). */
 const jan = (day: number) => new Date(2022, 0, day);
 
-const toMap = (tasks: GanttTask[]) =>
-  new Map<Id, GanttTask>(tasks.map((t) => [t.id, t]));
+const toMap = (tasks: GanttTask[]) => new Map<Id, GanttTask>(tasks.map((t) => [t.id, t]));
 
 /** Replace a task in the working set with a moved copy (simulates a drag). */
-function move(
-  current: Map<Id, GanttTask>,
-  id: Id,
-  startDate: Date,
-  endDate?: Date,
-) {
+function move(current: Map<Id, GanttTask>, id: Id, startDate: Date, endDate?: Date) {
   const task = current.get(id);
-  if (task) current.set(id, { ...task, startDate, endDate });
+  if (task) {
+    current.set(id, { ...task, startDate, endDate });
+  }
 }
 
 describe("schedule", () => {

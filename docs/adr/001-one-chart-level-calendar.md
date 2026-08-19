@@ -9,7 +9,7 @@
 via `task.calendar_id` and `resource_calendars`).
 
 **Why.** Column shading and scheduling read the same object, so they cannot disagree. A per-task
-calendar makes the *grid background* ambiguous — the background is drawn per column
+calendar makes the _grid background_ ambiguous — the background is drawn per column
 (`GridColumns.tsx:75`), so a chart with two calendars either shades one and lies about the other,
 or moves shading per-row and forces a change to column virtualization.
 

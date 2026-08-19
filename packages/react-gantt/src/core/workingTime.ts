@@ -330,11 +330,7 @@ export function addWorkingMs(
  * additive: `count(a, b) + count(b, c) === count(a, c)` for any instants. That is
  * why span measurement always goes through it.
  */
-export function countWorkingMs(
-  calendar: ResolvedCalendar | null,
-  from: Date,
-  to: Date,
-): number {
+export function countWorkingMs(calendar: ResolvedCalendar | null, from: Date, to: Date): number {
   if (!calendar) {
     return to.getTime() - from.getTime();
   }
@@ -369,11 +365,7 @@ export function countWorkingMs(
 }
 
 /** True when `[from, to)` contains no working time at all — the shading predicate. */
-export function isNonWorkingSpan(
-  calendar: ResolvedCalendar | null,
-  from: Date,
-  to: Date,
-): boolean {
+export function isNonWorkingSpan(calendar: ResolvedCalendar | null, from: Date, to: Date): boolean {
   if (!calendar) {
     return false;
   }
@@ -431,10 +423,7 @@ export function nonWorkingInfo(
  * working day (ADR-018), so a weekends-off calendar over full days keeps
  * `duration: 3` meaning three whole days.
  */
-export function workingMsPerUnit(
-  calendar: ResolvedCalendar | null,
-  unit: DurationUnit,
-): number {
+export function workingMsPerUnit(calendar: ResolvedCalendar | null, unit: DurationUnit): number {
   if (unit === "minute") {
     return MS_PER_MINUTE;
   }

@@ -4,7 +4,7 @@
 - **Context:** Working time (days & hours) — see the [glossary](../glossary.md) and the [ADR index](./README.md).
 
 **Decision.** `getTaskList` emits a concrete exclusive `endDate` on every task whose end is
-*derivable*, not just summaries. A task authored `{startDate, duration}` therefore comes back from
+_derivable_, not just summaries. A task authored `{startDate, duration}` therefore comes back from
 `onTasksChange` carrying a resolved `endDate`, with its original `duration` untouched.
 
 **As implemented:** a task that is already an instant — no `endDate`, no `duration` — is left

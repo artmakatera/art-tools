@@ -1,8 +1,4 @@
-import type {
-  GanttTask,
-  TaskDependency,
-  TaskDependencyType,
-} from "@am/react-gantt";
+import type { GanttTask, TaskDependency, TaskDependencyType } from "@am/react-gantt";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock data generator
@@ -166,10 +162,7 @@ const MILESTONE_NAMES = [
 /**
  * Generate up to `count` tasks plus a set of valid dependencies between them.
  */
-export function generateMockData(
-  count: number,
-  options: GenerateOptions = {},
-): MockData {
+export function generateMockData(count: number, options: GenerateOptions = {}): MockData {
   const total = Math.max(0, Math.floor(count));
   const tasks: GanttTask[] = [];
   const dependencies: TaskDependency[] = [];
@@ -199,17 +192,12 @@ export function generateMockData(
   let nameSeq = 0;
 
   // Inclusive random integer in [min, max].
-  const randInt = (min: number, max: number): number =>
-    min + Math.floor(rng() * (max - min + 1));
+  const randInt = (min: number, max: number): number => min + Math.floor(rng() * (max - min + 1));
 
-  const pick = <T,>(arr: T[]): T => arr[Math.floor(rng() * arr.length)]!;
+  const pick = <T>(arr: T[]): T => arr[Math.floor(rng() * arr.length)]!;
 
   const seen = new Set<string>();
-  const addDep = (
-    from: number,
-    to: number,
-    type: TaskDependencyType,
-  ): void => {
+  const addDep = (from: number, to: number, type: TaskDependencyType): void => {
     if (from === to) {
       return;
     }
@@ -263,8 +251,7 @@ export function generateMockData(
     let prevLeafStart: Date | null = null; // start of the previous leaf (for SS)
 
     while (remaining > 0) {
-      const canSummary =
-        depth < MAX_DEPTH && remaining >= 4 && rng() < 0.35;
+      const canSummary = depth < MAX_DEPTH && remaining >= 4 && rng() < 0.35;
 
       if (canSummary) {
         // A summary (phase) row plus its own descendants.
@@ -284,9 +271,7 @@ export function generateMockData(
         const sub = layChildren(summaryId, subSize - 1, cursor, depth + 1);
         summary.startDate = sub.start;
         summary.endDate = sub.end;
-        summary.progress = sub.leafCount
-          ? Math.round(sub.progressSum / sub.leafCount)
-          : 0;
+        summary.progress = sub.leafCount ? Math.round(sub.progressSum / sub.leafCount) : 0;
 
         if (prevAnchor !== null && sub.firstLeaf !== null) {
           addDep(prevAnchor, sub.firstLeaf, "FS");
@@ -309,11 +294,9 @@ export function generateMockData(
 
       // A leaf: a normal task, or — as the last child of a non-trivial group —
       // occasionally a zero-duration milestone.
-      const isMilestone =
-        remaining === 1 && prevAnchor !== null && rng() < 0.3;
+      const isMilestone = remaining === 1 && prevAnchor !== null && rng() < 0.3;
       // Run in parallel with the previous leaf (shared start) ~25% of the time.
-      const runParallel: boolean =
-        !isMilestone && prevLeafStart !== null && rng() < 0.25;
+      const runParallel: boolean = !isMilestone && prevLeafStart !== null && rng() < 0.25;
 
       const start: Date = runParallel && prevLeafStart ? prevLeafStart : cursor;
       const duration = isMilestone ? 0 : randInt(1, 5);
@@ -380,8 +363,7 @@ export function generateMockData(
     // With a years range, each project starts on a random day inside the
     // window so the dataset spreads across the whole span; otherwise projects
     // stagger off the previous one via `globalCursor`.
-    const projectStart =
-      spreadDays > 0 ? addDays(baseDate, randInt(0, spreadDays)) : globalCursor;
+    const projectStart = spreadDays > 0 ? addDays(baseDate, randInt(0, spreadDays)) : globalCursor;
 
     const projectId = nextId++;
     const project: GanttTask = {
@@ -397,9 +379,7 @@ export function generateMockData(
     const body = layChildren(projectId, projectSize - 1, projectStart, 1);
     project.startDate = body.start;
     project.endDate = body.end;
-    project.progress = body.leafCount
-      ? Math.round(body.progressSum / body.leafCount)
-      : 0;
+    project.progress = body.leafCount ? Math.round(body.progressSum / body.leafCount) : 0;
 
     // Stagger the next project so the chart shows overlapping work rather than
     // one long single-file timeline.
@@ -410,9 +390,7 @@ export function generateMockData(
   // Sprinkle a few extra valid cross-task links: only ever from an earlier leaf
   // to a later one whose start is on/after the earlier's finish (keeps the graph
   // a DAG and the FS semantics honest).
-  const ordered = [...leaves].sort(
-    (a, b) => a.start.getTime() - b.start.getTime(),
-  );
+  const ordered = leaves.toSorted((a, b) => a.start.getTime() - b.start.getTime());
   const extra = Math.floor(ordered.length * 0.08);
   for (let i = 0; i < extra; i++) {
     const fromIdx = randInt(0, ordered.length - 2);

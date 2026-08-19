@@ -209,11 +209,7 @@ export function unitOffset(origin: Date, date: Date, unit: CalendarUnit): number
  * Date at a fractional `offset` of `unit` columns from `origin`. Inverse of
  * {@link unitOffset}.
  */
-export function dateAtOffset(
-  origin: Date,
-  unit: CalendarUnit,
-  offset: number,
-): Date {
+export function dateAtOffset(origin: Date, unit: CalendarUnit, offset: number): Date {
   const linearMs = LINEAR_UNIT_MS[unit];
   if (linearMs !== undefined) {
     return new Date(origin.getTime() + offset * linearMs);
@@ -230,12 +226,7 @@ export function dateAtOffset(
  * outward by `pad` whole columns (`pad * step` units). Grid and TaskList both
  * derive their origin from this so their pixel math cannot drift.
  */
-export function resolveOrigin(
-  min: Date,
-  unit: CalendarUnit,
-  pad: number,
-  step: number,
-): Date {
+export function resolveOrigin(min: Date, unit: CalendarUnit, pad: number, step: number): Date {
   return addUnit(startOfUnit(min, unit), unit, -pad * step);
 }
 
@@ -254,22 +245,25 @@ interface TaskDates {
 }
 
 function getMinMaxDatesNonCached(tasks: readonly TaskDates[]): { min: Date; max: Date } | null {
-   const first = tasks[0];
-  if (!first) return null;
-    let min = first.startDate;
+  const first = tasks[0];
+  if (!first) {
+    return null;
+  }
+  let min = first.startDate;
   let max = first.endDate ?? first.startDate;
   for (const t of tasks) {
-    if (t.startDate < min) min = t.startDate;
+    if (t.startDate < min) {
+      min = t.startDate;
+    }
     const end = t.endDate ?? t.startDate;
-    if (end > max) max = end;
+    if (end > max) {
+      max = end;
+    }
   }
   return { min, max };
 }
 
 export const getMinMaxDates = memoize(getMinMaxDatesNonCached, 3);
-
-
-
 
 export function buildDatesFromTasks(
   tasks: readonly TaskDates[],
@@ -277,7 +271,9 @@ export function buildDatesFromTasks(
   scales?: Scale[],
 ): Date[] {
   const range = getMinMaxDates(tasks);
-  if (!range) return [];
+  if (!range) {
+    return [];
+  }
 
   const unit = resolveColumnUnit(scales);
   const step = resolveColumnStep(scales);
@@ -286,5 +282,3 @@ export function buildDatesFromTasks(
   const count = Math.round(unitOffset(start, end, unit) / step) + 1;
   return buildDates(start, count, unit, step);
 }
-
-

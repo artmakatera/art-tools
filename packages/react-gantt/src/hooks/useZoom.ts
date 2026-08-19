@@ -1,10 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import {
-  dateAtOffset,
-  getMinMaxDates,
-  resolveOrigin,
-  unitOffset,
-} from "../core/dateUtils";
+import { dateAtOffset, getMinMaxDates, resolveOrigin, unitOffset } from "../core/dateUtils";
 import { resolveColumnStep, resolveColumnUnit } from "../core/scales";
 import type { ZoomLevel } from "../core/zoom";
 import type { GanttTask } from "../types";

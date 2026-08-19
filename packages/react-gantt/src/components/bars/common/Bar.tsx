@@ -53,13 +53,7 @@ export const Bar = memo(function Bar({
   const selectedId = useGanttSelectedId();
   const isSelected = selectedId === task.id;
 
-  const { left, width, progress } = computeTaskPixels(
-    task,
-    override || {},
-    origin,
-    colWidth,
-    unit,
-  );
+  const { left, width, progress } = computeTaskPixels(task, override || {}, origin, colWidth, unit);
   const top = index * rowHeight;
   const visualLeft = left;
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;

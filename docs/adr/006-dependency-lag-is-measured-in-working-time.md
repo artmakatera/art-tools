@@ -9,6 +9,6 @@
 duration term in the same expression use different units); a per-dependency `lagUnit` flag (a
 third independent switch, eight combinations to specify and test).
 
-**Why.** "Start two days after this finishes" means two *working* days to every user who says it.
+**Why.** "Start two days after this finishes" means two _working_ days to every user who says it.
 Physical-wait-time lag is better served later by an explicit elapsed flag than by making the
 default counter-intuitive.

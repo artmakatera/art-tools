@@ -33,10 +33,7 @@ export interface TaskListHeaderSlotProps {
   columnResizeHandle?: SlotPropsInput<ComponentProps<"div">, TaskListHeaderCellOwnerState>;
 }
 
-export type TaskListHeaderSlotConfig = SlotConfig<
-  TaskListHeaderSlots,
-  TaskListHeaderSlotProps
->;
+export type TaskListHeaderSlotConfig = SlotConfig<TaskListHeaderSlots, TaskListHeaderSlotProps>;
 
 interface TaskListHeaderProps {
   columns: ColumnDef[];
@@ -148,50 +145,52 @@ function buildActionTask(task: GanttTask): GanttTask {
 const ACTION_COLUMN_KEY = "__action";
 
 export const DEFAULT_COLUMNS: ColumnDef[] = [
-    {
+  {
     key: ACTION_COLUMN_KEY,
     header: "  ",
     width: 120,
     render: (task, api) => {
-      return  <div style={{ display: "flex", gap: "8px"}}>
-        <button
-          type="button"
-          title="Edit"
-          aria-label={api.labels.editTask(task)}
-          onClick={(e) => {
-            e.stopPropagation();
-            api.editTask(task);
-          }}
-        >
-          <span aria-hidden="true">&#9998;</span>
-        </button>
-        <button
-          type="button"
-          title="Add after"
-          aria-label={api.labels.addTaskAfter(task)}
-          onClick={(e) => {
-            e.stopPropagation();
-            const created = buildActionTask(task);
-            api.createTask(created, task.id);
-            api.editTask(created);
-          }}
-        >
-          <span aria-hidden="true">&#10133;</span>
-        </button>
-        <button
-          type="button"
-          title="Delete"
-          aria-label={api.labels.deleteTask(task)}
-          style={{ fontSize: 9 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            api.deleteTask(task.id);
-          }}
-        >
-          <span aria-hidden="true">&#10060;</span>
-        </button>
-      </div>
-    }
+      return (
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            type="button"
+            title="Edit"
+            aria-label={api.labels.editTask(task)}
+            onClick={(e) => {
+              e.stopPropagation();
+              api.editTask(task);
+            }}
+          >
+            <span aria-hidden="true">&#9998;</span>
+          </button>
+          <button
+            type="button"
+            title="Add after"
+            aria-label={api.labels.addTaskAfter(task)}
+            onClick={(e) => {
+              e.stopPropagation();
+              const created = buildActionTask(task);
+              api.createTask(created, task.id);
+              api.editTask(created);
+            }}
+          >
+            <span aria-hidden="true">&#10133;</span>
+          </button>
+          <button
+            type="button"
+            title="Delete"
+            aria-label={api.labels.deleteTask(task)}
+            style={{ fontSize: 9 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              api.deleteTask(task.id);
+            }}
+          >
+            <span aria-hidden="true">&#10060;</span>
+          </button>
+        </div>
+      );
+    },
   },
   {
     key: "__name",
@@ -220,7 +219,6 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
     width: 90,
     render: (task: GanttTask) => `${task.progress ?? 0}%`,
   },
-
 ];
 
 /** {@link DEFAULT_COLUMNS} without the actions column — the `readOnly` default. */

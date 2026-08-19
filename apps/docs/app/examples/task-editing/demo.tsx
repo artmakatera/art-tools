@@ -31,14 +31,24 @@ export function TaskEditingDemo() {
 
   const save = useCallback(
     (form: { name: string; start: string; end: string; progress: number }) => {
-      if (!editing) return;
+      if (!editing) {
+        return;
+      }
       const patch: TaskPatch = {};
-      if (form.name !== editing.name) patch.name = form.name;
+      if (form.name !== editing.name) {
+        patch.name = form.name;
+      }
       const start = fromInputValue(form.start);
-      if (start.getTime() !== editing.startDate.getTime()) patch.startDate = start;
+      if (start.getTime() !== editing.startDate.getTime()) {
+        patch.startDate = start;
+      }
       const end = fromInputValue(form.end);
-      if (end.getTime() !== editing.endDate?.getTime()) patch.endDate = end;
-      if (form.progress !== (editing.progress ?? 0)) patch.progress = form.progress;
+      if (end.getTime() !== editing.endDate?.getTime()) {
+        patch.endDate = end;
+      }
+      if (form.progress !== (editing.progress ?? 0)) {
+        patch.progress = form.progress;
+      }
 
       api.current?.updateTask(editing.id, patch);
       setEditing(null);
@@ -59,12 +69,7 @@ export function TaskEditingDemo() {
         height={320}
       />
       {editing ? (
-        <EditForm
-          key={editing.id}
-          task={editing}
-          onCancel={() => setEditing(null)}
-          onSave={save}
-        />
+        <EditForm key={editing.id} task={editing} onCancel={() => setEditing(null)} onSave={save} />
       ) : null}
     </div>
   );
@@ -90,7 +95,14 @@ function EditForm({
         e.preventDefault();
         onSave({ name, start, end, progress });
       }}
-      style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", borderTop: "1px solid #e2e8f0", padding: 12 }}
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 12,
+        alignItems: "flex-end",
+        borderTop: "1px solid #e2e8f0",
+        padding: 12,
+      }}
     >
       <label style={{ display: "flex", flexDirection: "column", fontSize: 12, gap: 2 }}>
         Name
@@ -115,7 +127,9 @@ function EditForm({
         />
       </label>
       <button type="submit">Save</button>
-      <button type="button" onClick={onCancel}>Cancel</button>
+      <button type="button" onClick={onCancel}>
+        Cancel
+      </button>
     </form>
   );
 }

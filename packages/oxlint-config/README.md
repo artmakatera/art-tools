@@ -3,11 +3,11 @@
 Shared [oxlint](https://oxc.rs/docs/guide/usage/linter) configs. The repo uses oxlint + oxfmt;
 there is no ESLint anywhere.
 
-| Config | Extends | For |
-| --- | --- | --- |
-| `base.json` | — | any package |
-| `react.json` | `base.json` | React packages and apps |
-| `next.json` | `react.json` | Next.js apps (adds the `nextjs` plugin) |
+| Config       | Extends      | For                                     |
+| ------------ | ------------ | --------------------------------------- |
+| `base.json`  | —            | any package                             |
+| `react.json` | `base.json`  | React packages and apps                 |
+| `next.json`  | `react.json` | Next.js apps (adds the `nextjs` plugin) |
 
 Consume via the path form, which is what every package here already does:
 
@@ -24,7 +24,7 @@ live as comments in the JSON.
   oversights. Stylesheets (`@am/react-gantt/style.css`, `./globals.css`) and Next's `server-only`
   poison pill exist purely for their side effect and have nothing to assign.
 - **`jsx-a11y/click-events-have-key-events`**, **`jsx-a11y/no-static-element-interactions`** — the
-  Gantt's rows *are* keyboard-operable, but through a `keydown` handler delegated to the pane
+  Gantt's rows _are_ keyboard-operable, but through a `keydown` handler delegated to the pane
   container. The rules only look at the element with `onClick` and cannot see the delegation, so
   they fire on every row. Satisfying them would mean scattered disables or misleading roles.
 - **`jsx-a11y/prefer-tag-over-role`** — the connector handles must stay positioned `div`s with

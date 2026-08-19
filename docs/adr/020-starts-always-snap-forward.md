@@ -14,4 +14,4 @@ backward-anchored, which makes ADR-007's lossy round-trip reachable during ordin
 rather than only from odd input.
 
 **Cost accepted.** A backward drag onto a weekend appears to do nothing, which reads as a broken
-drag. Also: snapping forward means a task never grows *into* non-working time by snapping.
+drag. Also: snapping forward means a task never grows _into_ non-working time by snapping.

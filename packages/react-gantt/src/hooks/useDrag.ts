@@ -8,12 +8,7 @@ interface UseDragOptions<T> {
   autoScroll?: boolean;
 }
 
-export function useDrag<T>({
-  onStart,
-  onDrag,
-  onEnd,
-  autoScroll = false,
-}: UseDragOptions<T>) {
+export function useDrag<T>({ onStart, onDrag, onEnd, autoScroll = false }: UseDragOptions<T>) {
   const isActiveRef = useRef(false);
   const ctxRef = useRef<T | null>(null);
   const startXRef = useRef(0);
@@ -39,7 +34,9 @@ export function useDrag<T>({
   });
 
   const fireDrag = useCallback(() => {
-    if (!isActiveRef.current || ctxRef.current === null) return;
+    if (!isActiveRef.current || ctxRef.current === null) {
+      return;
+    }
     const cursorDelta = lastClientXRef.current - startXRef.current;
     const deltaX = cursorDelta + getScrollDelta();
     lastDeltaRef.current = deltaX;
@@ -64,7 +61,9 @@ export function useDrag<T>({
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (!isActiveRef.current || ctxRef.current === null) return;
+      if (!isActiveRef.current || ctxRef.current === null) {
+        return;
+      }
       lastClientXRef.current = e.clientX;
       setCursorX(e.clientX);
       fireDrag();

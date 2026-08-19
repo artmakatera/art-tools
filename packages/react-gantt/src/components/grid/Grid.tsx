@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
 import { buildDatesFromTasks } from "../../core/dateUtils";
 import { DEFAULT_SCALES, resolveColumnStep, resolveColumnUnit } from "../../core/scales";
-import type { GanttTask, Id, TaskState } from "../../types";
+import type { GanttTask, Id, Overrides, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
 import { Calendar } from "../calendar/Calendar";
@@ -60,10 +60,7 @@ interface GanttGridProps {
   slotProps?: GridSlotProps;
 }
 
-export function GanttGrid({
-  slots: slotsProp,
-  slotProps: slotPropsProp,
-}: GanttGridProps = {}) {
+export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttGridProps = {}) {
   const ganttSlots = useGanttSlots();
   const slots = slotsProp ?? ganttSlots.timeline?.grid?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.timeline?.grid?.slotProps;
@@ -113,12 +110,15 @@ export function GanttGrid({
     };
   }, [gridRef, wheelEnabled, keyboardEnabled, zoomAt, zoomIn, zoomOut, visibleTasks.length]);
 
-  const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
+  const [overrides, setOverrides] = useState<Overrides>({});
 
-  const handleSelect = useCallback((task: GanttTask) => {
-    setSelectedId(task.id);
-    onTaskClick?.(task);
-  }, [setSelectedId, onTaskClick]);
+  const handleSelect = useCallback(
+    (task: GanttTask) => {
+      setSelectedId(task.id);
+      onTaskClick?.(task);
+    },
+    [setSelectedId, onTaskClick],
+  );
 
   const handleOverride = useCallback((id: Id, patch: Partial<TaskState> | null) => {
     setOverrides((prev) => {
@@ -136,11 +136,10 @@ export function GanttGrid({
   );
 
   const originMs = dates[0]?.getTime();
-  const origin = useMemo(
-    () => (originMs == null ? undefined : new Date(originMs)),
-    [originMs],
-  );
-  if (!origin) return null;
+  const origin = useMemo(() => (originMs == null ? undefined : new Date(originMs)), [originMs]);
+  if (!origin) {
+    return null;
+  }
 
   const unit = resolveColumnUnit(scales);
   const totalWidth = dates.length * colWidth;
@@ -266,4 +265,3 @@ export function GanttGrid({
 }
 
 GanttGrid.displayName = "GanttGrid";
-

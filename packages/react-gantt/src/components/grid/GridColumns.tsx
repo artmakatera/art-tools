@@ -98,9 +98,7 @@ export function GridColumns({
           ? nonWorkingInfo(calendar, date, addUnit(date, unit, step))
           : { isNonWorking: false, reason: undefined };
         // With no calendar, keep the historical Sat/Sun-only behaviour exactly.
-        const nonWorking = calendar
-          ? info.isNonWorking
-          : unit === "day" && isWeekend(date);
+        const nonWorking = calendar ? info.isNonWorking : unit === "day" && isWeekend(date);
         const ownerState: GridColumnOwnerState = {
           date,
           index,
