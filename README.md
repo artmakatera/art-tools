@@ -13,7 +13,7 @@ A high-performance, composable Gantt chart component library for React, built as
 - **Dependency links** — visualize Finish-to-Start, Finish-to-Finish, Start-to-Start, and Start-to-Finish relationships (with optional lag) between tasks; create and delete links interactively.
 - **Undo/redo** — every user action (drag, resize, create, delete, edit) is recorded as a transaction in an undoable/redoable change log.
 - **Customizable task list** — configurable, resizable columns via `ColumnDef`, with a `render` API for building custom cell content (e.g. inline edit/add/delete actions).
-- **Imperative API** — `apiRef` exposes `createTask`, `updateTask`, `deleteTask`, `undo`, `redo`, and `scrollToTask` for programmatic control.
+- **Imperative API** — `apiRef` exposes `createTask`, `updateTask`, `deleteTask`, `undo`, `redo`, and `revealTask` for programmatic control.
 - **Flexible time scales** — day, week, month, quarter, and year views with configurable formatting.
 - **Resizable panes** — draggable divider between the task list and the calendar/grid area.
 - **Virtualized rendering** — rows and columns are windowed on both axes with overscan, so charts with thousands of tasks stay smooth.

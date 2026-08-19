@@ -4,7 +4,7 @@ import { midpoint, type Bounds, type DependencyLink, type Point } from "./geomet
 import type { TaskDependency } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
-import { useGanttLabels, useGanttReadOnly } from "../../context/GanttContext";
+import { useGanttLabels, useGanttReadOnly } from "../../context/contexts";
 import styles from "./DependencyLinks.module.css";
 
 /** Stroke thickness of the link, in pixels. */

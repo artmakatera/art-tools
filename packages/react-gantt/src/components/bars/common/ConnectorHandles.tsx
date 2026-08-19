@@ -5,7 +5,7 @@ import {
   useGanttDragActive,
   useGanttScroll,
   type ConnectorHandle,
-} from "../../../context/GanttContext";
+} from "../../../context/contexts";
 import { CONNECTOR_HANDLE_SIZE } from "../../../core/constants";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";

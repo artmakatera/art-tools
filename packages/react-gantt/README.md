@@ -429,7 +429,8 @@ ref.current?.updateTask(id, { progress: 80 });
 ref.current?.deleteTask(id);
 ref.current?.undo();
 ref.current?.redo();
-ref.current?.scrollToTask(id); // auto-expands collapsed ancestors first
+ref.current?.revealTask(id); // vertical; add { horizontal: true } for the bar
+ref.current?.revealTask(id, { horizontal: true }); // expands collapsed ancestors first
 ```
 
 `updateTask` takes a `TaskPatch` (`name`, `startDate`, `endDate`, `progress`); only

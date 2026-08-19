@@ -1,7 +1,7 @@
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
-import { useGanttLabels } from "../../context/GanttContext";
+import { useGanttLabels } from "../../context/contexts";
 import styles from "./GridResizeHandle.module.css";
 
 /** State passed to the function form of the GridResizeHandle slotProps. */

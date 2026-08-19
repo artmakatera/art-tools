@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
-import { buildDatesFromTasks } from "../../core/dateUtils";
+import { buildTimelineDates } from "../../core/timeline";
 import { DEFAULT_SCALES, resolveColumnStep, resolveColumnUnit } from "../../core/scales";
 import type { GanttTask, Id, Overrides, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
@@ -23,7 +23,7 @@ import {
   useGanttTaskState,
   useGanttViewport,
   useGanttZoom,
-} from "../../context/GanttContext";
+} from "../../context/contexts";
 
 /** State passed to the function form of the Grid slotProps. */
 export interface GridOwnerState {
@@ -131,7 +131,7 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
   }, []);
 
   const dates = useMemo(
-    () => buildDatesFromTasks(visibleTasks, padDays, scales),
+    () => buildTimelineDates(visibleTasks, padDays, scales),
     [visibleTasks, padDays, scales],
   );
 

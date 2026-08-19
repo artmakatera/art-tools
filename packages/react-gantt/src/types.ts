@@ -6,6 +6,7 @@ import type {
   GanttTimelineSlots,
 } from "./context/GanttSlotsContext";
 import type { ZoomLevel } from "./core/zoom";
+import type { RevealOptions } from "./hooks/useRevealTask";
 
 type GanttTaskType = "task" | "milestone" | "summary";
 
@@ -104,12 +105,14 @@ export interface GanttHandle {
   undo: () => void;
   redo: () => void;
   /**
-   * Scroll the task list vertically to reveal a task. No-op for an unknown id,
-   * and — currently — also for a task hidden under a collapsed ancestor, since
-   * the reveal only searches the *visible* rows. (`useExpand.revealAncestors`
-   * exists to close that gap but is not wired up yet.)
+   * Bring a task into view. Vertical by default; pass `{ horizontal: true }` to
+   * also scroll the grid to the task's bar.
+   *
+   * Expands any collapsed ancestors first, so a task nested under a collapsed
+   * parent is revealed rather than silently ignored. Still a no-op for an id that
+   * is not in the chart at all.
    */
-  scrollToTask: (id: Id) => void;
+  revealTask: (id: Id, options?: RevealOptions) => void;
   /** Step the zoom ladder one level finer. No-op at the finest level. */
   zoomIn: () => void;
   /** Step the zoom ladder one level coarser. No-op at the coarsest level. */
@@ -188,13 +191,22 @@ export interface GanttLabels {
 /** `GanttLabels` with every key filled in from the defaults. */
 export type ResolvedGanttLabels = Required<GanttLabels>;
 
-export interface GanttProps {
+/**
+ * Everything the chart engine needs: data, callbacks, scheduling, zoom.
+ *
+ * Shared verbatim by `<Gantt>` and `<GanttProvider>` — `<Gantt>` destructures
+ * every one of these and forwards it untouched, then adds layout and slots of its
+ * own. Declared once so the two cannot drift apart, which they already had:
+ * `GanttProps.height` was required while the provider's was optional, with a doc
+ * on the required one saying "omit to grow with content".
+ */
+export interface GanttEngineProps {
   tasks: GanttTask[];
   rowHeight?: number;
   colWidth?: number;
   /** Total component height in px. When set, rows scroll vertically within it
    *  (calendar/header stay pinned); omit to grow with content. */
-  height: number;
+  height?: number;
   scales?: Scale[];
   padDays?: number;
   /** Custom zoom ladder (coarse → fine). Defaults to the built-in ladder; when
@@ -210,8 +222,6 @@ export interface GanttProps {
   zoomKeyboard?: boolean;
   onTaskClick?: (task: GanttTask) => void;
   dependencies?: TaskDependency[];
-  columns?: ColumnDef[];
-  defaultTaskListWidth?: number;
   onDependencyCreate?: (dep: TaskDependency) => void;
   onDependencyDelete?: (dep: TaskDependency) => void;
   onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
@@ -246,6 +256,22 @@ export interface GanttProps {
   readOnly?: boolean;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
+  /**
+   * Overrides for the library's accessible strings (screen-reader names).
+   * Pass a referentially stable object — see `GanttLabels`.
+   */
+  labels?: GanttLabels;
+}
+
+/** Props of the composable `<GanttProvider>`: the engine plus its subtree. */
+export interface GanttProviderProps extends GanttEngineProps {
+  children: React.ReactNode;
+}
+
+/** Props of the all-in-one `<Gantt>`: the engine plus layout and slots. */
+export interface GanttProps extends GanttEngineProps {
+  columns?: ColumnDef[];
+  defaultTaskListWidth?: number;
   hideTaskList?: boolean;
   /**
    * Slot overrides for the task-list pane (`treeCell`, `header`). Prop-drilled.
@@ -260,11 +286,6 @@ export interface GanttProps {
   dependencySlots?: GanttDependenciesSlots;
   /** Slot overrides for the calendar/grid timeline chrome. */
   timeline?: GanttTimelineSlots;
-  /**
-   * Overrides for the library's accessible strings (screen-reader names).
-   * Pass a referentially stable object — see `GanttLabels`.
-   */
-  labels?: GanttLabels;
 }
 
 export interface TaskState {

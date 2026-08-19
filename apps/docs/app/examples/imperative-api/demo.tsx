@@ -51,7 +51,12 @@ export function ImperativeApiDemo() {
         <button type="button" onClick={() => api.current?.redo()}>
           Redo
         </button>
-        <button type="button" onClick={() => api.current?.scrollToTask("ship")}>
+        <button
+          type="button"
+          // `horizontal: true` because this chart fits vertically — the interesting
+          // axis here is the timeline. A bare `revealTask(id)` scrolls the rows.
+          onClick={() => api.current?.revealTask("ship", { horizontal: true })}
+        >
           Scroll to “Ship it”
         </button>
         <button type="button" onClick={() => api.current?.updateTask("build", { progress: 100 })}>

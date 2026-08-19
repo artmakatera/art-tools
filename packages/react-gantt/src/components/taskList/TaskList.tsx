@@ -6,15 +6,11 @@ import {
   useGanttSelectedId,
   useGanttTaskActions,
   useGanttTaskState,
-} from "../../context/GanttContext";
-import type { ColumnDef, GanttTask, Id } from "../../types";
+} from "../../context/contexts";
+import type { ColumnDef, Id } from "../../types";
 import { TaskListHeader } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
 import type { GanttTaskListSlots } from "../../context/GanttSlotsContext";
-import { getMinMaxDates, resolveOrigin } from "../../core/dateUtils";
-import { computeTaskPixels } from "../../core/barUtils";
-import { resolveColumnStep, resolveColumnUnit } from "../../core/scales";
-import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
 import { useColumnWidths } from "../../hooks/useColumnWidths";
@@ -33,11 +29,11 @@ interface TaskListProps {
 
 export function TaskList({ columns = [], taskList }: TaskListProps) {
   const { visibleTasks, expandedIds, parentIds } = useGanttTaskState();
-  const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
+  const { toggleExpand, setSelectedId, onTaskClick, revealTask } = useGanttTaskActions();
   const selectedId = useGanttSelectedId();
-  const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
+  const { rowHeight, scales, height } = useGanttConfig();
   const labels = useGanttLabels();
-  const { taskListRef, onTaskListScroll, gridRef } = useGanttScroll();
+  const { taskListRef, onTaskListScroll } = useGanttScroll();
 
   const { widths, onResizeStart } = useColumnWidths();
 
@@ -49,40 +45,19 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     [columns, widths],
   );
 
-  const scrollToTask = (task: GanttTask) => {
-    const grid = gridRef.current;
-    const range = getMinMaxDates(visibleTasks);
-    if (!grid || !range) {
-      return;
-    }
-    // Matches the grid's origin: buildDatesFromTasks aligns to the unit
-    // boundary containing min, padded outward by whole columns.
-    const unit = resolveColumnUnit(scales);
-    const origin = resolveOrigin(range.min, unit, padDays, resolveColumnStep(scales));
-    const { left, width } = computeTaskPixels(task, {}, origin, colWidth, unit);
-    const nextLeft = scrollOffsetToReveal(
-      left,
-      width,
-      grid.scrollLeft,
-      grid.clientWidth,
-      colWidth, // keep one column of padding
-    );
-    if (nextLeft !== grid.scrollLeft) {
-      grid.scrollLeft = nextLeft;
-    }
-  };
-
   // Dispatched through a latest-ref so `handleSelect` is identity-stable
   // forever: it is handed to every memoized row, and closing over `visibleTasks`
   // directly would re-render the whole window on every edit, expand or zoom.
-  // (Same pattern as `useScrollToTask`.)
+  // (Same pattern as `useRevealTask`.)
   const selectRef = useLatestRef((id: Id) => {
     setSelectedId(id);
 
     const task = visibleTasks.find((t) => t.id === id);
     if (task) {
       onTaskClick?.(task);
-      scrollToTask(task); // existing horizontal grid reveal — unchanged
+      // Horizontal only: clicking a row must not also scroll it vertically, since
+      // the row the user just clicked is by definition already on screen.
+      revealTask(id, { horizontal: true, vertical: false });
     }
   });
   const handleSelect = useCallback((id: Id) => selectRef.current(id), [selectRef]);

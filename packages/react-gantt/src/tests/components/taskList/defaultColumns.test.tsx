@@ -1,14 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { Gantt } from "../../../Gantt";
-import { DEFAULT_COLUMNS, READ_ONLY_COLUMNS } from "../../../components/taskList/TaskListHeader";
+import { DEFAULT_COLUMNS, READ_ONLY_COLUMNS } from "../../../components/taskList/defaultColumns";
 import type { GanttTask } from "../../../types";
 
 /**
  * The built-in column catalogue, pinned before it moves out of
  * `TaskListHeader.tsx`.
  *
- * `DEFAULT_COLUMNS` and `READ_ONLY_COLUMNS` currently live inside the header
+ * `DEFAULT_COLUMNS` and `READ_ONLY_COLUMNS` live in their own module, separate
  * *component* module — which is why `Gantt.tsx` imports column data from a leaf
  * presentation file. They are slated to move to their own module and become
  * public so consumers can extend rather than replace them, so the shape and the

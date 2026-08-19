@@ -12,7 +12,7 @@ import { DEFAULT_LABELS } from "../../../core/labels";
 // rendered directly without a full <GanttProvider>.
 const startDrag = vi.fn();
 const endDrag = vi.fn();
-vi.mock("../../../context/GanttContext", () => ({
+vi.mock("../../../context/contexts", () => ({
   useGanttDependency: () => ({ startDrag, endDrag }),
   useGanttDragActive: () => false,
   useGanttScroll: () => ({ gridBodyRef: { current: document.createElement("div") } }),

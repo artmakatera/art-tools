@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { dateAtOffset, getMinMaxDates, resolveOrigin, unitOffset } from "../core/dateUtils";
-import { resolveColumnStep, resolveColumnUnit } from "../core/scales";
+import { dateAtOffset, unitOffset } from "../core/dateUtils";
+import { timelineOrigin } from "../core/timeline";
+import { resolveColumnUnit } from "../core/scales";
 import type { ZoomLevel } from "../core/zoom";
 import type { GanttTask } from "../types";
 import { useLatestRef } from "./useLatestRef";
@@ -74,12 +75,10 @@ export function useZoom({
         return;
       }
       const grid = gridRef.current;
-      const range = getMinMaxDates(visibleTasksRef.current);
-      if (grid && range) {
-        const level = levelsRef.current[cur]!;
+      const level = levelsRef.current[cur]!;
+      const origin = timelineOrigin(visibleTasksRef.current, level.scales, padDaysRef.current);
+      if (grid && origin) {
         const unit = resolveColumnUnit(level.scales);
-        const step = resolveColumnStep(level.scales);
-        const origin = resolveOrigin(range.min, unit, padDaysRef.current, step);
         pending.current = {
           date: dateAtOffset(origin, unit, focusPx / level.colWidth),
           viewportOffset: focusPx - grid.scrollLeft,
@@ -113,14 +112,12 @@ export function useZoom({
     }
     pending.current = null;
     const grid = gridRef.current;
-    const range = getMinMaxDates(visibleTasksRef.current);
-    if (!grid || !range) {
+    const level = levelsRef.current[index]!;
+    const origin = timelineOrigin(visibleTasksRef.current, level.scales, padDaysRef.current);
+    if (!grid || !origin) {
       return;
     }
-    const level = levelsRef.current[index]!;
     const unit = resolveColumnUnit(level.scales);
-    const step = resolveColumnStep(level.scales);
-    const origin = resolveOrigin(range.min, unit, padDaysRef.current, step);
     const targetContentPx = unitOffset(origin, anchor.date, unit) * level.colWidth;
     grid.scrollLeft = Math.max(0, targetContentPx - anchor.viewportOffset);
     // eslint-disable-next-line react-hooks/exhaustive-deps

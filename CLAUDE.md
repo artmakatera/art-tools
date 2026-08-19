@@ -83,5 +83,4 @@ comment and the code disagree, the comment is a bug: fix or delete it, do not
 leave it. `dateUtils.resolveOrigin` carried a false "cannot drift" claim for
 exactly this reason.
 
-
-DO Not commit by itself.
+DO Not commit by itself!
