@@ -6,11 +6,7 @@ import {
   pxToDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
-import {
-  useGanttLabels,
-  useGanttReadOnly,
-  useGanttSelectedId,
-} from "../../../context/GanttContext";
+import { useGanttLabels, useGanttReadOnly, useGanttSelectedId } from "../../../context/contexts";
 import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";

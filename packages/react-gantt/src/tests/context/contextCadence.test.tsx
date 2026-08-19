@@ -1,7 +1,6 @@
 import { act, fireEvent, render } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  GanttProvider,
   useGanttConfig,
   useGanttDependency,
   useGanttDependencyDrag,
@@ -15,7 +14,8 @@ import {
   useGanttViewport,
   useGanttWorkCalendar,
   useGanttZoom,
-} from "../../context/GanttContext";
+} from "../../context/contexts";
+import { GanttProvider } from "../../context/GanttProvider";
 import type { GanttCalendar, GanttTask } from "../../types";
 
 /**

@@ -1,5 +1,5 @@
 import type { ComponentProps, ElementType } from "react";
-import { useGanttDependencyDrag } from "../../context/GanttContext";
+import { useGanttDependencyDrag } from "../../context/contexts";
 import type { DependencyDragState } from "../../hooks/useDependencyDrag";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";

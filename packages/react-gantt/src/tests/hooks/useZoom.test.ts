@@ -2,7 +2,8 @@ import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useZoom } from "../../hooks/useZoom";
 import { DEFAULT_ZOOM_LEVELS } from "../../core/zoom";
-import { dateAtOffset, getMinMaxDates, resolveOrigin } from "../../core/dateUtils";
+import { dateAtOffset, getMinMaxDates } from "../../core/dateUtils";
+import { resolveOriginAt } from "../../core/timeline";
 import { resolveColumnStep, resolveColumnUnit } from "../../core/scales";
 import type { GanttTask } from "../../types";
 
@@ -97,7 +98,7 @@ describe("useZoom", () => {
     const dateAt = (level: (typeof DEFAULT_ZOOM_LEVELS)[number], contentPx: number) => {
       const unit = resolveColumnUnit(level.scales);
       const step = resolveColumnStep(level.scales);
-      const origin = resolveOrigin(getMinMaxDates(tasks)!.min, unit, 1, step);
+      const origin = resolveOriginAt(getMinMaxDates(tasks)!.min, unit, 1, step);
       return dateAtOffset(origin, unit, contentPx / level.colWidth).getTime();
     };
 

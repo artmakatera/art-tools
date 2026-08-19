@@ -1,10 +1,9 @@
 import type React from "react";
 import type { ComponentProps, ElementType } from "react";
-import type { ColumnDef, GanttTask, Scale } from "../../types";
+import type { ColumnDef, Scale } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import styles from "./TaskList.module.css";
 import { DEFAULT_SCALES } from "../../core/scales";
-import { addDays } from "../../core/dateUtils";
 
 /** State passed to the function form of the header (container) slotProps. */
 export interface TaskListHeaderOwnerState {
@@ -115,113 +114,3 @@ export function TaskListHeader({
     </Header>
   );
 }
-
-/**
- * Builds the task inserted by the actions-column "add after" button: a blank
- * one-day task starting the day after the clicked row, under the same parent.
- *
- * `endDate` is exclusive, so a one-day task ends at the following midnight.
- *
- * Known gap (ADR-012): this is a library-authored date that does NOT snap onto
- * working time, because a column's `render` is a plain function with no access to
- * the calendar. A task added after a Friday row can therefore land on a Saturday
- * until it is first dragged.
- */
-function buildActionTask(task: GanttTask): GanttTask {
-  const start = addDays(task.startDate, 1);
-  return {
-    id: `task-${Date.now()}`,
-    name: "New task",
-    startDate: start,
-    endDate: addDays(start, 1),
-    duration: 1,
-    progress: 0,
-    type: "task",
-    parentId: task.parentId ?? null,
-  };
-}
-
-/** Key of the built-in edit/add/delete column, dropped when `readOnly` is set. */
-const ACTION_COLUMN_KEY = "__action";
-
-export const DEFAULT_COLUMNS: ColumnDef[] = [
-  {
-    key: ACTION_COLUMN_KEY,
-    header: "  ",
-    width: 120,
-    render: (task, api) => {
-      return (
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button
-            type="button"
-            title="Edit"
-            aria-label={api.labels.editTask(task)}
-            onClick={(e) => {
-              e.stopPropagation();
-              api.editTask(task);
-            }}
-          >
-            <span aria-hidden="true">&#9998;</span>
-          </button>
-          <button
-            type="button"
-            title="Add after"
-            aria-label={api.labels.addTaskAfter(task)}
-            onClick={(e) => {
-              e.stopPropagation();
-              const created = buildActionTask(task);
-              api.createTask(created, task.id);
-              api.editTask(created);
-            }}
-          >
-            <span aria-hidden="true">&#10133;</span>
-          </button>
-          <button
-            type="button"
-            title="Delete"
-            aria-label={api.labels.deleteTask(task)}
-            style={{ fontSize: 9 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              api.deleteTask(task.id);
-            }}
-          >
-            <span aria-hidden="true">&#10060;</span>
-          </button>
-        </div>
-      );
-    },
-  },
-  {
-    key: "__name",
-    header: "Task Name",
-    render: (task: GanttTask) => task.name,
-    width: 200,
-    isTreeColumn: true,
-  },
-  {
-    key: "__start",
-    header: "Start",
-    width: 90,
-    render: (task: GanttTask) => task.startDate.toLocaleDateString(),
-  },
-  {
-    key: "__end",
-    header: "End",
-    width: 90,
-    // Stored ends are exclusive instants, so format through the api rather than
-    // reading `task.endDate` — otherwise a Mon–Fri task reads as ending Saturday.
-    render: (task: GanttTask, api) => api.format.endDate(task)?.toLocaleDateString() ?? "—",
-  },
-  {
-    key: "__progress",
-    header: "Progress, %",
-    width: 90,
-    render: (task: GanttTask) => `${task.progress ?? 0}%`,
-  },
-];
-
-/** {@link DEFAULT_COLUMNS} without the actions column — the `readOnly` default. */
-export const READ_ONLY_COLUMNS: ColumnDef[] = DEFAULT_COLUMNS.filter(
-  (col) => col.key !== ACTION_COLUMN_KEY,
-);

@@ -2,7 +2,7 @@ import { clsx } from "clsx";
 import type { ComponentProps, ElementType } from "react";
 import { addUnit, isWeekend } from "../../core/dateUtils";
 import { nonWorkingInfo, type NonWorkingReason } from "../../core/workingTime";
-import { useGanttWorkCalendar } from "../../context/GanttContext";
+import { useGanttWorkCalendar } from "../../context/contexts";
 import type { CalendarUnit } from "../../types";
 import type { IndexRange } from "../../core/virtualize";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";

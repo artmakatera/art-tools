@@ -1,12 +1,12 @@
 import { useMemo, useRef } from "react";
-import { GanttProvider } from "./context/GanttContext";
+import { GanttProvider } from "./context/GanttProvider";
 import { GanttSlotsProvider } from "./context/GanttSlotsContext";
 import { GanttGrid } from "./components/grid/Grid";
 import { GridResizeHandle } from "./components/grid/GridResizeHandle";
 import { TaskList } from "./components/taskList/TaskList";
 import { useGridResize } from "./hooks/useGridResize";
 import type { GanttProps } from "./types";
-import { DEFAULT_COLUMNS, READ_ONLY_COLUMNS } from "./components/taskList/TaskListHeader";
+import { DEFAULT_COLUMNS, READ_ONLY_COLUMNS } from "./components/taskList/defaultColumns";
 import { DEFAULT_LABELS } from "./core/labels";
 
 export function Gantt({

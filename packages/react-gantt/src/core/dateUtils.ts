@@ -1,5 +1,4 @@
-import type { CalendarUnit, Scale } from "../types";
-import { resolveColumnStep, resolveColumnUnit } from "./scales";
+import type { CalendarUnit } from "../types";
 import { memoize } from "./utils";
 
 const MS_PER_MINUTE = 60_000;
@@ -221,15 +220,6 @@ export function dateAtOffset(origin: Date, unit: CalendarUnit, offset: number): 
   return new Date(base + frac * (next - base));
 }
 
-/**
- * The timeline origin: the start-of-unit boundary containing `min`, padded
- * outward by `pad` whole columns (`pad * step` units). Grid and TaskList both
- * derive their origin from this so their pixel math cannot drift.
- */
-export function resolveOrigin(min: Date, unit: CalendarUnit, pad: number, step: number): Date {
-  return addUnit(startOfUnit(min, unit), unit, -pad * step);
-}
-
 export function buildDates(
   start: Date,
   count: number,
@@ -264,21 +254,3 @@ function getMinMaxDatesNonCached(tasks: readonly TaskDates[]): { min: Date; max:
 }
 
 export const getMinMaxDates = memoize(getMinMaxDatesNonCached, 3);
-
-export function buildDatesFromTasks(
-  tasks: readonly TaskDates[],
-  pad = 0,
-  scales?: Scale[],
-): Date[] {
-  const range = getMinMaxDates(tasks);
-  if (!range) {
-    return [];
-  }
-
-  const unit = resolveColumnUnit(scales);
-  const step = resolveColumnStep(scales);
-  const start = resolveOrigin(range.min, unit, pad, step);
-  const end = addUnit(startOfUnit(range.max, unit), unit, pad * step);
-  const count = Math.round(unitOffset(start, end, unit) / step) + 1;
-  return buildDates(start, count, unit, step);
-}

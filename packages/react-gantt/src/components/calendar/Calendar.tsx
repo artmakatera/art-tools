@@ -4,7 +4,7 @@ import styles from "./Calendar.module.css";
 import { CalendarRow } from "./CalendarRow";
 import { DEFAULT_SCALES } from "../../core/scales";
 
-type CalendarProps = {
+export type CalendarProps = {
   colWidth: number;
   rowHeight: number;
   scales?: Scale[];

@@ -1,7 +1,7 @@
 import type { DurationUnit, GanttTask } from "../types";
 import type { ResolvedCalendar } from "./calendar";
 import { startOfUnit } from "./dateUtils";
-import { addWorkingUnits } from "./workingTime";
+import { addWorkingUnits, countWorkingMs, workingMsPerUnit } from "./workingTime";
 
 /**
  * Everything outside a task that its dates depend on. Threaded explicitly through
@@ -70,4 +70,31 @@ export function displayEndDate(startDate: Date, endInstant: Date): Date {
  */
 export function endInstantFromDisplayDate(displayEnd: Date): Date {
   return new Date(displayEnd.getFullYear(), displayEnd.getMonth(), displayEnd.getDate() + 1);
+}
+
+/**
+ * The task's user-facing end date, or `undefined` when it is an instant.
+ *
+ * Backs `ColumnApi.format.endDate`. Lives here rather than inside the provider so
+ * it is a plain function over a {@link SchedulingContext} — testable without
+ * mounting a chart, and reusable by any consumer with the same problem.
+ */
+export function displayEndOf(task: GanttTask, ctx: SchedulingContext): Date | undefined {
+  const end = endInstantOf(task, ctx);
+  if (end.getTime() <= task.startDate.getTime()) {
+    return undefined;
+  }
+  return displayEndDate(task.startDate, end);
+}
+
+/**
+ * Working time the task occupies, expressed in the chart's `durationUnit`.
+ *
+ * Backs `ColumnApi.format.duration`. Measured through `countWorkingMs` so it is
+ * additive and calendar-aware, then divided by what one unit is worth under that
+ * calendar (ADR-018).
+ */
+export function workingDurationOf(task: GanttTask, ctx: SchedulingContext): number {
+  const worked = countWorkingMs(ctx.calendar, task.startDate, endInstantOf(task, ctx));
+  return worked / workingMsPerUnit(ctx.calendar, ctx.durationUnit);
 }

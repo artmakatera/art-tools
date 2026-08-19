@@ -2,7 +2,7 @@ import { clsx } from "clsx";
 import { useMemo, type ComponentProps, type ElementType } from "react";
 import { addUnit, isWeekend, periodKey } from "../../core/dateUtils";
 import { nonWorkingInfo, type NonWorkingReason } from "../../core/workingTime";
-import { useGanttWorkCalendar } from "../../context/GanttContext";
+import { useGanttWorkCalendar } from "../../context/contexts";
 import { formatPeriodLabel } from "../../core/labels";
 import type { Scale } from "../../types";
 import type { IndexRange } from "../../core/virtualize";
