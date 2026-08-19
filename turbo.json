@@ -3,12 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**",
-        "!.next/dev/**"
-      ]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "!.next/dev/**"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
@@ -40,12 +35,7 @@
     },
     "lint": {
       "dependsOn": ["^lint"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".oxlintrc.json",
-        ".oxlintrc.jsonc",
-        "oxlint.config.ts"
-      ]
+      "inputs": ["$TURBO_DEFAULT$", ".oxlintrc.json", ".oxlintrc.jsonc", "oxlint.config.ts"]
     },
     "lint:fix": {
       "cache": false

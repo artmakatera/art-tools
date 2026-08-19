@@ -66,7 +66,9 @@ export function parseWorkTimeRange(range: WorkTimeRange): [number, number] {
   const from = Number(m[1]) * 60 + Number(m[2]);
   const to = Number(m[3]) * 60 + Number(m[4]);
   if (from < 0 || from >= MINUTES_PER_DAY) {
-    throw new Error(`Invalid working-hours range ${JSON.stringify(range)}: start must be within the day.`);
+    throw new Error(
+      `Invalid working-hours range ${JSON.stringify(range)}: start must be within the day.`,
+    );
   }
   if (to <= from || to > MINUTES_PER_DAY) {
     throw new Error(

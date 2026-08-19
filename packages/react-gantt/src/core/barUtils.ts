@@ -66,4 +66,3 @@ export type BarCommit =
   | { kind: "resizeStart"; startDate: Date }
   /** End edge dragged here; the start is pinned. */
   | { kind: "resizeEnd"; endDate: Date };
-

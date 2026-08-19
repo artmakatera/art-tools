@@ -10,9 +10,7 @@ import type { CSSProperties } from "react";
  * `data-*` autocomplete. If a consumer replaces the element with a custom component
  * via `slots`, the props stay loosely typed against the native shape (MUI's default).
  */
-export type SlotPropsInput<P, OwnerState> =
-  | Partial<P>
-  | ((ownerState: OwnerState) => Partial<P>);
+export type SlotPropsInput<P, OwnerState> = Partial<P> | ((ownerState: OwnerState) => Partial<P>);
 
 /** Convenience shape for a component's public `{ slots, slotProps }` config prop. */
 export interface SlotConfig<Slots, SlotProps> {
@@ -37,8 +35,7 @@ export function mergeSlotProps<
   slotProps: SlotPropsInput<Props, OwnerState> | undefined,
   ownerState: OwnerState,
 ): Props {
-  const external =
-    typeof slotProps === "function" ? slotProps(ownerState) : slotProps;
+  const external = typeof slotProps === "function" ? slotProps(ownerState) : slotProps;
   if (!external) {
     return internalProps;
   }

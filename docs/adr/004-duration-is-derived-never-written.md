@@ -15,8 +15,8 @@ a brand-new field into every `{type:'update', task}` snapshot in the change log 
 `onTasksChange` payload, and would force `sameTask` (`hooks/useTaskList.ts:100`) — the gate
 deciding whether a drag records an undo step at all — to learn about it.
 
-**Held against prior art.** Some libraries *do* store integer durations
+**Held against prior art.** Some libraries _do_ store integer durations
 as their source of truth rather than deriving them. That is right for
 a library that owns its data; this library treats consumer tasks as an immutable seed replayed
 through a change log, so the same choice would be wrong here. ADR-013's `durationUnit` therefore
-governs interpretation of *input* duration and *display* only.
+governs interpretation of _input_ duration and _display_ only.

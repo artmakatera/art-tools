@@ -7,10 +7,9 @@ import type {
 } from "./context/GanttSlotsContext";
 import type { ZoomLevel } from "./core/zoom";
 
-type GanttTaskType = "task" | "milestone" | "summary"
+type GanttTaskType = "task" | "milestone" | "summary";
 
-export type CalendarUnit = "minute" | "hour" |"day" | "week" | "month" | "quarter" | "year";
-
+export type CalendarUnit = "minute" | "hour" | "day" | "week" | "month" | "quarter" | "year";
 
 export type Scale = {
   unit: CalendarUnit;
@@ -69,7 +68,6 @@ export interface GanttCalendar {
 /** The unit an input `duration` is expressed in, and the unit it displays in. */
 export type DurationUnit = "day" | "hour" | "minute";
 
-
 export interface GanttTask {
   id: Id;
   name: string;
@@ -80,9 +78,7 @@ export interface GanttTask {
   progress?: number;
   type?: GanttTaskType;
   parentId?: Id | null;
-
 }
-
 
 export interface ColumnDef<T extends GanttTask = GanttTask> {
   key: string;
@@ -90,7 +86,6 @@ export interface ColumnDef<T extends GanttTask = GanttTask> {
   width?: number;
   render: (task: T, api: ColumnApi) => React.ReactNode;
   isTreeColumn?: boolean;
-
 }
 
 /** Patch passed to the imperative `updateTask`; only the provided fields change. */
@@ -108,8 +103,12 @@ export interface GanttHandle {
   deleteTask: (id: Id) => void;
   undo: () => void;
   redo: () => void;
-  /** Scroll the task list vertically to reveal a task, auto-expanding any
-   *  collapsed ancestors first. No-op for an unknown id. */
+  /**
+   * Scroll the task list vertically to reveal a task. No-op for an unknown id,
+   * and — currently — also for a task hidden under a collapsed ancestor, since
+   * the reveal only searches the *visible* rows. (`useExpand.revealAncestors`
+   * exists to close that gap but is not wired up yet.)
+   */
   scrollToTask: (id: Id) => void;
   /** Step the zoom ladder one level finer. No-op at the finest level. */
   zoomIn: () => void;
@@ -268,15 +267,17 @@ export interface GanttProps {
   labels?: GanttLabels;
 }
 
-
-
 export interface TaskState {
   startDate: Date;
   endDate?: Date;
   progress: number;
 }
 
-
+/**
+ * Transient per-task state during a drag, keyed by task id. Pixel-derived and
+ * never committed — the preview (ADR-008) that the bar renders instead of its
+ * stored dates until the gesture ends.
+ */
 export type Overrides = Record<Id, Partial<TaskState>>;
 
 export type TaskCommand =
@@ -295,13 +296,11 @@ export interface ChangeLog {
   cursor: number;
 }
 
-
 export type TaskDependencyType = "FS" | "FF" | "SS" | "SF";
-
 
 export type TaskDependency = {
   from: Id;
   to: Id;
   type: TaskDependencyType;
   lag?: number;
-}
+};

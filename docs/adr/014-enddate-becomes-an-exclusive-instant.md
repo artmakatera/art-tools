@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Context:** Working time (days & hours) — see the [glossary](../glossary.md) and the [ADR index](./README.md).
 
-**Decision.** `endDate` is the instant work stops, public *and* internal. A Mon–Fri all-day task is
+**Decision.** `endDate` is the instant work stops, public _and_ internal. A Mon–Fri all-day task is
 `startDate: Mon 00:00, endDate: Sat 00:00`. A 9-to-5 Friday task is `Fri 09:00 → Fri 17:00`. A
 display-layer formatter renders inclusive dates in task-list columns and tooltips; stored and
 emitted dates are always exclusive instants.
@@ -25,7 +25,7 @@ same way: store exclusive, expose exclusive, convert only in the display templat
 explicitly against adjusting stored dates instead.
 
 **Why this is cheaper than it looks.** The `+1`/`−1` day adjustments scattered through
-`constrainedStart` exist *because* the end is inclusive; exclusive ends are what makes interval
+`constrainedStart` exist _because_ the end is inclusive; exclusive ends are what makes interval
 arithmetic clean, so they disappear rather than being ported.
 
 **Cost accepted.** Every `endDate` in `packages/mock-data` (21 occurrences) and the docs examples

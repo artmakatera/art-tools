@@ -45,10 +45,7 @@ export function seedResolvedTasks(tasks: GanttTask[]): ResolvedTaskMap {
  * the seed tasks, returning the effective tasks keyed by id in display order.
  * Pure full replay — prefer `resolveCommittedTasksCached` in render paths.
  */
-export function resolveCommittedTasks(
-  tasks: GanttTask[],
-  log: ChangeLog,
-): ResolvedTaskMap {
+export function resolveCommittedTasks(tasks: GanttTask[], log: ChangeLog): ResolvedTaskMap {
   let resolved = seedResolvedTasks(tasks);
   for (let k = 0; k < log.cursor; k++) {
     resolved = applyCommands(resolved, log.transactions[k]!);
@@ -277,8 +274,7 @@ export function getParentTaskData(
     }
   }
 
-  const progress =
-    notMilestoneCount === 0 ? 0 : Math.round(progressSum / notMilestoneCount);
+  const progress = notMilestoneCount === 0 ? 0 : Math.round(progressSum / notMilestoneCount);
 
   return {
     ...task,

@@ -19,6 +19,6 @@ but requires rewriting consumer dates on mount, which ADR-002 and ADR-012 exist 
 
 **Cost accepted — the sharpest edge in the design.** The projection is lossy:
 `walk(walk(d, −n), +n)` may not return `d` when `d` is non-working, so FS/FF round-trips can drift.
-The asymmetry is *intended* and must be pinned by an explicit test asserting the drift, so a
+The asymmetry is _intended_ and must be pinned by an explicit test asserting the drift, so a
 future reader cannot mistake it for a bug and "fix" it. Composition holds **only** from a
 working-time anchor — project once at an operation's boundary, then compose freely inside.

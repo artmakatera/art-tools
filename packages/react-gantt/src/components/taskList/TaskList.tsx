@@ -32,8 +32,7 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [], taskList }: TaskListProps) {
-  const { visibleTasks, expandedIds, parentIds } =
-    useGanttTaskState();
+  const { visibleTasks, expandedIds, parentIds } = useGanttTaskState();
   const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
   const selectedId = useGanttSelectedId();
   const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
@@ -46,9 +45,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
   // header and rows render this same array, so they stay aligned by construction.
   const resolvedColumns = useMemo(
     () =>
-      columns.map((col) =>
-        widths[col.key] != null ? { ...col, width: widths[col.key] } : col,
-      ),
+      columns.map((col) => (widths[col.key] != null ? { ...col, width: widths[col.key] } : col)),
     [columns, widths],
   );
 
@@ -90,7 +87,6 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
   });
   const handleSelect = useCallback((id: Id) => selectRef.current(id), [selectRef]);
 
-  // Depth map: how many levels deep each task is
   const depthMap = useMemo(() => {
     const map = new Map<Id, number>();
     for (const t of visibleTasks) {
@@ -116,14 +112,12 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     return map;
   }, [visibleTasks]);
 
-  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(
-    taskListRef,
-    {
-      trackHorizontal: false,
-    },
-  );
+  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(taskListRef, {
+    trackHorizontal: false,
+  });
 
-  // Re-measure on scroll (after syncing the grid), then window the rows.
+  // Order matters: sync the grid first, then measure, so the windowing reads the
+  // scroll position both panes have settled on.
   const handleScroll = useCallback(() => {
     onTaskListScroll();
     scheduleMeasure();
@@ -138,7 +132,6 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     visibleTasks.length,
     ROW_OVERSCAN,
   );
-
 
   return (
     <div
@@ -165,7 +158,11 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
         role="presentation"
       >
         <div className={styles.rows} role="rowgroup">
-          <div style={{ height: rowRange.start * rowHeight }} role="presentation" aria-hidden="true" />
+          <div
+            style={{ height: rowRange.start * rowHeight }}
+            role="presentation"
+            aria-hidden="true"
+          />
           {Array.from({ length: rowRange.end - rowRange.start }, (_, i) => {
             const index = rowRange.start + i;
             const task = visibleTasks[index]!;

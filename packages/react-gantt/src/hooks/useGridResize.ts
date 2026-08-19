@@ -13,7 +13,9 @@ export function useGridResize(
       e.preventDefault();
       const overlay = overlayRef.current;
       const container = containerRef.current;
-      if (!overlay || !container) return;
+      if (!overlay || !container) {
+        return;
+      }
       startRef.current = {
         mouseX: e.clientX,
         width: overlay.offsetWidth,
@@ -21,7 +23,9 @@ export function useGridResize(
       };
 
       const onMove = (ev: MouseEvent) => {
-        if (!startRef.current) return;
+        if (!startRef.current) {
+          return;
+        }
         const { mouseX, width, containerW } = startRef.current;
         // Handle is on the grid's left edge: dragging left increases the width.
         const next = Math.min(containerW, Math.max(GRID_MIN_WIDTH, width + (mouseX - ev.clientX)));

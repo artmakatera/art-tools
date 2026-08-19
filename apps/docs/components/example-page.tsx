@@ -32,12 +32,10 @@ export async function ExamplePage({
   // One read→highlight chain per file, all started together: awaiting demo.tsx
   // first would hold every extra source behind it for no reason.
   const sources = await Promise.all(
-    [{ name: "demo.tsx", lang: "tsx" as HighlightLang }, ...extraSources].map(
-      async (file) => ({
-        name: file.name,
-        html: await highlight(await readDemoSource(meta.slug, file.name), file.lang),
-      }),
-    ),
+    [{ name: "demo.tsx", lang: "tsx" as HighlightLang }, ...extraSources].map(async (file) => ({
+      name: file.name,
+      html: await highlight(await readDemoSource(meta.slug, file.name), file.lang),
+    })),
   );
 
   return (

@@ -1,14 +1,14 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { Gantt } from '../../../Gantt';
-import type { GanttTask } from '../../../types';
+import { render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { Gantt } from "../../../Gantt";
+import type { GanttTask } from "../../../types";
 
 /** A single root task; `overrides` sets (or omits) the `type`. */
 function oneTask(overrides: Partial<GanttTask>): GanttTask[] {
   return [
     {
-      id: 't1',
-      name: 'T',
+      id: "t1",
+      name: "T",
       startDate: new Date(2026, 0, 1),
       endDate: new Date(2026, 0, 5),
       duration: 4,
@@ -23,13 +23,13 @@ function oneTask(overrides: Partial<GanttTask>): GanttTask[] {
 // uses `.project`; MilestoneBar renders `.milestoneShape`.
 function bars(container: HTMLElement) {
   return {
-    task: container.querySelector('.am-gantt-bar-task'),
-    summary: container.querySelector('.project'),
-    milestone: container.querySelector('.milestoneShape'),
+    task: container.querySelector(".am-gantt-bar-task"),
+    summary: container.querySelector(".project"),
+    milestone: container.querySelector(".milestoneShape"),
   };
 }
 
-describe('Bar type dispatch', () => {
+describe("Bar type dispatch", () => {
   it('renders a task bar for an untyped task (undefined behaves as "task")', () => {
     const { container } = render(<Gantt tasks={oneTask({})} height={300} hideTaskList />);
     const b = bars(container);
@@ -40,7 +40,7 @@ describe('Bar type dispatch', () => {
 
   it('renders a task bar for type "task"', () => {
     const { container } = render(
-      <Gantt tasks={oneTask({ type: 'task' })} height={300} hideTaskList />,
+      <Gantt tasks={oneTask({ type: "task" })} height={300} hideTaskList />,
     );
     const b = bars(container);
     expect(b.task).not.toBeNull();
@@ -50,7 +50,7 @@ describe('Bar type dispatch', () => {
 
   it('renders a milestone shape for type "milestone"', () => {
     const { container } = render(
-      <Gantt tasks={oneTask({ type: 'milestone' })} height={300} hideTaskList />,
+      <Gantt tasks={oneTask({ type: "milestone" })} height={300} hideTaskList />,
     );
     const b = bars(container);
     expect(b.milestone).not.toBeNull();
@@ -60,7 +60,7 @@ describe('Bar type dispatch', () => {
 
   it('renders a summary (project) bar for type "summary"', () => {
     const { container } = render(
-      <Gantt tasks={oneTask({ type: 'summary' })} height={300} hideTaskList />,
+      <Gantt tasks={oneTask({ type: "summary" })} height={300} hideTaskList />,
     );
     const b = bars(container);
     expect(b.summary).not.toBeNull();

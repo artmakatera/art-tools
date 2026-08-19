@@ -33,18 +33,36 @@ export function ImperativeApiDemo() {
 
   return (
     <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>
-        <button type="button" onClick={addTask}>Add task</button>
-        <button type="button" onClick={() => api.current?.undo()}>Undo</button>
-        <button type="button" onClick={() => api.current?.redo()}>Redo</button>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          padding: "8px 12px",
+          borderBottom: "1px solid #e2e8f0",
+        }}
+      >
+        <button type="button" onClick={addTask}>
+          Add task
+        </button>
+        <button type="button" onClick={() => api.current?.undo()}>
+          Undo
+        </button>
+        <button type="button" onClick={() => api.current?.redo()}>
+          Redo
+        </button>
         <button type="button" onClick={() => api.current?.scrollToTask("ship")}>
           Scroll to “Ship it”
         </button>
         <button type="button" onClick={() => api.current?.updateTask("build", { progress: 100 })}>
           Complete “Build feature”
         </button>
-        <button type="button" onClick={() => api.current?.zoomIn()}>Zoom in</button>
-        <button type="button" onClick={() => api.current?.zoomOut()}>Zoom out</button>
+        <button type="button" onClick={() => api.current?.zoomIn()}>
+          Zoom in
+        </button>
+        <button type="button" onClick={() => api.current?.zoomOut()}>
+          Zoom out
+        </button>
       </div>
       <Gantt apiRef={api} tasks={tasks} onTasksChange={setTasks} height={320} />
     </div>

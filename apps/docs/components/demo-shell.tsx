@@ -44,7 +44,10 @@ export function DemoShell({ title, blurb, children, notes, sources }: DemoShellP
 
       <section aria-label="Source" className="flex flex-col gap-4">
         {sources.map((file) => (
-          <figure key={file.name} className="flex flex-col overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
+          <figure
+            key={file.name}
+            className="flex flex-col overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800"
+          >
             <figcaption className="border-b border-slate-200 bg-slate-50 px-4 py-2 font-mono text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
               {file.name}
             </figcaption>

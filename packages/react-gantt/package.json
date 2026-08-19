@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "React Gantt component library",
+  "files": [
+    "dist",
+    "src/style.css.d.ts"
+  ],
   "type": "module",
   "sideEffects": [
     "**/*.css"
@@ -22,10 +26,6 @@
       "default": "./dist/style.css"
     }
   },
-  "files": [
-    "dist",
-    "src/style.css.d.ts"
-  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
@@ -37,10 +37,6 @@
   },
   "dependencies": {
     "clsx": "^2.1.1"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@am/config-typescript": "workspace:*",
@@ -58,5 +54,9 @@
     "vite": "^8.0.10",
     "vite-plugin-dts": "^5.0.0",
     "vitest": "^4.1.5"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   }
 }

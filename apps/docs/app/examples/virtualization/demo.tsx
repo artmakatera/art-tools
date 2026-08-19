@@ -36,10 +36,21 @@ export function VirtualizationDemo() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          padding: "8px 12px",
+          borderBottom: "1px solid #e2e8f0",
+        }}
+      >
         <span style={{ fontSize: 13 }}>Dataset:</span>
         {SIZES.map((size) => (
-          <label key={size} style={{ fontSize: 13, display: "inline-flex", gap: 4, alignItems: "center" }}>
+          <label
+            key={size}
+            style={{ fontSize: 13, display: "inline-flex", gap: 4, alignItems: "center" }}
+          >
             <input
               type="radio"
               name="size"

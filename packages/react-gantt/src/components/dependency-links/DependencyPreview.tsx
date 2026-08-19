@@ -54,7 +54,7 @@ export function DependencyPreview({
   const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
   const Root = slots?.root ?? "div";
- 
+
   const rootProps = mergeSlotProps(
     {
       className: styles.preview,

@@ -67,11 +67,7 @@ export function GanttSlotsProvider({
   value: GanttSlotsValue;
   children: ReactNode;
 }) {
-  return (
-    <GanttSlotsContext.Provider value={value}>
-      {children}
-    </GanttSlotsContext.Provider>
-  );
+  return <GanttSlotsContext.Provider value={value}>{children}</GanttSlotsContext.Provider>;
 }
 
 /** Read the grid-side slot groups. Returns `{}` outside a provider. */

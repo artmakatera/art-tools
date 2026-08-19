@@ -1,6 +1,5 @@
 import type { CalendarUnit, GanttLabels, GanttTask, ResolvedGanttLabels } from "../types";
 
-
 export const DEFAULT_LABELS: ResolvedGanttLabels = {
   gantt: "Gantt chart",
   taskList: "Task list",
@@ -31,7 +30,6 @@ const TYPE_NAMES: Record<NonNullable<GanttTask["type"]>, string> = {
   milestone: "milestone",
   summary: "summary",
 };
-
 
 export function formatBarLabel(task: GanttTask, progress: number): string {
   const type = TYPE_NAMES[task.type ?? "task"];

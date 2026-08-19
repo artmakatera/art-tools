@@ -10,11 +10,10 @@ export interface BarA11yProps {
   title: string;
 }
 
-interface DraggableBarProps
-  extends Omit<
-    ComponentPropsWithoutRef<"div">,
-    "style" | "className" | "title" | "children" | "onMouseDown"
-  > {
+interface DraggableBarProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "style" | "className" | "title" | "children" | "onMouseDown"
+> {
   left: number;
   top: number;
   width: number;

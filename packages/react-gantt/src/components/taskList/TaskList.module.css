@@ -114,8 +114,7 @@
 }
 
 .expandBtn:focus-visible {
-  outline: var(--am-gantt-focus-ring-width, 2px) solid
-    var(--am-gantt-focus-ring-color, #1d4ed8);
+  outline: var(--am-gantt-focus-ring-width, 2px) solid var(--am-gantt-focus-ring-color, #1d4ed8);
   outline-offset: var(--am-gantt-focus-ring-offset, -2px);
   border-radius: 2px;
 }

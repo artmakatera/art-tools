@@ -6,8 +6,8 @@
 **Original decision.** `GanttTask.durationUnit?: 'working' | 'calendar'`, defaulting to
 `'working'`, so a task could declare an elapsed duration that ignores the calendar.
 
-**Superseded because** ADR-013 adopts a chart-level `durationUnit` naming a *unit*
-(day/hour/minute), which cannot also express a *basis*. Elapsed durations therefore drop out of
+**Superseded because** ADR-013 adopts a chart-level `durationUnit` naming a _unit_
+(day/hour/minute), which cannot also express a _basis_. Elapsed durations therefore drop out of
 this pass.
 
 **Reasoning retained.** Real projects mix work durations with elapsed ones — concrete curing and

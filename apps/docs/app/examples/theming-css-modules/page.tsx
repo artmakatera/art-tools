@@ -12,8 +12,11 @@ export const dynamic = "error";
 
 export default function Page() {
   return (
-    <ExamplePage meta={meta} fallbackHeight={360}
-      extraSources={[{ name: "demo.module.css", lang: "css" }]}>
+    <ExamplePage
+      meta={meta}
+      fallbackHeight={360}
+      extraSources={[{ name: "demo.module.css", lang: "css" }]}
+    >
       <CssModulesDemo />
     </ExamplePage>
   );

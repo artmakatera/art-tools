@@ -27,13 +27,13 @@ export function DependenciesDemo() {
   return (
     <div>
       <p style={{ margin: 0, padding: "8px 12px", fontSize: 12, color: "#475569" }}>
-        Hover a bar to reveal its connector handles, then drag one onto another
-        bar. Click a link to select it, then press Delete.
+        Hover a bar to reveal its connector handles, then drag one onto another bar. Click a link to
+        select it, then press Delete.
       </p>
       <Gantt
         tasks={tasks}
         dependencies={dependencies}
-        onTasksChange={task => setTasks(task)}
+        onTasksChange={(task) => setTasks(task)}
         onDependencyCreate={handleCreate}
         onDependencyDelete={handleDelete}
         height={300}

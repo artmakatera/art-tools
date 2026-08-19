@@ -88,21 +88,57 @@ export interface DependencyGraph {
   size: number;
 }
 
-export function buildDependencyGraph(
-  dependencies: TaskDependency[],
-): DependencyGraph {
+export function buildDependencyGraph(dependencies: TaskDependency[]): DependencyGraph {
   const successorsOf = new Map<Id, Id[]>();
   const predecessorDeps = new Map<Id, TaskDependency[]>();
   for (const dep of dependencies) {
     const successorList = successorsOf.get(dep.from);
-    if (successorList) successorList.push(dep.to);
-    else successorsOf.set(dep.from, [dep.to]);
+    if (successorList) {
+      successorList.push(dep.to);
+    } else {
+      successorsOf.set(dep.from, [dep.to]);
+    }
 
     const deps = predecessorDeps.get(dep.to);
-    if (deps) deps.push(dep);
-    else predecessorDeps.set(dep.to, [dep]);
+    if (deps) {
+      deps.push(dep);
+    } else {
+      predecessorDeps.set(dep.to, [dep]);
+    }
   }
   return { successorsOf, predecessorDeps, size: dependencies.length };
+}
+
+/**
+ * The mutable working set a cascade walks: reads of the effective task state,
+ * writes of the tasks it moves. A plain `Map` satisfies it; so does the
+ * copy-on-write view from {@link overlayOf}, which is what keeps a cascade from
+ * cloning the whole resolved map on every edit.
+ */
+export interface TaskWorkingSet {
+  get(id: Id): GanttTask | undefined;
+  set(id: Id, task: GanttTask): void;
+  readonly size: number;
+}
+
+/**
+ * Copy-on-write view over the resolved task map: reads fall through to `base`,
+ * writes land in a small overlay, so `base` is never touched and no O(n) clone
+ * is paid (~17ms at 100k tasks, on every single edit).
+ */
+export function overlayOf(base: ReadonlyMap<Id, GanttTask>): TaskWorkingSet {
+  const patch = new Map<Id, GanttTask>();
+  return {
+    get: (id) => patch.get(id) ?? base.get(id),
+    set: (id, task) => {
+      patch.set(id, task);
+    },
+    // A cascade only ever replaces existing tasks, so the base size still bounds
+    // the relaxation loop.
+    get size() {
+      return base.size;
+    },
+  };
 }
 
 /**
@@ -113,7 +149,7 @@ export function buildDependencyGraph(
 function earliestStart(
   task: GanttTask,
   predecessorDeps: Map<Id, TaskDependency[]>,
-  current: Map<Id, GanttTask>,
+  current: TaskWorkingSet,
   ctx: SchedulingContext,
 ): Date | null {
   const length = workingLengthOf(task, ctx);
@@ -121,7 +157,9 @@ function earliestStart(
   let earliest: Date | null = null;
   for (const dep of predecessorDeps.get(task.id) ?? []) {
     const pred = current.get(dep.from);
-    if (!pred) continue;
+    if (!pred) {
+      continue;
+    }
     const candidate = constrainedStart(
       spanOf(pred, ctx),
       dep.type,
@@ -129,7 +167,9 @@ function earliestStart(
       length,
       ctx,
     );
-    if (earliest === null || candidate > earliest) earliest = candidate;
+    if (earliest === null || candidate > earliest) {
+      earliest = candidate;
+    }
   }
   if (earliest === null) {
     return null;
@@ -227,12 +267,13 @@ export function resolveCommit(
  * its own successors are then revisited. Returns only the tasks whose dates
  * moved.
  *
- * `current` is the working set of effective tasks and is mutated in place as
- * the schedule settles. A per-call iteration cap keeps dependency cycles from
- * looping forever.
+ * `current` is the working set of effective tasks and is written to in place as
+ * the schedule settles — pass {@link overlayOf} to leave the caller's resolved
+ * map untouched. A per-call iteration cap keeps dependency cycles from looping
+ * forever.
  */
 export function scheduleDependents(
-  current: Map<Id, GanttTask>,
+  current: TaskWorkingSet,
   graph: DependencyGraph,
   changedId: Id,
   ctx: SchedulingContext = LINEAR_CONTEXT,
@@ -259,19 +300,27 @@ export function scheduleDependents(
   let iterations = 0;
 
   while (!queue.isEmpty()) {
-    if (iterations++ > maxIterations) break; // guard against dependency cycles
+    if (iterations++ > maxIterations) {
+      break;
+    } // guard against dependency cycles
     const predId = queue.dequeue()!;
 
     for (const successorId of successorsOf.get(predId) ?? []) {
       const successor = current.get(successorId);
-      if (!successor) continue;
+      if (!successor) {
+        continue;
+      }
 
       const earliest = earliestStart(successor, predecessorDeps, current, ctx);
-      if (earliest === null) continue;
+      if (earliest === null) {
+        continue;
+      }
       // Lower bound only: push a violating (too-early) successor forward, but
       // never pull it earlier when a predecessor moves back. Compared as instants
       // rather than whole days, so a sub-day violation cascades too.
-      if (earliest.getTime() <= successor.startDate.getTime()) continue;
+      if (earliest.getTime() <= successor.startDate.getTime()) {
+        continue;
+      }
 
       const next = movedTo(successor, earliest, ctx);
       current.set(successorId, next);

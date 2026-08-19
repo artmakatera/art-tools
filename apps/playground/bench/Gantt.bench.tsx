@@ -1,7 +1,7 @@
-import { Gantt } from '@am/react-gantt';
-import { renderToString } from 'react-dom/server';
-import { bench, describe } from 'vitest';
-import { generateTasks } from '../src/fixtures';
+import { Gantt } from "@am/react-gantt";
+import { renderToString } from "react-dom/server";
+import { bench, describe } from "vitest";
+import { generateTasks } from "../src/fixtures";
 
 const small = generateTasks(10);
 const medium = generateTasks(100);
@@ -12,20 +12,20 @@ const xlarge = generateTasks(10_000);
 // red in `turbo run check-types`.
 const HEIGHT = 400;
 
-describe('Gantt server render', () => {
-  bench('10 tasks', () => {
+describe("Gantt server render", () => {
+  bench("10 tasks", () => {
     renderToString(<Gantt tasks={small} height={HEIGHT} />);
   });
 
-  bench('100 tasks', () => {
+  bench("100 tasks", () => {
     renderToString(<Gantt tasks={medium} height={HEIGHT} />);
   });
 
-  bench('1k tasks', () => {
+  bench("1k tasks", () => {
     renderToString(<Gantt tasks={large} height={HEIGHT} />);
   });
 
-  bench('10k tasks', () => {
+  bench("10k tasks", () => {
     renderToString(<Gantt tasks={xlarge} height={HEIGHT} />);
   });
 });

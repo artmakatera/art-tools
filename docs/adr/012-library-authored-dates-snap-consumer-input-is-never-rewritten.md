@@ -13,7 +13,7 @@ could not explain the bar they see); normalize-on-mount (rewrites consumer data,
 ADR-002).
 
 **Cost accepted.** The first render can visibly contradict the chart's own rule, and the
-non-working *anchor* case is reachable straight from input — which is precisely why ADR-007's
+non-working _anchor_ case is reachable straight from input — which is precisely why ADR-007's
 lossy projection convention is needed at all.
 
 **Known gap, accepted.** `buildActionTask` (`components/taskList/TaskListHeader.tsx:125`) is

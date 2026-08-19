@@ -9,7 +9,7 @@
 - per-weekday override (0 = Sunday … 6 = Saturday), e.g. a short Friday, or `false` for a day off
 - per-specific-date override, e.g. a holiday `false`, or a half day `["9:00-13:00"]`
 
-Gaps *between* ranges are the non-working hours — that is how a lunch break is expressed. Minute
+Gaps _between_ ranges are the non-working hours — that is how a lunch break is expressed. Minute
 precision is required (`"8:30-12:00"`). `hours: false` marks a non-working day, so **working days
 are the degenerate case of working hours**, not a separate feature.
 

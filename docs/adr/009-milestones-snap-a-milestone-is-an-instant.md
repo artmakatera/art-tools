@@ -6,7 +6,7 @@
 **Decision.** A milestone moves to the closest working time.
 
 **Rejected.** Milestones never snap (a contract deadline can legitimately fall on a Sunday — but
-then a milestone becomes a non-working *anchor* for every successor, the ambiguous case ADR-007
+then a milestone becomes a non-working _anchor_ for every successor, the ambiguous case ADR-007
 has to paper over); a per-milestone snap override.
 
 **Precondition.** Forces reconciliation of an existing inconsistency: `core/scheduling.ts:104-108`

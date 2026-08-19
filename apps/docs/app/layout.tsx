@@ -10,8 +10,7 @@ export const metadata: Metadata = {
     default: "@am/react-gantt examples",
     template: "%s · @am/react-gantt",
   },
-  description:
-    "A gallery of runnable examples for the @am/react-gantt component library.",
+  description: "A gallery of runnable examples for the @am/react-gantt component library.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

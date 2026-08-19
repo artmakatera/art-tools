@@ -67,9 +67,7 @@ export function BarProgress({
           parentWidth={parentWidth}
           onResize={(newWidth) => onProgressChange(toProgress(newWidth))}
           onResizeEnd={
-            onProgressEnd
-              ? (newWidth) => onProgressEnd(toProgress(newWidth))
-              : undefined
+            onProgressEnd ? (newWidth) => onProgressEnd(toProgress(newWidth)) : undefined
           }
         />
       )}

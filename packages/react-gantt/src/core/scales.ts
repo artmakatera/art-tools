@@ -10,8 +10,7 @@ export const DEFAULT_SCALES: Scale[] = [
   {
     unit: "month",
     step: 1,
-    format: (d: Date) =>
-      d.toLocaleString(undefined, { month: "long", year: "numeric" }),
+    format: (d: Date) => d.toLocaleString(undefined, { month: "long", year: "numeric" }),
   },
   {
     unit: "day",

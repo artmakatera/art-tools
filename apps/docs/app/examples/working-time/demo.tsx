@@ -69,9 +69,9 @@ export function WorkingTimeDemo() {
         ))}
       </div>
       <p style={{ margin: 0, padding: "0 12px 8px", fontSize: 12, color: "#475569" }}>
-        Non-working columns are shaded. Drag a bar across a weekend: it keeps its
-        working duration and grows visually. Drag an edge onto a Sunday and it
-        settles back onto the last working day.
+        Non-working columns are shaded. Drag a bar across a weekend: it keeps its working duration
+        and grows visually. Drag an edge onto a Sunday and it settles back onto the last working
+        day.
       </p>
       <Gantt
         tasks={tasks}

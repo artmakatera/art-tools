@@ -7,12 +7,8 @@ function findScrollContainer(el: HTMLElement | null): HTMLElement | null {
   let node = el;
   while (node) {
     const style = getComputedStyle(node);
-    const hasScrollableOverflow =
-      style.overflowX === "auto" || style.overflowX === "scroll";
-    if (
-      hasScrollableOverflow &&
-      node.scrollWidth > node.clientWidth
-    ) {
+    const hasScrollableOverflow = style.overflowX === "auto" || style.overflowX === "scroll";
+    if (hasScrollableOverflow && node.scrollWidth > node.clientWidth) {
       return node;
     }
     node = node.parentElement;
@@ -27,7 +23,6 @@ function bounds(container: HTMLElement): { left: number; right: number } {
   const boundingRect = container.getBoundingClientRect();
   return { left: boundingRect.left, right: boundingRect.right };
 }
-
 
 function edgeSpeed(left: number, right: number, cursorX: number): number {
   if (cursorX < left + EDGE) {
@@ -61,10 +56,7 @@ export interface AutoScrollHandle {
   getScrollDelta: () => number;
 }
 
-export function useAutoScroll({
-  enabled,
-  onScroll,
-}: UseAutoScrollOptions): AutoScrollHandle {
+export function useAutoScroll({ enabled, onScroll }: UseAutoScrollOptions): AutoScrollHandle {
   const stateRef = useRef<AutoScrollState>({
     container: null,
     scrollTarget: null,
@@ -87,15 +79,20 @@ export function useAutoScroll({
     }
     const { left, right } = bounds(s.container);
     const speed = edgeSpeed(left, right, s.cursorX);
-    if (speed !== 0) s.container.scrollLeft += speed;
+    if (speed !== 0) {
+      s.container.scrollLeft += speed;
+    }
     s.rafId = requestAnimationFrame(tick);
   }, []);
 
   const stop = useCallback(() => {
     const s = stateRef.current;
-    if (s.rafId !== null) cancelAnimationFrame(s.rafId);
-    if (s.scrollTarget)
+    if (s.rafId !== null) {
+      cancelAnimationFrame(s.rafId);
+    }
+    if (s.scrollTarget) {
       s.scrollTarget.removeEventListener("scroll", handleScroll);
+    }
     s.container = null;
     s.scrollTarget = null;
     s.rafId = null;
@@ -103,14 +100,15 @@ export function useAutoScroll({
 
   const start = useCallback(
     (el: HTMLElement) => {
-      if (!enabled) return;
+      if (!enabled) {
+        return;
+      }
       const s = stateRef.current;
       const container = findScrollContainer(el);
       s.container = container;
       s.startScrollLeft = container?.scrollLeft ?? 0;
       if (container) {
-        s.scrollTarget =
-          container === document.scrollingElement ? window : container;
+        s.scrollTarget = container === document.scrollingElement ? window : container;
         // Passive: the handler only re-fires the drag, it never preventDefaults,
         // so the browser must not wait on it to scroll.
         s.scrollTarget.addEventListener("scroll", handleScroll, { passive: true });

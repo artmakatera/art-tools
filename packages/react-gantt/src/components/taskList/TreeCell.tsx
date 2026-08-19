@@ -97,11 +97,7 @@ export function TreeCell({
 
   return (
     <Root {...rootProps}>
-      {isParent ? (
-        <ExpandButton {...buttonProps} />
-      ) : (
-        <Placeholder {...placeholderProps} />
-      )}
+      {isParent ? <ExpandButton {...buttonProps} /> : <Placeholder {...placeholderProps} />}
       {children}
     </Root>
   );

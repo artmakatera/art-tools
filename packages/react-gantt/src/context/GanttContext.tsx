@@ -390,14 +390,18 @@ export function GanttProvider({
     redo,
     canUndo,
     canRedo,
-  } = useTaskList(tasks, dependencies, {
-    onTaskCreate: onTaskCreateProp,
-    onTaskDelete,
-    onTasksChange,
-  }, schedulingContext);
+  } = useTaskList(
+    tasks,
+    dependencies,
+    {
+      onTaskCreate: onTaskCreateProp,
+      onTaskDelete,
+      onTasksChange,
+    },
+    schedulingContext,
+  );
 
-  const { visibleTasks, expandedIds, parentIds, toggleExpand } =
-    useExpand(tasksList);
+  const { visibleTasks, expandedIds, parentIds, toggleExpand } = useExpand(tasksList);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
@@ -418,7 +422,8 @@ export function GanttProvider({
     initialIndex: defaultZoomIndex ?? DEFAULT_ZOOM_INDEX,
   });
 
-  // Notify the consumer of the zoom level (on mount and each change).
+  // Fires on mount as well as on every change, so a consumer can render zoom
+  // controls from it without duplicating the initial-index resolution.
   const onZoomChangeRef = useLatestRef(onZoomChange);
   useEffect(() => {
     onZoomChangeRef.current?.({ index: zoom.index, count: zoom.count });
@@ -485,7 +490,21 @@ export function GanttProvider({
     }),
     // onTaskEditRef is identity-stable (useLatestRef); listed only to satisfy
     // exhaustive-deps.
-    [createTask, updateTask, deleteTask, undo, redo, scrollToTask, zoomIn, zoomOut, setZoom, onTaskEditRef, readOnly, labelsValue, schedulingContext],
+    [
+      createTask,
+      updateTask,
+      deleteTask,
+      undo,
+      redo,
+      scrollToTask,
+      zoomIn,
+      zoomOut,
+      setZoom,
+      onTaskEditRef,
+      readOnly,
+      labelsValue,
+      schedulingContext,
+    ],
   );
 
   const { drag, startDrag, endDrag } = useDependencyDrag({ gridBodyRef, onDependencyCreate });
@@ -533,7 +552,18 @@ export function GanttProvider({
       onTaskClick: onTaskClickStable,
       scrollToTask,
     }),
-    [updateTask, commitTask, createTask, deleteTask, undo, redo, columnApi, toggleExpand, onTaskClickStable, scrollToTask],
+    [
+      updateTask,
+      commitTask,
+      createTask,
+      deleteTask,
+      undo,
+      redo,
+      columnApi,
+      toggleExpand,
+      onTaskClickStable,
+      scrollToTask,
+    ],
   );
 
   // All members are stable refs/callbacks → created exactly once.
@@ -557,29 +587,29 @@ export function GanttProvider({
   return (
     <GanttConfigContext.Provider value={configValue}>
       <GanttReadOnlyContext.Provider value={readOnly}>
-      <GanttLabelsContext.Provider value={labelsValue}>
-      <GanttCalendarContext.Provider value={schedulingContext}>
-      <GanttZoomContext.Provider value={zoomValue}>
-        <GanttScrollContext.Provider value={scrollValue}>
-          <GanttTaskActionsContext.Provider value={taskActionsValue}>
-            <GanttDependencyContext.Provider value={dependencyValue}>
-              <GanttTaskStateContext.Provider value={taskStateValue}>
-                <GanttSelectionContext.Provider value={selectedId}>
-                  <GanttDragActiveContext.Provider value={drag !== null}>
-                    <GanttViewportContext.Provider value={viewport}>
-                      <GanttDragContext.Provider value={drag}>
-                        {children}
-                      </GanttDragContext.Provider>
-                    </GanttViewportContext.Provider>
-                  </GanttDragActiveContext.Provider>
-                </GanttSelectionContext.Provider>
-              </GanttTaskStateContext.Provider>
-            </GanttDependencyContext.Provider>
-          </GanttTaskActionsContext.Provider>
-        </GanttScrollContext.Provider>
-      </GanttZoomContext.Provider>
-      </GanttCalendarContext.Provider>
-      </GanttLabelsContext.Provider>
+        <GanttLabelsContext.Provider value={labelsValue}>
+          <GanttCalendarContext.Provider value={schedulingContext}>
+            <GanttZoomContext.Provider value={zoomValue}>
+              <GanttScrollContext.Provider value={scrollValue}>
+                <GanttTaskActionsContext.Provider value={taskActionsValue}>
+                  <GanttDependencyContext.Provider value={dependencyValue}>
+                    <GanttTaskStateContext.Provider value={taskStateValue}>
+                      <GanttSelectionContext.Provider value={selectedId}>
+                        <GanttDragActiveContext.Provider value={drag !== null}>
+                          <GanttViewportContext.Provider value={viewport}>
+                            <GanttDragContext.Provider value={drag}>
+                              {children}
+                            </GanttDragContext.Provider>
+                          </GanttViewportContext.Provider>
+                        </GanttDragActiveContext.Provider>
+                      </GanttSelectionContext.Provider>
+                    </GanttTaskStateContext.Provider>
+                  </GanttDependencyContext.Provider>
+                </GanttTaskActionsContext.Provider>
+              </GanttScrollContext.Provider>
+            </GanttZoomContext.Provider>
+          </GanttCalendarContext.Provider>
+        </GanttLabelsContext.Provider>
       </GanttReadOnlyContext.Provider>
     </GanttConfigContext.Provider>
   );
