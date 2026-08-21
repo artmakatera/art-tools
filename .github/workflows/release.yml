@@ -30,43 +30,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Trusted publishing needs npm >= 11.5.1, and pnpm has no native OIDC
-      # support (pnpm#9812) — `pnpm publish` shells out to whatever npm is on
-      # PATH, so it is the runner's npm that has to clear the floor, not the
-      # pinned pnpm. Without this the publish fails as a misleading E404.
-      - run: npm install -g npm@latest
-
-      # TEMPORARY diagnostic — remove once the publish is green. Changesets
-      # reads `pnpm info <pkg> --json` and indexes `.versions` on the parsed
-      # stdout without checking for a nested error payload, so a failed
-      # registry read surfaces as a TypeError rather than an auth message.
-      # This prints the raw response so the real failure is visible.
-      - name: Diagnose registry read
-        run: |
-          echo "repo=$GITHUB_REPOSITORY ref=$GITHUB_REF workflow=$GITHUB_WORKFLOW"
-          echo "npm=$(npm --version) pnpm=$(pnpm --version) node=$(node --version)"
-          for f in ./.npmrc "$HOME/.npmrc"; do
-            echo "--- $f"
-            sed -E 's/(_authToken=).*/\1<redacted>/' "$f" 2>/dev/null || echo "(absent)"
-          done
-          echo "--- pnpm info @art-tools/react-gantt --json"
-          set +e
-          pnpm info @art-tools/react-gantt --json >/tmp/info.json 2>/tmp/info.err
-          echo "exitCode=$?"
-          echo "--- stdout"; cat /tmp/info.json
-          echo "--- stderr"; cat /tmp/info.err
-          echo "--- parsed shape"
-          node -e '
-            const fs = require("fs");
-            try {
-              const j = JSON.parse(fs.readFileSync("/tmp/info.json", "utf8"));
-              console.log("topLevelKeys =", Object.keys(j).join(","));
-              console.log("typeof versions =", typeof j.versions);
-              console.log("nestedError =", JSON.stringify(j.error ?? null));
-            } catch (e) {
-              console.log("parse failed:", e.message);
-            }
-          '
+      # Pinned to 11.x, and both bounds are load-bearing. Floor: trusted
+      # publishing needs npm >= 11.5.1, and pnpm has no native OIDC support
+      # (pnpm#9812) — it shells out to whatever npm is on PATH, so the runner's
+      # npm is what must clear it, not the pinned pnpm. Ceiling: npm 12 changed
+      # `info --json` to return an array, and changesets 3.0.1's pnpm path
+      # parses that without unwrapping (its npm path does unwrap), so
+      # `publishedVersions` lands undefined and publish dies on a TypeError
+      # reading 'includes'. Do not move this to @latest.
+      - run: npm install -g npm@11
 
       # Opens a "Version Packages" PR while changesets are pending; publishes
       # once that PR is merged and none are left.
