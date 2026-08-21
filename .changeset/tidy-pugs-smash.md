@@ -1,5 +1,5 @@
 ---
-"@am-tools/react-gantt": minor
+"@art-tools/react-gantt": minor
 ---
 
 Initial public release.
@@ -10,4 +10,4 @@ FS/SS/FF/SF dependency links with working-time lag, working-time calendars,
 undo/redo, a slot-based theming API, and an imperative `apiRef`.
 
 Ships ESM + CJS with type declarations and a single stylesheet at
-`@am-tools/react-gantt/style.css`. React 18 and 19 are supported as peers.
+`@art-tools/react-gantt/style.css`. React 18 and 19 are supported as peers.

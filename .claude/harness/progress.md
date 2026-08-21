@@ -35,7 +35,7 @@ Re-run `./init.sh` and replace this block when you change anything.
 | ------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `pnpm lint`         | 0 errors, 1 warning — `clsx` default-import in `packages/react-gantt/src/components/bars/taskBar/TaskResizer.tsx:1` |
 | `pnpm check-types`  | 5/5 workspaces pass                                                                                                 |
-| `pnpm test`         | **485 passed** across 43 files (`@am-tools/react-gantt`)                                                            |
+| `pnpm test`         | **485 passed** across 43 files (`@art-tools/react-gantt`)                                                           |
 | `pnpm format:check` | **FAIL** — `packages/react-gantt/README.md`. Pre-existing. Fix: `pnpm format`                                       |
 | `pnpm build`        | 3/3 tasks successful — library + both consumer apps                                                                 |
 
@@ -56,10 +56,10 @@ Test Files  43 passed (43)
 | `pnpm dlx publint packages/react-gantt`                          | **All good!**                                                      |
 | `@arethetypeswrong/cli --pack … --exclude-entrypoints style.css` | **No problems found** — green on node10, node16 CJS + ESM, bundler |
 | `npm pack --dry-run`                                             | 11 files, 256.5 kB packed / 974.1 kB unpacked                      |
-| `pnpm changeset status`                                          | one pending **minor** for `@am-tools/react-gantt`                  |
+| `pnpm changeset status`                                          | one pending **minor** for `@art-tools/react-gantt`                 |
 
 ```
-📦  @am-tools/react-gantt@0.0.0
+📦  @art-tools/react-gantt@0.0.0
    1.1kB  LICENSE
   28.0kB  README.md
   62.2kB  dist/index.cjs
@@ -84,10 +84,10 @@ of the 974 kB unpacked and are shipped deliberately — see the comment in
 ### 2026-08-21 — npm publish readiness (`npm-publish-readiness`)
 
 **What changed:** Made `packages/react-gantt` publishable to the public npm
-registry as `@am-tools/react-gantt`, and wired the release path. Nothing was
+registry as `@art-tools/react-gantt`, and wired the release path. Nothing was
 published and nothing was committed.
 
-- **Renamed** `@am/react-gantt` → `@am-tools/react-gantt`, 59 occurrences across
+- **Renamed** `@am/react-gantt` → `@art-tools/react-gantt`, 59 occurrences across
   39 files, plus a `pnpm install` to relink. The other six `@am/*` packages are
   `private: true` and were left alone.
 - **Manifest**: removed `private`, added `publishConfig.access: public` +

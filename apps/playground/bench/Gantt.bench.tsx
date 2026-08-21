@@ -1,4 +1,4 @@
-import { Gantt } from "@am-tools/react-gantt";
+import { Gantt } from "@art-tools/react-gantt";
 import { renderToString } from "react-dom/server";
 import { bench, describe } from "vitest";
 import { generateTasks } from "../src/fixtures";

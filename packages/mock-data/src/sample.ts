@@ -1,4 +1,4 @@
-import type { GanttTask, TaskDependency } from "@am-tools/react-gantt";
+import type { GanttTask, TaskDependency } from "@art-tools/react-gantt";
 
 // Synthetic sample project. Shape notes:
 //   percent-done → progress, children flattened into parentId links,

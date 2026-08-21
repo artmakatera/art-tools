@@ -1,5 +1,5 @@
 /**
- * Type stub for the `@am-tools/react-gantt/style.css` export.
+ * Type stub for the `@art-tools/react-gantt/style.css` export.
  *
  * The package's `exports` map points that subpath's `types` condition here, and
  * `files` ships it — but the file did not exist, which only stayed invisible
@@ -9,7 +9,7 @@
  * those two toolchains.
  *
  * The stylesheet is imported for its side effect:
- *   import "@am-tools/react-gantt/style.css";
+ *   import "@art-tools/react-gantt/style.css";
  */
 declare const styleSheetUrl: string;
 export default styleSheetUrl;

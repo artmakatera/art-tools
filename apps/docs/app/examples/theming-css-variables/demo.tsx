@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Gantt } from "@am-tools/react-gantt";
+import { Gantt } from "@art-tools/react-gantt";
 import { treeTasks } from "@/lib/demo-tasks";
 
 /**

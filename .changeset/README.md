@@ -1,6 +1,6 @@
 # Changesets
 
-This folder holds the pending release notes. `@am-tools/react-gantt` is the only
+This folder holds the pending release notes. `@art-tools/react-gantt` is the only
 publishable package in the monorepo — everything else is `private: true` and is
 skipped automatically, so there is no `ignore` list to maintain.
 

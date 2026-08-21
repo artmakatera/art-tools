@@ -1,4 +1,4 @@
-import type { GanttTask } from "@am-tools/react-gantt";
+import type { GanttTask } from "@art-tools/react-gantt";
 
 const DAY_MS = 1000 * 60 * 60 * 24;
 // Local civil constructor: an ISO string parses as UTC midnight and lands a day

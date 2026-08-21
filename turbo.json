@@ -18,7 +18,7 @@
       "persistent": true,
       "cache": false
     },
-    "@am-tools/react-gantt#dev": {
+    "@art-tools/react-gantt#dev": {
       "persistent": true,
       "cache": false,
       "dependsOn": ["build"]
@@ -26,12 +26,12 @@
     "@am/docs#dev": {
       "persistent": true,
       "cache": false,
-      "dependsOn": ["@am-tools/react-gantt#build"]
+      "dependsOn": ["@art-tools/react-gantt#build"]
     },
     "@am/playground#dev": {
       "persistent": true,
       "cache": false,
-      "dependsOn": ["@am-tools/react-gantt#build"]
+      "dependsOn": ["@art-tools/react-gantt#build"]
     },
     "lint": {
       "dependsOn": ["^lint"],

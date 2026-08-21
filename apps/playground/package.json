@@ -2,7 +2,7 @@
   "name": "@am/playground",
   "version": "0.0.0",
   "private": true,
-  "description": "Local experimentation + performance benchmarks for @am-tools/react-gantt",
+  "description": "Local experimentation + performance benchmarks for @art-tools/react-gantt",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,8 +14,8 @@
     "bench": "vitest bench"
   },
   "dependencies": {
-    "@am-tools/react-gantt": "workspace:*",
     "@am/mock-data": "workspace:*",
+    "@art-tools/react-gantt": "workspace:*",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

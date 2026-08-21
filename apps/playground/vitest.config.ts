@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@am-tools/react-gantt": reactGanttSource,
+      "@art-tools/react-gantt": reactGanttSource,
     },
   },
   test: {

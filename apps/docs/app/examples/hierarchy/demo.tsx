@@ -1,6 +1,6 @@
 "use client";
 
-import { Gantt } from "@am-tools/react-gantt";
+import { Gantt } from "@art-tools/react-gantt";
 import { treeTasks } from "@/lib/demo-tasks";
 
 /**

@@ -4,13 +4,13 @@
   "features": [
     {
       "id": "npm-publish-readiness",
-      "name": "Make the library publishable to npm as @am-tools/react-gantt",
-      "description": "The library has never been published. It is `private: true`, has no license, no repository metadata, and no build guard — a publish from a clean checkout would ship an empty tarball because `dist/` is gitignored and nothing forces a build. Rename from the unowned two-character `@am` scope to `@am-tools/react-gantt`, add the missing manifest metadata and an MIT license, fix the exports map so no condition escapes `dist/`, and wire up Changesets plus GitHub Actions with npm provenance. Nothing is published as part of this work.",
+      "name": "Make the library publishable to npm as @art-tools/react-gantt",
+      "description": "The library has never been published. It is `private: true`, has no license, no repository metadata, and no build guard — a publish from a clean checkout would ship an empty tarball because `dist/` is gitignored and nothing forces a build. Rename from the unowned two-character `@am` scope to `@art-tools/react-gantt`, add the missing manifest metadata and an MIT license, fix the exports map so no condition escapes `dist/`, and wire up Changesets plus GitHub Actions with npm provenance. Nothing is published as part of this work.",
       "status": "in_progress",
       "priority": "high",
       "dependencies": [],
       "doneCriteria": [
-        "`packages/react-gantt/package.json` is not private, is named @am-tools/react-gantt, and carries publishConfig.access public, license, repository (with `directory`), homepage, bugs, keywords, engines",
+        "`packages/react-gantt/package.json` is not private, is named @art-tools/react-gantt, and carries publishConfig.access public, license, repository (with `directory`), homepage, bugs, keywords, engines",
         "A `prepublishOnly` script rebuilds `dist` — a publish from a fresh clone cannot ship an empty tarball",
         "MIT LICENSE exists at the repo root and inside packages/react-gantt",
         "No `exports` condition points outside `dist/`; `files` is exactly [\"dist\"]",
@@ -34,7 +34,7 @@
         "LICENSE"
       ],
       "blockedBy": "Every doneCriteria entry is satisfied except the last: `./init.sh` still exits 1 at `pnpm format:check` on packages/react-gantt/README.md. That failure predates this work (feature `baseline-format-debt`) and is not caused by it — lint, check-types, test and build are all green, and format:check was reduced back from 6 failing files to the same 1 it failed on before. Clear `baseline-format-debt` and this feature is done with no further code change.",
-      "evidence": "Recorded 2026-08-21. pnpm lint: 0 errors, 1 warning (pre-existing clsx default-import in TaskResizer.tsx:1). pnpm check-types: 5/5 workspaces pass. pnpm test: 485 passed across 43 files. pnpm build: 3/3 tasks successful, including both consumer apps. pnpm format:check: 1 file fails (packages/react-gantt/README.md) — pre-existing, see blockedBy. publint: 'All good!'. @arethetypeswrong/cli --exclude-entrypoints style.css: 'No problems found', green on node10/node16-CJS/node16-ESM/bundler. npm pack --dry-run: 11 files, 256.5 kB packed — LICENSE, README.md, package.json, dist/{index.cjs,index.mjs,index.d.ts,index.d.cts,style.css,style.css.d.ts} and two .js.map; no src/, tests, or tsconfig. changeset status: one pending minor for @am-tools/react-gantt."
+      "evidence": "Recorded 2026-08-21. pnpm lint: 0 errors, 1 warning (pre-existing clsx default-import in TaskResizer.tsx:1). pnpm check-types: 5/5 workspaces pass. pnpm test: 485 passed across 43 files. pnpm build: 3/3 tasks successful, including both consumer apps. pnpm format:check: 1 file fails (packages/react-gantt/README.md) — pre-existing, see blockedBy. publint: 'All good!'. @arethetypeswrong/cli --exclude-entrypoints style.css: 'No problems found', green on node10/node16-CJS/node16-ESM/bundler. npm pack --dry-run: 11 files, 256.5 kB packed — LICENSE, README.md, package.json, dist/{index.cjs,index.mjs,index.d.ts,index.d.cts,style.css,style.css.d.ts} and two .js.map; no src/, tests, or tsconfig. changeset status: one pending minor for @art-tools/react-gantt."
     },
     {
       "id": "use-client-boundary",

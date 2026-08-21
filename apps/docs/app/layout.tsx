@@ -7,10 +7,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "@am-tools/react-gantt examples",
-    template: "%s · @am-tools/react-gantt",
+    default: "@art-tools/react-gantt examples",
+    template: "%s · @art-tools/react-gantt",
   },
-  description: "A gallery of runnable examples for the @am-tools/react-gantt component library.",
+  description: "A gallery of runnable examples for the @art-tools/react-gantt component library.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

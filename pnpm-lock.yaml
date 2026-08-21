@@ -32,12 +32,12 @@ importers:
 
   apps/docs:
     dependencies:
-      '@am-tools/react-gantt':
-        specifier: workspace:*
-        version: link:../../packages/react-gantt
       '@am/mock-data':
         specifier: workspace:*
         version: link:../../packages/mock-data
+      '@art-tools/react-gantt':
+        specifier: workspace:*
+        version: link:../../packages/react-gantt
       '@shikijs/langs':
         specifier: ^4.4.2
         version: 4.4.2
@@ -87,12 +87,12 @@ importers:
 
   apps/playground:
     dependencies:
-      '@am-tools/react-gantt':
-        specifier: workspace:*
-        version: link:../../packages/react-gantt
       '@am/mock-data':
         specifier: workspace:*
         version: link:../../packages/mock-data
+      '@art-tools/react-gantt':
+        specifier: workspace:*
+        version: link:../../packages/react-gantt
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -129,15 +129,15 @@ importers:
 
   packages/mock-data:
     devDependencies:
-      '@am-tools/react-gantt':
-        specifier: workspace:*
-        version: link:../react-gantt
       '@am/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       '@am/oxlint-config':
         specifier: workspace:*
         version: link:../oxlint-config
+      '@art-tools/react-gantt':
+        specifier: workspace:*
+        version: link:../react-gantt
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14

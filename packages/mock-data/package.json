@@ -14,9 +14,9 @@
     "lint:fix": "oxlint --fix"
   },
   "devDependencies": {
-    "@am-tools/react-gantt": "workspace:*",
     "@am/config-typescript": "workspace:*",
     "@am/oxlint-config": "workspace:*",
+    "@art-tools/react-gantt": "workspace:*",
     "@types/react": "^19.2.14",
     "typescript": "^6.0.3"
   }

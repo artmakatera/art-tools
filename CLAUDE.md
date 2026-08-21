@@ -139,21 +139,21 @@ DO Not commit by itself!
 `./init.sh` is the gate. Run it before claiming anything is done; its output is
 the evidence.
 
-| Command                                                 | What it settles                                                                                                  |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `./init.sh`                                             | Everything below, in order. Fails fast.                                                                          |
-| `./init.sh --quick`                                     | Skips install and build — the inner loop while iterating.                                                        |
-| `pnpm test`                                             | 485 tests across 43 files in `packages/react-gantt`.                                                             |
-| `pnpm check-types`                                      | `tsc --noEmit` across all 5 workspaces.                                                                          |
-| `pnpm lint`                                             | oxlint. Warnings do not fail; errors do.                                                                         |
-| `pnpm format:check`                                     | oxfmt. **Currently red** on one file — see `baseline-format-debt`.                                               |
-| `pnpm build`                                            | Turborepo build of every package.                                                                                |
-| `pnpm --filter @am-tools/react-gantt test -- <pattern>` | A single test file, while iterating.                                                                             |
-| `pnpm bench`                                            | Perf benchmarks in `apps/playground`. Run these for anything touching virtualization or the resolution pipeline. |
+| Command                                                  | What it settles                                                                                                  |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `./init.sh`                                              | Everything below, in order. Fails fast.                                                                          |
+| `./init.sh --quick`                                      | Skips install and build — the inner loop while iterating.                                                        |
+| `pnpm test`                                              | 485 tests across 43 files in `packages/react-gantt`.                                                             |
+| `pnpm check-types`                                       | `tsc --noEmit` across all 5 workspaces.                                                                          |
+| `pnpm lint`                                              | oxlint. Warnings do not fail; errors do.                                                                         |
+| `pnpm format:check`                                      | oxfmt. **Currently red** on one file — see `baseline-format-debt`.                                               |
+| `pnpm build`                                             | Turborepo build of every package.                                                                                |
+| `pnpm --filter @art-tools/react-gantt test -- <pattern>` | A single test file, while iterating.                                                                             |
+| `pnpm bench`                                             | Perf benchmarks in `apps/playground`. Run these for anything touching virtualization or the resolution pipeline. |
 
 Two things about running the apps:
 
-- `pnpm dev` builds `@am-tools/react-gantt` **before** either app starts. Both consume
+- `pnpm dev` builds `@art-tools/react-gantt` **before** either app starts. Both consume
   its `dist`, so skipping that ordering makes a clean checkout fail to resolve
   the import. It is not optional sequencing.
 - `docs/` is prose; `apps/docs/` is the runnable Next.js gallery. The names

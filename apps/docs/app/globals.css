@@ -13,7 +13,7 @@
 @layer theme, base, gantt, site, components, utilities;
 
 @import "tailwindcss";
-@import "@am-tools/react-gantt/style.css" layer(gantt);
+@import "@art-tools/react-gantt/style.css" layer(gantt);
 
 /* Pin content detection rather than relying on the process cwd. */
 @source "./";

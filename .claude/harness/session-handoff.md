@@ -14,7 +14,7 @@ criterion outstanding.
 
 ## Where things stand
 
-`packages/react-gantt` is now publishable to npm as `@am-tools/react-gantt`. The
+`packages/react-gantt` is now publishable to npm as `@art-tools/react-gantt`. The
 rename, manifest metadata, MIT license, exports/declaration fixes, Changesets,
 and both GitHub Actions workflows all landed. `publint` and `attw` are clean,
 `npm pack --dry-run` ships 11 files with no source or tests, and one pending
@@ -30,10 +30,11 @@ tree on branch `critical-path`.
   `packages/react-gantt/README.md`, exactly as it did before this session. Run
   `pnpm format`, confirm the diff is whitespace only, and both features close.
   It was left alone here because it belongs to a different feature.
-- **Scope ownership of `@am-tools` is unverified** and cannot be checked without
-  authenticating. Run `npm login && npm access list packages @am-tools` before
-  wiring up the token. If it is taken, publish returns 403 — harmless, but the
-  fix is another 39-file rename, much cheaper now than after a release.
+- **Scope: settled.** `@am` and `@am-tools` are both registered to someone else.
+  The package is now `@art-tools/react-gantt`, an npm org the `artmakatera`
+  account owns (`npm org ls art-tools` → `artmakatera - owner`). Verify a scope
+  with `npm org ls <scope>` before renaming — package-name availability says
+  nothing about scope ownership, which is what cost the previous two renames.
 - **Two owner-only steps before any release can run:** add an npm
   granular-access token as the `NPM_TOKEN` repository secret, and make the
   GitHub repo public (npm provenance requires it and will fail loudly otherwise).
@@ -42,7 +43,7 @@ tree on branch `critical-path`.
 
 | File                                                    | Change                                                        |
 | ------------------------------------------------------- | ------------------------------------------------------------- |
-| 39 files across `apps/`, `packages/`, docs              | `@am/react-gantt` → `@am-tools/react-gantt`                   |
+| 39 files across `apps/`, `packages/`, docs              | `@am/react-gantt` → `@art-tools/react-gantt`                  |
 | `packages/react-gantt/package.json`                     | Unprivate + full publish metadata, split `types` conditions   |
 | `packages/react-gantt/vite.config.ts`                   | `bundleTypes`, `dist/style.css.d.ts` copy, `index.d.cts` emit |
 | `packages/react-gantt/tsconfig.build.json`              | `declarationMap: false`                                       |

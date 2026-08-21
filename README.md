@@ -1,6 +1,6 @@
 # react-gantt-edge
 
-A high-performance, composable Gantt chart component library for React, built as a pnpm/Turborepo monorepo. The core library lives in `packages/react-gantt` (`@am-tools/react-gantt`); `apps/playground` is a local sandbox for testing it against large datasets and running benchmarks.
+A high-performance, composable Gantt chart component library for React, built as a pnpm/Turborepo monorepo. The core library lives in `packages/react-gantt` (`@art-tools/react-gantt`); `apps/playground` is a local sandbox for testing it against large datasets and running benchmarks.
 
 > **📖 Full library documentation:** [`packages/react-gantt/README.md`](packages/react-gantt/README.md) — install, API reference, data model, slots & theming, architecture, and roadmap. This root readme is just a monorepo overview.
 
@@ -18,7 +18,7 @@ A high-performance, composable Gantt chart component library for React, built as
 - **Resizable panes** — draggable divider between the task list and the calendar/grid area.
 - **Virtualized rendering** — rows and columns are windowed on both axes with overscan, so charts with thousands of tasks stay smooth.
 - **Undo-friendly state model** — an insertion-ordered, cached resolution pipeline keeps undo/redo and edits fast regardless of history length.
-- **Theming** — CSS custom properties for colors and sizing, importable via `@am-tools/react-gantt/style.css`.
+- **Theming** — CSS custom properties for colors and sizing, importable via `@art-tools/react-gantt/style.css`.
 
 ## Project structure
 
@@ -27,7 +27,7 @@ apps/
   docs/                # Next.js examples gallery (port 3000) — a running app
   playground/          # Vite app for manual testing + benchmarks (port 5173)
 packages/
-  react-gantt/         # The Gantt chart library (@am-tools/react-gantt)
+  react-gantt/         # The Gantt chart library (@art-tools/react-gantt)
   mock-data/           # Shared fixtures: a sample project + a large-dataset generator
   config-typescript/   # Shared TypeScript config
   oxlint-config/       # Shared lint config
@@ -49,7 +49,7 @@ pnpm build    # build all packages
 pnpm test     # run the test suite
 ```
 
-`pnpm dev` builds `@am-tools/react-gantt` before either app starts — both consume its
+`pnpm dev` builds `@art-tools/react-gantt` before either app starts — both consume its
 `dist`, so without that ordering a clean checkout fails to resolve it. The library
 then stays in watch mode, so edits rebuild automatically.
 

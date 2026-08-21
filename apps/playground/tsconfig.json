@@ -2,7 +2,7 @@
   "extends": "@am/config-typescript/react-app.json",
   "compilerOptions": {
     "paths": {
-      "@am-tools/react-gantt": ["../../packages/react-gantt/src/index.ts"]
+      "@art-tools/react-gantt": ["../../packages/react-gantt/src/index.ts"]
     }
   },
   "include": ["src", "bench"]

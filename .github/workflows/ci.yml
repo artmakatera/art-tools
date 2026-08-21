@@ -51,7 +51,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm --filter @am-tools/react-gantt build
+      - run: pnpm --filter @art-tools/react-gantt build
 
       - run: pnpm dlx publint packages/react-gantt
 
