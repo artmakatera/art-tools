@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@am/mock-data"],
 
   // Next 16 writes its own AGENTS.md/CLAUDE.md into the app on first dev run.
-  // The repo already has a root CLAUDE.md holding its actual conventions; a
+  // The repo already has a root AGENTS.md holding its actual conventions; a
   // generated stub beside it is just noise.
   agentRules: false,
 

@@ -611,7 +611,6 @@ and `-offset`.
 Proposed future features. These are **not yet implemented** — they capture gaps in the
 current design and a sketch of how each would hook in.
 
-
 ### 1. Critical path
 
 The scheduling engine already builds the dependency graph
@@ -619,7 +618,6 @@ The scheduling engine already builds the dependency graph
 Propose layering CPM (critical path method) analysis on top — compute the longest
 zero-slack chain, expose a `highlightCriticalPath` option, and add slot hooks / an
 `ownerState` flag so critical bars and links can be styled distinctly.
-
 
 ### 2. Export / print
 

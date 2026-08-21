@@ -48,3 +48,5 @@ yarn-error.log*
 # Agent-local state
 .claude/worktrees/
 .claude/settings.local.json
+.claude/harness/
+CLAUDE.local.md

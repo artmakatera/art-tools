@@ -12,7 +12,7 @@
   "rules": {
     "import/no-unassigned-import": "off",
     // The `style` category is off wholesale, which is why this one drifted to 42
-    // violations. It is a stated project convention (see CLAUDE.md), so it is
+    // violations. It is a stated project convention (see AGENTS.md), so it is
     // enabled by name rather than by turning the whole category on.
     "curly": ["error", "all"]
   },
