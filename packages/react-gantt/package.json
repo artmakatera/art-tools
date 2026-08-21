@@ -1,6 +1,6 @@
 {
   "name": "@art-tools/react-gantt",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Composable, virtualized Gantt chart for React — dependencies, working-time calendars, undo/redo, and slot-based theming.",
   "keywords": [
     "gantt",
