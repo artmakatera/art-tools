@@ -611,27 +611,18 @@ and `-offset`.
 Proposed future features. These are **not yet implemented** — they capture gaps in the
 current design and a sketch of how each would hook in.
 
-### 1. Keyboard navigation
 
-ARIA semantics are implemented (see [Accessibility](#accessibility)) — a screen reader
-can read the whole chart. What is still missing is a **keyboard model**: there is no way
-to move focus between rows and bars, and no way to edit without a pointer. Propose
-roving-tabindex focus across the two panes, keyboard move/resize (arrow keys nudge the
-selected bar by one column), Enter/Space to expand/collapse, and focus management for the
-dependency connector handles so links can be created without a pointer. Adding it means
-un-hiding the drag affordances that are currently `aria-hidden` precisely because no key
-can operate them.
-
-### 2. Export / print
-
-Propose export of the chart to PNG/SVG/PDF, plus a print-friendly render mode that
-temporarily disables virtualization and renders the full extent so browser print
-captures every row.
-
-### 3. Critical path
+### 1. Critical path
 
 The scheduling engine already builds the dependency graph
 (`buildDependencyGraph` in [`src/core/scheduling.ts`](./src/core/scheduling.ts)).
 Propose layering CPM (critical path method) analysis on top — compute the longest
 zero-slack chain, expose a `highlightCriticalPath` option, and add slot hooks / an
 `ownerState` flag so critical bars and links can be styled distinctly.
+
+
+### 2. Export / print
+
+Propose export of the chart to PNG/SVG/PDF, plus a print-friendly render mode that
+temporarily disables virtualization and renders the full extent so browser print
+captures every row.
