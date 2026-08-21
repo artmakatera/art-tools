@@ -1,47 +1,76 @@
 import type { GanttTask, Id, TaskDependency, TaskDependencyType } from "../types";
-import { addDays, diffDays, getEndDate } from "./dateUtils";
+import type { BarCommit } from "./barUtils";
 import { Queue } from "./queue";
+import { endInstantOf, LINEAR_CONTEXT, type SchedulingContext } from "./taskDates";
+import {
+  addWorkingMs,
+  closestWorkingTime,
+  countWorkingMs,
+  nearestWorkingTime,
+  workingMsPerUnit,
+} from "./workingTime";
 
 interface Span {
   start: Date;
-  /** Last occupied day (inclusive); equals `start` for milestones. */
+  /** The instant work stops — EXCLUSIVE (ADR-014). Equals `start` for milestones. */
   end: Date;
 }
 
-function spanOf(task: GanttTask): Span {
+function spanOf(task: GanttTask, ctx: SchedulingContext): Span {
   return {
     start: task.startDate,
-    end: getEndDate(task.startDate, task.endDate, task.duration),
+    end: endInstantOf(task, ctx),
   };
 }
 
-/** Whole-day span of a task, inclusive (a 1-day task has duration 0). */
-function durationDaysOf(task: GanttTask): number {
-  const { start, end } = spanOf(task);
-  return diffDays(start, end);
+/** Working time a task occupies, in milliseconds. */
+function workingLengthOf(task: GanttTask, ctx: SchedulingContext): number {
+  const { start, end } = spanOf(task, ctx);
+  return countWorkingMs(ctx.calendar, start, end);
 }
 
 /**
  * Earliest start a successor may take given a single predecessor and the
- * relationship type, using ASAP forward-scheduling rules. The task model
- * treats `endDate` as the last occupied day (inclusive), so a finish-to-start
- * link places the successor on the day *after* the finish.
+ * relationship type, using ASAP forward-scheduling rules.
+ *
+ * `endDate` is an exclusive instant, so a finish-to-start link starts the
+ * successor exactly where the predecessor stopped — the `+1`/`-1` day fudges the
+ * old inclusive model needed are gone, not ported.
+ *
+ * FF and SF are **decomposed** into two separately anchored walks rather than
+ * folding `lag - successorLength` into one offset (ADR-007). Folding is wrong
+ * twice under working time: the two terms are measured from different anchors,
+ * and they travel in opposite directions when their signs differ, so working-time
+ * addition — which is not linear — cannot combine them.
+ *
+ * The explicit anchor direction matters most at `lag === 0`, the commonest value:
+ * FS/SS compute a *start* and must project forward, while FF/SF compute a
+ * *finish* and must project backward. Deriving the direction from the sign of a
+ * zero would silently pick the wrong one.
  */
 function constrainedStart(
   pred: Span,
   type: TaskDependencyType,
-  lag: number,
-  successorDuration: number,
+  lagMs: number,
+  successorLength: number,
+  ctx: SchedulingContext,
 ): Date {
+  const cal = ctx.calendar;
   switch (type) {
-    case "FS": // successor starts the day after the predecessor finishes
-      return addDays(pred.end, 1 + lag);
+    case "FS": // successor starts where the predecessor finished
+      return addWorkingMs(cal, pred.end, lagMs, 1);
     case "SS": // successor starts together with the predecessor
-      return addDays(pred.start, lag);
-    case "FF": // successor finishes together with the predecessor
-      return addDays(pred.end, lag - successorDuration);
-    case "SF": // successor finishes the day before the predecessor starts
-      return addDays(pred.start, -1 + lag - successorDuration);
+      return addWorkingMs(cal, pred.start, lagMs, 1);
+    case "FF": {
+      // successor finishes together with the predecessor
+      const finish = addWorkingMs(cal, pred.end, lagMs, -1);
+      return addWorkingMs(cal, finish, -successorLength, -1);
+    }
+    case "SF": {
+      // successor finishes when the predecessor starts
+      const finish = addWorkingMs(cal, pred.start, lagMs, -1);
+      return addWorkingMs(cal, finish, -successorLength, -1);
+    }
   }
 }
 
@@ -59,21 +88,57 @@ export interface DependencyGraph {
   size: number;
 }
 
-export function buildDependencyGraph(
-  dependencies: TaskDependency[],
-): DependencyGraph {
+export function buildDependencyGraph(dependencies: TaskDependency[]): DependencyGraph {
   const successorsOf = new Map<Id, Id[]>();
   const predecessorDeps = new Map<Id, TaskDependency[]>();
   for (const dep of dependencies) {
     const successorList = successorsOf.get(dep.from);
-    if (successorList) successorList.push(dep.to);
-    else successorsOf.set(dep.from, [dep.to]);
+    if (successorList) {
+      successorList.push(dep.to);
+    } else {
+      successorsOf.set(dep.from, [dep.to]);
+    }
 
     const deps = predecessorDeps.get(dep.to);
-    if (deps) deps.push(dep);
-    else predecessorDeps.set(dep.to, [dep]);
+    if (deps) {
+      deps.push(dep);
+    } else {
+      predecessorDeps.set(dep.to, [dep]);
+    }
   }
   return { successorsOf, predecessorDeps, size: dependencies.length };
+}
+
+/**
+ * The mutable working set a cascade walks: reads of the effective task state,
+ * writes of the tasks it moves. A plain `Map` satisfies it; so does the
+ * copy-on-write view from {@link overlayOf}, which is what keeps a cascade from
+ * cloning the whole resolved map on every edit.
+ */
+export interface TaskWorkingSet {
+  get(id: Id): GanttTask | undefined;
+  set(id: Id, task: GanttTask): void;
+  readonly size: number;
+}
+
+/**
+ * Copy-on-write view over the resolved task map: reads fall through to `base`,
+ * writes land in a small overlay, so `base` is never touched and no O(n) clone
+ * is paid (~17ms at 100k tasks, on every single edit).
+ */
+export function overlayOf(base: ReadonlyMap<Id, GanttTask>): TaskWorkingSet {
+  const patch = new Map<Id, GanttTask>();
+  return {
+    get: (id) => patch.get(id) ?? base.get(id),
+    set: (id, task) => {
+      patch.set(id, task);
+    },
+    // A cascade only ever replaces existing tasks, so the base size still bounds
+    // the relaxation loop.
+    get size() {
+      return base.size;
+    },
+  };
 }
 
 /**
@@ -84,29 +149,107 @@ export function buildDependencyGraph(
 function earliestStart(
   task: GanttTask,
   predecessorDeps: Map<Id, TaskDependency[]>,
-  current: Map<Id, GanttTask>,
+  current: TaskWorkingSet,
+  ctx: SchedulingContext,
 ): Date | null {
-  const duration = durationDaysOf(task);
+  const length = workingLengthOf(task, ctx);
+  const msPerUnit = workingMsPerUnit(ctx.calendar, ctx.durationUnit);
   let earliest: Date | null = null;
   for (const dep of predecessorDeps.get(task.id) ?? []) {
     const pred = current.get(dep.from);
-    if (!pred) continue;
-    const candidate = constrainedStart(spanOf(pred), dep.type, dep.lag ?? 0, duration);
-    if (earliest === null || candidate > earliest) earliest = candidate;
+    if (!pred) {
+      continue;
+    }
+    const candidate = constrainedStart(
+      spanOf(pred, ctx),
+      dep.type,
+      (dep.lag ?? 0) * msPerUnit,
+      length,
+      ctx,
+    );
+    if (earliest === null || candidate > earliest) {
+      earliest = candidate;
+    }
   }
-  return earliest;
+  if (earliest === null) {
+    return null;
+  }
+  // Project once, here, so the value the caller compares against is a fixpoint.
+  // `closestWorkingTime` is idempotent, so a task already parked on this instant
+  // stops moving; without this the strict comparison below could keep firing and
+  // silently exhaust the iteration guard, yielding a wrong-but-stable schedule.
+  return closestWorkingTime(ctx.calendar, earliest, 1);
 }
 
-/** A copy of `task` moved to `start`, preserving its duration. */
-function movedTo(task: GanttTask, start: Date): GanttTask {
+/** A copy of `task` moved to `start`, preserving the working time it occupies. */
+function movedTo(task: GanttTask, start: Date, ctx: SchedulingContext): GanttTask {
+  // A milestone is an instant: its end mirrors its start, never lags behind it.
+  // This is the single milestone rule — `useTaskList` defers to it rather than
+  // keeping its own.
+  if (task.type === "milestone") {
+    return { ...task, startDate: start, endDate: start };
+  }
   return {
     ...task,
     startDate: start,
-    endDate:
-      task.type === "milestone"
-        ? task.endDate
-        : addDays(start, durationDaysOf(task)),
+    endDate: addWorkingMs(ctx.calendar, start, workingLengthOf(task, ctx), 1),
   };
+}
+
+/**
+ * Turn a finished drag into the dates to store — the one place a pixel-derived
+ * value meets the calendar.
+ *
+ * A **move** preserves the task's working time, not its pixel width: drag a
+ * three-working-day task onto a Thursday and it still occupies three working days,
+ * growing visually across the weekend. A **resize** sets the working time instead,
+ * so an edge dropped in non-working time settles back onto the nearest working
+ * boundary (ADR-005) — quantization, which happens even with `snapToWorking` off.
+ *
+ * Starts always project forward and ends backward (ADR-020), which is what keeps
+ * every library-authored task forward-anchored at its start and backward-anchored
+ * at its end — the precondition that makes span round-trips exact.
+ */
+export function resolveCommit(
+  task: GanttTask,
+  commit: BarCommit,
+  ctx: SchedulingContext,
+): { startDate: Date; endDate: Date } {
+  const cal = ctx.calendar;
+  const snap = ctx.snapToWorking;
+  const span = spanOf(task, ctx);
+
+  if (task.type === "milestone") {
+    const raw = commit.kind === "resizeEnd" ? commit.endDate : commit.startDate;
+    const at = snap ? nearestWorkingTime(cal, raw) : raw;
+    return { startDate: at, endDate: at };
+  }
+
+  if (commit.kind === "move") {
+    const length = countWorkingMs(cal, span.start, span.end);
+    const start = snap ? closestWorkingTime(cal, commit.startDate, 1) : commit.startDate;
+    return { startDate: start, endDate: addWorkingMs(cal, start, length, 1) };
+  }
+
+  // Resize: project both edges inward and clamp to at least some working time.
+  // The untouched edge is unchanged pixel-wise, so projecting it is a no-op on an
+  // already-valid task — which is also what fixes the old bug where snapping the
+  // start handle could shift the far edge by a whole column.
+  const rawStart = commit.kind === "resizeStart" ? commit.startDate : span.start;
+  const rawEnd = commit.kind === "resizeEnd" ? commit.endDate : span.end;
+  const start = snap ? closestWorkingTime(cal, rawStart, 1) : rawStart;
+  const end = snap ? closestWorkingTime(cal, rawEnd, -1) : rawEnd;
+
+  if (countWorkingMs(cal, start, end) <= 0) {
+    // Collapsed or inverted — keep one unit of working time anchored on the edge
+    // the user was NOT dragging.
+    const unitMs = workingMsPerUnit(cal, ctx.durationUnit);
+    if (commit.kind === "resizeStart") {
+      return { startDate: addWorkingMs(cal, end, -unitMs, -1), endDate: end };
+    }
+    return { startDate: start, endDate: addWorkingMs(cal, start, unitMs, 1) };
+  }
+  return { startDate: start, endDate: end };
 }
 
 /**
@@ -124,14 +267,16 @@ function movedTo(task: GanttTask, start: Date): GanttTask {
  * its own successors are then revisited. Returns only the tasks whose dates
  * moved.
  *
- * `current` is the working set of effective tasks and is mutated in place as
- * the schedule settles. A per-call iteration cap keeps dependency cycles from
- * looping forever.
+ * `current` is the working set of effective tasks and is written to in place as
+ * the schedule settles — pass {@link overlayOf} to leave the caller's resolved
+ * map untouched. A per-call iteration cap keeps dependency cycles from looping
+ * forever.
  */
 export function scheduleDependents(
-  current: Map<Id, GanttTask>,
+  current: TaskWorkingSet,
   graph: DependencyGraph,
   changedId: Id,
+  ctx: SchedulingContext = LINEAR_CONTEXT,
 ): Map<Id, GanttTask> {
   const { successorsOf, predecessorDeps } = graph;
 
@@ -142,9 +287,9 @@ export function scheduleDependents(
   // is a lower bound, so a valid drag is preserved.
   const changedTask = current.get(changedId);
   if (changedTask) {
-    const earliest = earliestStart(changedTask, predecessorDeps, current);
-    if (earliest !== null && diffDays(changedTask.startDate, earliest) > 0) {
-      const clamped = movedTo(changedTask, earliest);
+    const earliest = earliestStart(changedTask, predecessorDeps, current, ctx);
+    if (earliest !== null && earliest.getTime() > changedTask.startDate.getTime()) {
+      const clamped = movedTo(changedTask, earliest, ctx);
       current.set(changedId, clamped);
       changed.set(changedId, clamped);
     }
@@ -155,20 +300,29 @@ export function scheduleDependents(
   let iterations = 0;
 
   while (!queue.isEmpty()) {
-    if (iterations++ > maxIterations) break; // guard against dependency cycles
+    if (iterations++ > maxIterations) {
+      break;
+    } // guard against dependency cycles
     const predId = queue.dequeue()!;
 
     for (const successorId of successorsOf.get(predId) ?? []) {
       const successor = current.get(successorId);
-      if (!successor) continue;
+      if (!successor) {
+        continue;
+      }
 
-      const earliest = earliestStart(successor, predecessorDeps, current);
-      if (earliest === null) continue;
+      const earliest = earliestStart(successor, predecessorDeps, current, ctx);
+      if (earliest === null) {
+        continue;
+      }
       // Lower bound only: push a violating (too-early) successor forward, but
-      // never pull it earlier when a predecessor moves back.
-      if (diffDays(successor.startDate, earliest) <= 0) continue;
+      // never pull it earlier when a predecessor moves back. Compared as instants
+      // rather than whole days, so a sub-day violation cascades too.
+      if (earliest.getTime() <= successor.startDate.getTime()) {
+        continue;
+      }
 
-      const next = movedTo(successor, earliest);
+      const next = movedTo(successor, earliest, ctx);
       current.set(successorId, next);
       changed.set(successorId, next);
       queue.enqueue(successorId);

@@ -8,14 +8,14 @@ const TASKS: GanttTask[] = [
   {
     id: "a",
     name: "A",
-    startDate: new Date("2026-01-01"),
-    endDate: new Date("2026-01-05"),
+    startDate: new Date(2026, 0, 1),
+    endDate: new Date(2026, 0, 5),
   },
   {
     id: "b",
     name: "B",
-    startDate: new Date("2026-01-10"),
-    endDate: new Date("2026-01-15"),
+    startDate: new Date(2026, 0, 10),
+    endDate: new Date(2026, 0, 15),
   },
 ];
 
@@ -27,10 +27,9 @@ function renderLinks(
     <DependencyLinksProvider
       tasks={TASKS}
       dependencies={deps}
-      origin={new Date("2026-01-01")}
+      origin={new Date(2026, 0, 1)}
       colWidth={30}
       rowHeight={40}
-      snapToDay
       unit="day"
       overrides={{}}
     >
@@ -52,9 +51,7 @@ describe("<DependencyLinks /> slots", () => {
     expect(container.querySelector(".layer")).not.toBeNull();
     expect(container.querySelectorAll(".segment").length).toBeGreaterThan(0);
     // Arrow is either arrowRight or arrowLeft.
-    const arrow =
-      container.querySelector(".arrowRight") ??
-      container.querySelector(".arrowLeft");
+    const arrow = container.querySelector(".arrowRight") ?? container.querySelector(".arrowLeft");
     expect(arrow).not.toBeNull();
     // Transparent hit areas are preserved.
     expect(container.querySelectorAll(".hitArea").length).toBeGreaterThan(0);

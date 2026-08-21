@@ -30,7 +30,13 @@ interface TaskResizerProps {
   left: number;
   colWidth: number;
   onResize: (newWidth: number, newLeft: number) => void;
-  onResizeEnd: (newWidth: number, newLeft: number) => void;
+  /**
+   * Fired on release with ONLY the edge the user dragged, as an absolute pixel
+   * position. The opposite edge is deliberately not reported: snapping both
+   * independently is what used to let a start-handle drag shift the far edge by a
+   * whole column.
+   */
+  onResizeEnd: (edge: "start" | "end", edgePx: number) => void;
   slots?: TaskResizerSlots;
   slotProps?: TaskResizerSlotProps;
 }
@@ -59,13 +65,7 @@ export function TaskResizer({
     onEnd: (deltaX, { startWidth, startLeft }) => {
       const clampedDelta = Math.min(deltaX, startWidth);
       const rawLeft = startLeft + clampedDelta;
-      const rawWidth = startWidth - clampedDelta;
-      const snappedLeft = Math.round(rawLeft / colWidth) * colWidth;
-      const snappedWidth = Math.max(
-        colWidth,
-        Math.round(rawWidth / colWidth) * colWidth,
-      );
-      onResizeEnd(snappedWidth, snappedLeft);
+      onResizeEnd("start", Math.round(rawLeft / colWidth) * colWidth);
     },
   });
 
@@ -76,12 +76,8 @@ export function TaskResizer({
       onResize(newWidth, startLeft);
     },
     onEnd: (deltaX, { startWidth, startLeft }) => {
-      const rawWidth = Math.max(0, startWidth + deltaX);
-      const snappedWidth = Math.max(
-        colWidth,
-        Math.round(rawWidth / colWidth) * colWidth,
-      );
-      onResizeEnd(snappedWidth, startLeft);
+      const rawRight = startLeft + Math.max(0, startWidth + deltaX);
+      onResizeEnd("end", Math.round(rawRight / colWidth) * colWidth);
     },
   });
 

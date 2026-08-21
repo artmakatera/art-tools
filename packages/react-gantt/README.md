@@ -21,9 +21,11 @@ MUI-style slot system for deep customization.
 - [Composable API](#composable-api)
 - [`GanttProps` reference](#ganttprops-reference)
 - [Data model](#data-model)
+- [Working time (calendars)](#working-time-calendars)
 - [Task bars](#task-bars)
 - [Dependencies & scheduling](#dependencies--scheduling)
 - [Columns](#columns)
+- [Read-only](#read-only)
 - [Imperative API](#imperative-api)
 - [Accessibility](#accessibility)
 - [Slots & theming](#slots--theming)
@@ -55,11 +57,41 @@ import "@am/react-gantt/style.css";
 import { Gantt, type GanttTask } from "@am/react-gantt";
 import "@am/react-gantt/style.css";
 
+// Build dates with the (year, monthIndex, day) constructor, never an ISO string —
+// `new Date("2023-01-10")` parses as UTC midnight while the geometry reads local
+// civil instants. `endDate` is EXCLUSIVE: "Install Apache" occupies Jan 10 alone.
 const tasks: GanttTask[] = [
-  { id: 1000, name: "Launch Cloud Platform", startDate: new Date("2023-01-10"), endDate: new Date("2023-01-21"), type: "summary" },
-  { id: 1,    name: "Setup web server",    startDate: new Date("2023-01-10"), endDate: new Date("2023-01-13"), progress: 33, parentId: 1000 },
-  { id: 11,   name: "Install Apache",      startDate: new Date("2023-01-10"), endDate: new Date("2023-01-10"), progress: 50, parentId: 1 },
-  { id: 12,   name: "Configure firewall",  startDate: new Date("2023-01-10"), endDate: new Date("2023-01-11"), progress: 50, parentId: 1 },
+  {
+    id: 1000,
+    name: "Launch Cloud Platform",
+    startDate: new Date(2023, 0, 10),
+    endDate: new Date(2023, 0, 22),
+    type: "summary",
+  },
+  {
+    id: 1,
+    name: "Setup web server",
+    startDate: new Date(2023, 0, 10),
+    endDate: new Date(2023, 0, 14),
+    progress: 33,
+    parentId: 1000,
+  },
+  {
+    id: 11,
+    name: "Install Apache",
+    startDate: new Date(2023, 0, 10),
+    endDate: new Date(2023, 0, 11),
+    progress: 50,
+    parentId: 1,
+  },
+  {
+    id: 12,
+    name: "Configure firewall",
+    startDate: new Date(2023, 0, 10),
+    endDate: new Date(2023, 0, 12),
+    progress: 50,
+    parentId: 1,
+  },
 ];
 
 export function App() {
@@ -92,7 +124,7 @@ import { GanttProvider, TaskList, GanttGrid } from "@am/react-gantt";
 <GanttProvider tasks={tasks} height={500}>
   <TaskList />
   <GanttGrid />
-</GanttProvider>
+</GanttProvider>;
 ```
 
 Set `hideTaskList` on `<Gantt>` to render only the calendar/grid (no task-list pane,
@@ -109,46 +141,50 @@ Defined in [`src/types.ts`](./src/types.ts).
 
 ### Data
 
-| Prop           | Type                | Description |
-| -------------- | ------------------- | ----------- |
-| `tasks`        | `GanttTask[]`       | **Required.** Stable seed list (see the note in Quick start). |
-| `dependencies` | `TaskDependency[]`  | Links between tasks (FS/FF/SS/SF, optional lag). |
-| `columns`      | `ColumnDef[]`       | Task-list columns. Falls back to built-in default columns. |
+| Prop            | Type                          | Description                                                                                                            |
+| --------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `tasks`         | `GanttTask[]`                 | **Required.** Stable seed list (see the note in Quick start).                                                          |
+| `dependencies`  | `TaskDependency[]`            | Links between tasks (FS/FF/SS/SF, optional lag).                                                                       |
+| `columns`       | `ColumnDef[]`                 | Task-list columns. Falls back to built-in default columns.                                                             |
+| `readOnly`      | `boolean`                     | Remove every editing affordance — see [Read-only](#read-only).                                                         |
+| `calendar`      | `GanttCalendar`               | Working-time definition. Supplying it opts into working-time scheduling — see [Working time](#working-time-calendars). |
+| `snapToWorking` | `boolean`                     | Default `true`. `false` keeps non-working shading but leaves dates untouched.                                          |
+| `durationUnit`  | `"day" \| "hour" \| "minute"` | How an input `duration` is interpreted and displayed. Default `"day"`.                                                 |
 
 ### Layout
 
-| Prop                   | Type      | Description |
-| ---------------------- | --------- | ----------- |
-| `height`               | `number`  | **Required.** Total component height in px; enables the pinned header + vertical scroll. |
-| `rowHeight`            | `number`  | Row height in px. |
-| `colWidth`             | `number`  | Width of one day column in px. |
+| Prop                   | Type      | Description                                                                                    |
+| ---------------------- | --------- | ---------------------------------------------------------------------------------------------- |
+| `height`               | `number`  | **Required.** Total component height in px; enables the pinned header + vertical scroll.       |
+| `rowHeight`            | `number`  | Row height in px.                                                                              |
+| `colWidth`             | `number`  | Width of one day column in px.                                                                 |
 | `scales`               | `Scale[]` | Calendar header rows (defaults to month + day — see [`DEFAULT_SCALES`](./src/core/scales.ts)). |
-| `padDays`              | `number`  | Extra day columns padded before/after the task date range. |
-| `defaultTaskListWidth` | `number`  | Initial width of the task-list pane. |
-| `hideTaskList`         | `boolean` | Render only the calendar/grid. |
+| `padDays`              | `number`  | Extra day columns padded before/after the task date range.                                     |
+| `defaultTaskListWidth` | `number`  | Initial width of the task-list pane.                                                           |
+| `hideTaskList`         | `boolean` | Render only the calendar/grid.                                                                 |
 
 ### Callbacks
 
-| Prop                 | Signature                                | Fired when |
-| -------------------- | ---------------------------------------- | ---------- |
-| `onTaskClick`        | `(task) => void`                         | A row/bar is selected. |
-| `onDependencyCreate` | `(dep: TaskDependency) => void`          | A link is drawn between two tasks. |
-| `onDependencyDelete` | `(dep: TaskDependency) => void`          | A link is deleted. |
-| `onTaskCreate`       | `(task, afterId?) => void`               | A task is created. |
-| `onTaskDelete`       | `(id: Id) => void`                       | A task is deleted. |
-| `onTaskEdit`         | `(task) => void`                         | A column's edit action fires (e.g. the actions-column pencil). |
-| `onTasksChange`      | `(tasks: GanttTask[]) => void`           | The resolved list changes (after create/delete/edit/undo/redo). |
+| Prop                 | Signature                       | Fired when                                                      |
+| -------------------- | ------------------------------- | --------------------------------------------------------------- |
+| `onTaskClick`        | `(task) => void`                | A row/bar is selected.                                          |
+| `onDependencyCreate` | `(dep: TaskDependency) => void` | A link is drawn between two tasks.                              |
+| `onDependencyDelete` | `(dep: TaskDependency) => void` | A link is deleted.                                              |
+| `onTaskCreate`       | `(task, afterId?) => void`      | A task is created.                                              |
+| `onTaskDelete`       | `(id: Id) => void`              | A task is deleted.                                              |
+| `onTaskEdit`         | `(task) => void`                | A column's edit action fires (e.g. the actions-column pencil).  |
+| `onTasksChange`      | `(tasks: GanttTask[]) => void`  | The resolved list changes (after create/delete/edit/undo/redo). |
 
 ### Other
 
-| Prop              | Type                   | Description |
-| ----------------- | ---------------------- | ----------- |
-| `apiRef`          | `React.Ref<GanttHandle>` | The [imperative API](#imperative-api) handle. |
-| `taskList`        | `GanttTaskListSlots`   | Slot overrides for the task-list pane (`treeCell`, `header`). |
-| `bars`            | `GanttBarsSlots`       | Slot overrides for timeline bars and their handles. |
+| Prop              | Type                     | Description                                                                         |
+| ----------------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| `apiRef`          | `React.Ref<GanttHandle>` | The [imperative API](#imperative-api) handle.                                       |
+| `taskList`        | `GanttTaskListSlots`     | Slot overrides for the task-list pane (`treeCell`, `header`).                       |
+| `bars`            | `GanttBarsSlots`         | Slot overrides for timeline bars and their handles.                                 |
 | `dependencySlots` | `GanttDependenciesSlots` | Slot overrides for dependency links (named to avoid colliding with `dependencies`). |
-| `timeline`        | `GanttTimelineSlots`   | Slot overrides for the calendar/grid chrome. |
-| `labels`          | `GanttLabels`          | Overrides for the [accessible strings](#accessibility). Pass a stable object. |
+| `timeline`        | `GanttTimelineSlots`     | Slot overrides for the calendar/grid chrome.                                        |
+| `labels`          | `GanttLabels`            | Overrides for the [accessible strings](#accessibility). Pass a stable object.       |
 
 ---
 
@@ -156,18 +192,28 @@ Defined in [`src/types.ts`](./src/types.ts).
 
 ```ts
 interface GanttTask {
-  id: Id;                                   // string | number
+  id: Id; // string | number
   name: string;
   startDate: Date;
-  endDate?: Date;                           // inclusive last day (chart is day-granular)
+  endDate?: Date; // EXCLUSIVE — the instant work stops
   duration?: number;
-  progress?: number;                        // 0–100
-  type?: "task" | "milestone" | "summary";  // default: "task"
-  parentId?: Id | null;                     // null/undefined = root
+  progress?: number; // 0–100
+  type?: "task" | "milestone" | "summary"; // default: "task"
+  parentId?: Id | null; // null/undefined = root
 }
 ```
 
 - **`Id`** — `string | number`.
+- **`endDate` is exclusive** — it is the instant work _stops_, not the last day
+  worked. A task running Monday through Friday is
+  `{ startDate: Mon, endDate: Sat }`, and a 9-to-5 Friday task is
+  `Fri 09:00 → Fri 17:00`. This is what makes interval arithmetic work without
+  scattered ±1 day corrections. To show a user the inclusive last day, use
+  `api.format.endDate(task)` inside a column, or the exported `displayEndDate`
+  / `endInstantFromDisplayDate` helpers when bridging a date input.
+- **`duration`** — interpreted in the chart's `durationUnit` and, when a
+  `calendar` is set, counted in _working_ time. The library never writes this
+  field back; it derives dates from it and leaves your data alone.
 - **`type`** — `"task"` (default), `"milestone"` (a diamond at `startDate`), or
   `"summary"` (a parent whose dates and progress roll up from its children). See
   [Task bars](#task-bars).
@@ -182,7 +228,7 @@ type TaskDependency = {
   from: Id;
   to: Id;
   type: TaskDependencyType;
-  lag?: number;  // days
+  lag?: number; // in `durationUnit`s; WORKING time when a calendar is set
 };
 ```
 
@@ -190,6 +236,67 @@ For the full seed → change-log → resolved-list pipeline (transactions, curso
 roll-up), see [`docs/data-structures.md`](./docs/data-structures.md).
 
 ---
+
+## Working time (calendars)
+
+By default the chart schedules in plain linear time: weekends are shaded but a
+five-day task dragged onto a Thursday simply ends on Monday. Pass a `calendar` to
+make non-working time real — for the scheduler, for drag, and for the dependency
+cascade.
+
+```tsx
+<Gantt
+  tasks={tasks}
+  height={480}
+  calendar={{
+    hours: ["8:00-12:00", "13:00-17:00"], // lunch is the gap between ranges
+    days: {
+      0: false,
+      6: false, // weekends off (0 = Sunday)
+      5: ["8:00-12:00"], // short Friday
+    },
+    dates: {
+      "2026-01-01": false, // holiday
+      "2026-01-10": ["9:00-13:00"], // half day
+    },
+  }}
+/>
+```
+
+Three scopes resolve in the order **`dates` → `days` → `hours`**, so a specific
+date beats a weekday rule, which beats the global default.
+
+| Prop            | Meaning                                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `calendar`      | The working-time definition. Supplying it _is_ the opt-in. Safe to write inline — it is keyed by content, not identity. |
+| `snapToWorking` | Default `true`. Set `false` to keep the shading but leave dates untouched.                                              |
+| `durationUnit`  | `"day"` (default), `"hour"`, or `"minute"` — how an input `duration` is read and displayed.                             |
+
+Things worth knowing before you rely on it:
+
+- **Omitting `hours` means whole days, not business hours.** A calendar that only
+  marks weekends off stays day-granular, so `duration: 3` is still three whole
+  days rather than three 8-hour shifts.
+- **A day off is just a day with no hours** (`false`), so working _days_ are the
+  degenerate case of working _time_ — there is no separate concept.
+- **One `durationUnit: "day"` is the week's longest working day.** With
+  `{ hours: ["8:00-17:00"] }` that is 9 hours. Adding a single longer weekday
+  therefore redefines "a day" for the whole chart.
+- **Your data is never rewritten.** Snapping applies only to dates the library
+  authors — drag commits and cascade results. A task you author ending on a
+  Sunday renders where you put it until it is first edited.
+- **Moves preserve working time, resizes set it.** Drag a three-working-day task
+  onto a Thursday and it stays three working days, growing visually across the
+  weekend. Drag its edge onto a Sunday and it settles back onto Friday.
+- **Non-working time is shaded, not compressed.** The time axis stays linear.
+  Slot consumers get `isNonWorking` and `nonWorkingReason`
+  (`"weekend" | "holiday" | "offHours"`) on the grid-column and calendar-cell
+  ownerStates.
+- **Known gap:** the actions column's "add after" button creates a task without
+  snapping it, because a column's `render` has no access to the calendar.
+
+The reasoning behind each of these — including what was rejected — is recorded in
+[`docs/adr/`](../../docs/adr/README.md).
 
 ## Task bars
 
@@ -239,7 +346,7 @@ interface ColumnDef<T extends GanttTask = GanttTask> {
   header: string;
   width?: number;
   render: (task: T, api: ColumnApi) => React.ReactNode;
-  isTreeColumn?: boolean;  // renders the indent + expand/collapse toggle
+  isTreeColumn?: boolean; // renders the indent + expand/collapse toggle
 }
 ```
 
@@ -271,6 +378,44 @@ tracked as session-local overrides).
 
 ---
 
+## Read-only
+
+```tsx
+<Gantt tasks={tasks} height={500} readOnly />
+```
+
+`readOnly` removes every editing affordance rather than disabling one:
+
+| Gone                                           | Kept                                                      |
+| ---------------------------------------------- | --------------------------------------------------------- |
+| Bar move, resize, progress drag                | Row/bar selection, `onTaskClick`                          |
+| Dependency connector handles                   | Dependency links themselves (drawn as usual)              |
+| Link selection + its `×` / Delete-key deletion | Expand/collapse, scroll, zoom, column resize              |
+| The built-in `__action` column                 | The `__name` / `__start` / `__end` / `__progress` columns |
+
+Nothing is rendered-but-inert: each affordance only exists when its handlers are
+wired, so there is no grabbable dead element and no disabled styling.
+
+`apiRef` keeps working — `readOnly` is about the pointer, not the data ([ADR-021](../../docs/adr/021-readonly-removes-affordances-not-the-api.md)).
+Drive an otherwise-frozen chart from your own toolbar:
+
+```tsx
+<Gantt tasks={tasks} height={500} readOnly apiRef={ref} />;
+ref.current?.updateTask(id, { progress: 80 }); // still applies
+```
+
+Custom `columns` are yours to gate — `render` receives `api.readOnly`:
+
+```tsx
+render: (task, api) =>
+  api.readOnly ? null : <button onClick={() => api.editTask(task)}>✎</button>,
+```
+
+`GanttProvider` takes the same prop, so the [composable API](#composable-api) behaves
+identically.
+
+---
+
 ## Imperative API
 
 Pass an `apiRef` to reach the `GanttHandle`:
@@ -279,12 +424,13 @@ Pass an `apiRef` to reach the `GanttHandle`:
 const ref = useRef<GanttHandle>(null);
 <Gantt apiRef={ref} tasks={tasks} height={500} />;
 
-ref.current?.createTask(task, afterId);  // afterId omitted → append at end
+ref.current?.createTask(task, afterId); // afterId omitted → append at end
 ref.current?.updateTask(id, { progress: 80 });
 ref.current?.deleteTask(id);
 ref.current?.undo();
 ref.current?.redo();
-ref.current?.scrollToTask(id);           // auto-expands collapsed ancestors first
+ref.current?.revealTask(id); // vertical; add { horizontal: true } for the bar
+ref.current?.revealTask(id, { horizontal: true }); // expands collapsed ancestors first
 ```
 
 `updateTask` takes a `TaskPatch` (`name`, `startDate`, `endDate`, `progress`); only
@@ -302,9 +448,9 @@ The default look is driven by `--am-gantt-*` variables in
 
 ```css
 :root {
-  --am-gantt-task-bg: #0ba5ff;            /* task bar fill */
-  --am-gantt-project-bg: #16a34a;         /* summary bar fill */
-  --am-gantt-milestone-bg: #f59e0b;       /* milestone diamond */
+  --am-gantt-task-bg: #0ba5ff; /* task bar fill */
+  --am-gantt-project-bg: #16a34a; /* summary bar fill */
+  --am-gantt-milestone-bg: #f59e0b; /* milestone diamond */
   --am-gantt-calendar-header-bg: #f8fafc;
   --am-gantt-calendar-weekend-bg: #f1f5f9;
   /* …plus task colors, border radii, resizer sizing, z-indices */
@@ -359,16 +505,16 @@ The chart is fully readable by a screen reader in browse / table-navigation mode
 
 The two panes are exposed as two widgets under one labelled `group`:
 
-| Element | Role & state |
-| ------- | ------------ |
-| Widget root | `group` + `aria-label` (`labels.gantt`) |
-| Task-list pane | `treegrid` + `aria-label`, `aria-rowcount`, `aria-colcount` |
-| Header row | `row` `aria-rowindex="1"`, cells `columnheader` + `aria-colindex` |
-| Task row | `row` + `aria-rowindex`, `aria-level`, `aria-expanded`, `aria-posinset`, `aria-setsize`, `aria-selected` |
-| Task cells | `gridcell`, or `rowheader` for the tree column; each with `aria-colindex` |
-| Timeline pane | `grid` + `aria-label`, `aria-rowcount`, `aria-colcount` (one column per date) |
-| Calendar row | `row` + `aria-rowindex`, cells `columnheader` + `aria-colindex`/`aria-colspan` |
-| Bar | `gridcell` + `aria-label`, `aria-colindex`/`aria-colspan` for its span on the date axis |
+| Element        | Role & state                                                                                             |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| Widget root    | `group` + `aria-label` (`labels.gantt`)                                                                  |
+| Task-list pane | `treegrid` + `aria-label`, `aria-rowcount`, `aria-colcount`                                              |
+| Header row     | `row` `aria-rowindex="1"`, cells `columnheader` + `aria-colindex`                                        |
+| Task row       | `row` + `aria-rowindex`, `aria-level`, `aria-expanded`, `aria-posinset`, `aria-setsize`, `aria-selected` |
+| Task cells     | `gridcell`, or `rowheader` for the tree column; each with `aria-colindex`                                |
+| Timeline pane  | `grid` + `aria-label`, `aria-rowcount`, `aria-colcount` (one column per date)                            |
+| Calendar row   | `row` + `aria-rowindex`, cells `columnheader` + `aria-colindex`/`aria-colspan`                           |
+| Bar            | `gridcell` + `aria-label`, `aria-colindex`/`aria-colspan` for its span on the date axis                  |
 
 Both panes are virtualized, so `aria-rowcount` reports the **full** list while only a
 window is in the DOM, and every `aria-rowindex` is absolute. Counts and indices are
@@ -396,17 +542,20 @@ Every accessible string is overridable — pass a **stable** (memoized) object, 
 and bars are memoized:
 
 ```tsx
-const labels = useMemo(() => ({
-  gantt: "Projektplan",
-  taskList: "Aufgabenliste",
-  timeline: "Zeitachse",
-  expand: "Aufklappen",
-  collapse: "Zuklappen",
-  editTask: (task) => `${task.name} bearbeiten`,
-  bar: (task, { progress }) => `${task.name}, ${progress}% erledigt`,
-}), []);
+const labels = useMemo(
+  () => ({
+    gantt: "Projektplan",
+    taskList: "Aufgabenliste",
+    timeline: "Zeitachse",
+    expand: "Aufklappen",
+    collapse: "Zuklappen",
+    editTask: (task) => `${task.name} bearbeiten`,
+    bar: (task, { progress }) => `${task.name}, ${progress}% erledigt`,
+  }),
+  [],
+);
 
-<Gantt tasks={tasks} height={400} labels={labels} />
+<Gantt tasks={tasks} height={400} labels={labels} />;
 ```
 
 Omitted keys keep their English defaults. `ColumnDef.render` receives the resolved set as
@@ -461,8 +610,6 @@ and `-offset`.
 
 Proposed future features. These are **not yet implemented** — they capture gaps in the
 current design and a sketch of how each would hook in.
-
-
 
 ### 1. Keyboard navigation
 

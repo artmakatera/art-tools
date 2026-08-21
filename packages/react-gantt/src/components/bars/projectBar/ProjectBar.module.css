@@ -3,7 +3,6 @@
   box-sizing: border-box;
   background-color: var(--am-gantt-project-bg);
   border-radius: 4px;
-  cursor: move;
   overflow: hidden;
   --am-gantt-bar-progress-bg: var(--am-gantt-project-bg-progress);
 }

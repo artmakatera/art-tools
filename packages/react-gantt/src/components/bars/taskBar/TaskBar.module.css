@@ -3,7 +3,6 @@
   box-sizing: border-box;
   background-color: var(--am-gantt-task-bg);
   border-radius: var(--am-gantt-task-border-radius);
-  cursor: move;
   --am-gantt-bar-progress-bg: var(--am-gantt-task-bg-progress);
 }
 

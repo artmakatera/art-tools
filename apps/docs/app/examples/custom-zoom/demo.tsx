@@ -45,7 +45,15 @@ export function CustomZoomDemo() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          padding: "8px 12px",
+          borderBottom: "1px solid #e2e8f0",
+        }}
+      >
         <button type="button" onClick={() => api.current?.zoomOut()} disabled={zoom.index <= 0}>
           − Out
         </button>

@@ -3,8 +3,9 @@ import type { GanttTask, TaskDependency } from "@am/react-gantt";
 // Synthetic sample project. Shape notes:
 //   percent-done → progress, children flattened into parentId links,
 //   the root summary → type "summary", a zero-duration node → "milestone".
-// Intraday times are dropped: this chart is day-granular and treats endDate as
-// the last (inclusive) day.
+// Intraday times are dropped: this chart is day-granular. `endDate` is the
+// EXCLUSIVE instant work stops (ADR-014), so a task covering Jan 10..21 stores
+// Jan 22 — the midnight starting the day after the last worked day.
 //
 // Dates are built with the (year, monthIndex, day) constructor, never from an
 // ISO string. `new Date("2022-01-10")` parses as UTC midnight, but the library's
@@ -18,17 +19,17 @@ export const mockTasks: GanttTask[] = [
     id: 1000,
     name: "Launch Cloud Platform",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 21),
+    endDate: new Date(2022, 0, 22),
     progress: 27,
     type: "summary",
   },
 
-//   // ── Setup web server ────────────────────────────────────────
+  //   // ── Setup web server ────────────────────────────────────────
   {
     id: 1,
     name: "Setup web server",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 13),
+    endDate: new Date(2022, 0, 14),
     progress: 33.3,
     parentId: 1000,
     type: "summary",
@@ -37,7 +38,7 @@ export const mockTasks: GanttTask[] = [
     id: 11,
     name: "Install Apache",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 10),
+    endDate: new Date(2022, 0, 11),
     progress: 50,
     parentId: 1,
   },
@@ -45,7 +46,7 @@ export const mockTasks: GanttTask[] = [
     id: 12,
     name: "Configure firewall",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 11),
+    endDate: new Date(2022, 0, 12),
     progress: 50,
     parentId: 1,
   },
@@ -53,7 +54,7 @@ export const mockTasks: GanttTask[] = [
     id: 13,
     name: "Setup load balancer",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 10),
+    endDate: new Date(2022, 0, 11),
     progress: 50,
     parentId: 1,
   },
@@ -61,7 +62,7 @@ export const mockTasks: GanttTask[] = [
     id: 14,
     name: "Configure ports",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 10),
+    endDate: new Date(2022, 0, 11),
     progress: 50,
     parentId: 1,
   },
@@ -69,7 +70,7 @@ export const mockTasks: GanttTask[] = [
     id: 15,
     name: "Run tests",
     startDate: new Date(2022, 0, 11),
-    endDate: new Date(2022, 0, 13),
+    endDate: new Date(2022, 0, 14),
     progress: 0,
     parentId: 1,
   },
@@ -79,7 +80,7 @@ export const mockTasks: GanttTask[] = [
     id: 2,
     name: "Website Design",
     startDate: new Date(2022, 0, 13),
-    endDate: new Date(2022, 0, 21),
+    endDate: new Date(2022, 0, 22),
     progress: 39.3,
     parentId: 1000,
     type: "summary",
@@ -88,7 +89,7 @@ export const mockTasks: GanttTask[] = [
     id: 21,
     name: "Contact designers",
     startDate: new Date(2022, 0, 13),
-    endDate: new Date(2022, 0, 14),
+    endDate: new Date(2022, 0, 15),
     progress: 70,
     parentId: 2,
   },
@@ -96,7 +97,7 @@ export const mockTasks: GanttTask[] = [
     id: 22,
     name: "Create shortlist of three designers",
     startDate: new Date(2022, 0, 14),
-    endDate: new Date(2022, 0, 17),
+    endDate: new Date(2022, 0, 18),
     progress: 60,
     parentId: 2,
   },
@@ -104,7 +105,7 @@ export const mockTasks: GanttTask[] = [
     id: 23,
     name: "Select & review final design",
     startDate: new Date(2022, 0, 17),
-    endDate: new Date(2022, 0, 19),
+    endDate: new Date(2022, 0, 20),
     progress: 50,
     parentId: 2,
   },
@@ -120,7 +121,7 @@ export const mockTasks: GanttTask[] = [
     id: 25,
     name: "Apply design to web site",
     startDate: new Date(2022, 0, 19),
-    endDate: new Date(2022, 0, 21),
+    endDate: new Date(2022, 0, 22),
     progress: 0,
     parentId: 2,
   },
@@ -130,7 +131,7 @@ export const mockTasks: GanttTask[] = [
     id: 3,
     name: "Setup Test Strategy",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 14),
+    endDate: new Date(2022, 0, 15),
     progress: 15,
     parentId: 1000,
     type: "summary",
@@ -139,7 +140,7 @@ export const mockTasks: GanttTask[] = [
     id: 31,
     name: "Hire QA staff",
     startDate: new Date(2022, 0, 10),
-    endDate: new Date(2022, 0, 12),
+    endDate: new Date(2022, 0, 13),
     progress: 40,
     parentId: 3,
   },
@@ -147,7 +148,7 @@ export const mockTasks: GanttTask[] = [
     id: 33,
     name: "Write test specs",
     startDate: new Date(2022, 0, 12),
-    endDate: new Date(2022, 0, 14),
+    endDate: new Date(2022, 0, 15),
     progress: 6.7,
     parentId: 3,
     type: "summary",
@@ -156,7 +157,7 @@ export const mockTasks: GanttTask[] = [
     id: 331,
     name: "Unit tests",
     startDate: new Date(2022, 0, 12),
-    endDate: new Date(2022, 0, 13),
+    endDate: new Date(2022, 0, 14),
     progress: 20,
     parentId: 33,
   },
@@ -164,7 +165,7 @@ export const mockTasks: GanttTask[] = [
     id: 332,
     name: "UI unit tests / individual screens",
     startDate: new Date(2022, 0, 12),
-    endDate: new Date(2022, 0, 14),
+    endDate: new Date(2022, 0, 15),
     progress: 10,
     parentId: 33,
   },
@@ -172,7 +173,7 @@ export const mockTasks: GanttTask[] = [
     id: 333,
     name: "Application tests",
     startDate: new Date(2022, 0, 1),
-    endDate: new Date(2022, 0, 2),
+    endDate: new Date(2022, 0, 3),
     progress: 0,
     // parentId: 33,
   },
@@ -180,12 +181,11 @@ export const mockTasks: GanttTask[] = [
     id: 334,
     name: "Monkey tests",
     startDate: new Date(2022, 0, 20),
-    endDate: new Date(2022, 0, 22),
+    endDate: new Date(2022, 0, 23),
     progress: 0,
     // parentId: 33,
   },
 ];
-
 
 // Dependencies with no `type` default to finish-to-start (FS).
 export const mockDependencies: TaskDependency[] = [

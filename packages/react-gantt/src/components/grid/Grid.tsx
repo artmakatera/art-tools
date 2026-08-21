@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
-import { buildDatesFromTasks } from "../../core/dateUtils";
-import { DEFAULT_SCALES, resolveColumnUnit } from "../../core/scales";
-import type { GanttTask, Id, TaskState } from "../../types";
+import { buildTimelineDates } from "../../core/timeline";
+import { DEFAULT_SCALES, resolveColumnStep, resolveColumnUnit } from "../../core/scales";
+import type { GanttTask, Id, Overrides, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
 import { Calendar } from "../calendar/Calendar";
@@ -23,7 +23,7 @@ import {
   useGanttTaskState,
   useGanttViewport,
   useGanttZoom,
-} from "../../context/GanttContext";
+} from "../../context/contexts";
 
 /** State passed to the function form of the Grid slotProps. */
 export interface GridOwnerState {
@@ -60,16 +60,13 @@ interface GanttGridProps {
   slotProps?: GridSlotProps;
 }
 
-export function GanttGrid({
-  slots: slotsProp,
-  slotProps: slotPropsProp,
-}: GanttGridProps = {}) {
+export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttGridProps = {}) {
   const ganttSlots = useGanttSlots();
   const slots = slotsProp ?? ganttSlots.timeline?.grid?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.timeline?.grid?.slotProps;
 
   const { visibleTasks } = useGanttTaskState();
-  const { updateTask, onTaskClick, setSelectedId } = useGanttTaskActions();
+  const { updateTask, commitTask, onTaskClick, setSelectedId } = useGanttTaskActions();
   const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
   const labels = useGanttLabels();
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
@@ -113,12 +110,15 @@ export function GanttGrid({
     };
   }, [gridRef, wheelEnabled, keyboardEnabled, zoomAt, zoomIn, zoomOut, visibleTasks.length]);
 
-  const [overrides, setOverrides] = useState<Record<Id, Partial<TaskState>>>({});
+  const [overrides, setOverrides] = useState<Overrides>({});
 
-  const handleSelect = useCallback((task: GanttTask) => {
-    setSelectedId(task.id);
-    onTaskClick?.(task);
-  }, [setSelectedId, onTaskClick]);
+  const handleSelect = useCallback(
+    (task: GanttTask) => {
+      setSelectedId(task.id);
+      onTaskClick?.(task);
+    },
+    [setSelectedId, onTaskClick],
+  );
 
   const handleOverride = useCallback((id: Id, patch: Partial<TaskState> | null) => {
     setOverrides((prev) => {
@@ -131,18 +131,16 @@ export function GanttGrid({
   }, []);
 
   const dates = useMemo(
-    () => buildDatesFromTasks(visibleTasks, padDays, scales),
+    () => buildTimelineDates(visibleTasks, padDays, scales),
     [visibleTasks, padDays, scales],
   );
 
   const originMs = dates[0]?.getTime();
-  const origin = useMemo(
-    () => (originMs == null ? undefined : new Date(originMs)),
-    [originMs],
-  );
-  if (!origin) return null;
+  const origin = useMemo(() => (originMs == null ? undefined : new Date(originMs)), [originMs]);
+  if (!origin) {
+    return null;
+  }
 
-  const snapToDay = true; // TODO: make this configurable per Gantt instance
   const unit = resolveColumnUnit(scales);
   const totalWidth = dates.length * colWidth;
   const bodyHeight = visibleTasks.length * rowHeight;
@@ -219,7 +217,6 @@ export function GanttGrid({
           origin={origin}
           colWidth={colWidth}
           rowHeight={rowHeight}
-          snapToDay={snapToDay}
           unit={unit}
           overrides={overrides}
         >
@@ -230,6 +227,7 @@ export function GanttGrid({
               bodyHeight={bodyHeight}
               colRange={colRange}
               unit={unit}
+              step={resolveColumnStep(scales)}
             />
             <DependencyLinks
               width={totalWidth}
@@ -249,9 +247,9 @@ export function GanttGrid({
                   origin={origin}
                   colWidth={colWidth}
                   rowHeight={rowHeight}
-                  snapToDay={snapToDay}
                   unit={unit}
                   onUpdate={updateTask}
+                  onCommit={commitTask}
                   override={overrides[task.id]}
                   onOverride={handleOverride}
                   onTaskClick={handleSelect}
@@ -267,4 +265,3 @@ export function GanttGrid({
 }
 
 GanttGrid.displayName = "GanttGrid";
-

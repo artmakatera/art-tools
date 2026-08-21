@@ -27,6 +27,13 @@ export const EXAMPLES: ExampleMeta[] = [
     group: "Core",
   },
   {
+    slug: "read-only",
+    title: "Read-only chart",
+    blurb:
+      "One prop removes every editing affordance: no bar drag or resize, no progress or connector handles, no actions column.",
+    group: "Core",
+  },
+  {
     slug: "custom-columns",
     title: "Custom columns",
     blurb: "Define the task-list columns yourself, including a render-prop action column.",
@@ -42,6 +49,12 @@ export const EXAMPLES: ExampleMeta[] = [
     slug: "dependencies",
     title: "Dependencies",
     blurb: "All four link types, lag, and the cascading reschedule that follows a move.",
+    group: "Core",
+  },
+  {
+    slug: "working-time",
+    title: "Working time",
+    blurb: "Weekends, holidays and business hours that the scheduler, drag and cascade all honour.",
     group: "Core",
   },
   {

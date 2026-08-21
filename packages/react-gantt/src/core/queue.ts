@@ -1,4 +1,3 @@
-
 /**
  * FIFO queue backed by a single array with a moving read cursor.
  *
@@ -12,7 +11,9 @@ export class Queue<T> {
   private head = 0;
 
   constructor(initial?: Iterable<T>) {
-    if (initial) this.items.push(...initial);
+    if (initial) {
+      this.items.push(...initial);
+    }
   }
 
   get size(): number {
@@ -28,7 +29,9 @@ export class Queue<T> {
   }
 
   dequeue(): T | undefined {
-    if (this.head >= this.items.length) return undefined;
+    if (this.head >= this.items.length) {
+      return undefined;
+    }
     const item = this.items[this.head];
     this.head++;
 

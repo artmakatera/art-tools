@@ -1,5 +1,4 @@
-import type { CalendarUnit, Scale } from "../types";
-import { resolveColumnStep, resolveColumnUnit } from "./scales";
+import type { CalendarUnit } from "../types";
 import { memoize } from "./utils";
 
 const MS_PER_MINUTE = 60_000;
@@ -66,10 +65,26 @@ export function isWeekend(date: Date): boolean {
   return dow === 0 || dow === 6;
 }
 
+/**
+ * Index of the local *civil* day containing `date` — days since 1970-01-01 by
+ * calendar date, ignoring time of day and immune to DST because it is computed
+ * from the civil fields rather than the epoch instant.
+ *
+ * The working-time calendar keys every day off this, so identical civil dates
+ * in different timezones map to the same index.
+ */
+export function civilDayIndex(date: Date): number {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / MS_PER_DAY;
+}
+
+/** Local midnight starting the civil day at `dayIndex`. Inverse of {@link civilDayIndex}. */
+export function dateFromCivilDayIndex(dayIndex: number): Date {
+  const utc = new Date(dayIndex * MS_PER_DAY);
+  return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
+}
+
 export function diffDays(from: Date, to: Date): number {
-  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-  const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
-  return Math.round((b - a) / MS_PER_DAY);
+  return civilDayIndex(to) - civilDayIndex(from);
 }
 
 export function addDays(date: Date, days: number): Date {
@@ -193,11 +208,7 @@ export function unitOffset(origin: Date, date: Date, unit: CalendarUnit): number
  * Date at a fractional `offset` of `unit` columns from `origin`. Inverse of
  * {@link unitOffset}.
  */
-export function dateAtOffset(
-  origin: Date,
-  unit: CalendarUnit,
-  offset: number,
-): Date {
+export function dateAtOffset(origin: Date, unit: CalendarUnit, offset: number): Date {
   const linearMs = LINEAR_UNIT_MS[unit];
   if (linearMs !== undefined) {
     return new Date(origin.getTime() + offset * linearMs);
@@ -207,20 +218,6 @@ export function dateAtOffset(
   const base = addUnit(origin, unit, whole).getTime();
   const next = addUnit(origin, unit, whole + 1).getTime();
   return new Date(base + frac * (next - base));
-}
-
-/**
- * The timeline origin: the start-of-unit boundary containing `min`, padded
- * outward by `pad` whole columns (`pad * step` units). Grid and TaskList both
- * derive their origin from this so their pixel math cannot drift.
- */
-export function resolveOrigin(
-  min: Date,
-  unit: CalendarUnit,
-  pad: number,
-  step: number,
-): Date {
-  return addUnit(startOfUnit(min, unit), unit, -pad * step);
 }
 
 export function buildDates(
@@ -238,42 +235,22 @@ interface TaskDates {
 }
 
 function getMinMaxDatesNonCached(tasks: readonly TaskDates[]): { min: Date; max: Date } | null {
-   const first = tasks[0];
-  if (!first) return null;
-    let min = first.startDate;
+  const first = tasks[0];
+  if (!first) {
+    return null;
+  }
+  let min = first.startDate;
   let max = first.endDate ?? first.startDate;
   for (const t of tasks) {
-    if (t.startDate < min) min = t.startDate;
+    if (t.startDate < min) {
+      min = t.startDate;
+    }
     const end = t.endDate ?? t.startDate;
-    if (end > max) max = end;
+    if (end > max) {
+      max = end;
+    }
   }
   return { min, max };
 }
 
 export const getMinMaxDates = memoize(getMinMaxDatesNonCached, 3);
-
-
-
-
-export function buildDatesFromTasks(
-  tasks: readonly TaskDates[],
-  pad = 0,
-  scales?: Scale[],
-): Date[] {
-  const range = getMinMaxDates(tasks);
-  if (!range) return [];
-
-  const unit = resolveColumnUnit(scales);
-  const step = resolveColumnStep(scales);
-  const start = resolveOrigin(range.min, unit, pad, step);
-  const end = addUnit(startOfUnit(range.max, unit), unit, pad * step);
-  const count = Math.round(unitOffset(start, end, unit) / step) + 1;
-  return buildDates(start, count, unit, step);
-}
-
-
-export function getEndDate(startDate: Date, endDate?: Date, duration?: number, ): Date {
-  if (endDate) return endDate;
-  if (duration === undefined) return startDate;
-  return addDays(startDate, duration - 1);
-}

@@ -1,22 +1,10 @@
-import {
-  Fragment,
-  useEffect,
-  useState,
-  type ComponentProps,
-  type ElementType,
-} from "react";
+import { Fragment, useEffect, useState, type ComponentProps, type ElementType } from "react";
 import { useDependencyLinks } from "./DependencyLinksContext";
-import {
-  linkBounds,
-  midpoint,
-  type Bounds,
-  type DependencyLink,
-  type Point,
-} from "./geometry";
+import { midpoint, type Bounds, type DependencyLink, type Point } from "./geometry";
 import type { TaskDependency } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
-import { useGanttLabels } from "../../context/GanttContext";
+import { useGanttLabels, useGanttReadOnly } from "../../context/contexts";
 import styles from "./DependencyLinks.module.css";
 
 /** Stroke thickness of the link, in pixels. */
@@ -86,10 +74,7 @@ export interface DependencyLinksSlotProps {
 }
 
 /** Slot config for the dependency links layer. */
-export type DependencyLinksSlotConfig = SlotConfig<
-  DependencyLinksSlots,
-  DependencyLinksSlotProps
->;
+export type DependencyLinksSlotConfig = SlotConfig<DependencyLinksSlots, DependencyLinksSlotProps>;
 
 interface DependencyLinksProps {
   width: number;
@@ -102,17 +87,11 @@ interface DependencyLinksProps {
 }
 
 /** True when a link's bounding box overlaps the visible rect (or no rect set). */
-function linkInView(points: Point[], rect: Bounds | undefined): boolean {
+function linkInView(b: Bounds, rect: Bounds | undefined): boolean {
   if (!rect) {
     return true;
   }
-  const b = linkBounds(points);
-  return (
-    b.minX <= rect.maxX &&
-    b.maxX >= rect.minX &&
-    b.minY <= rect.maxY &&
-    b.maxY >= rect.minY
-  );
+  return b.minX <= rect.maxX && b.maxX >= rect.minX && b.minY <= rect.maxY && b.maxY >= rect.minY;
 }
 
 /** One straight segment as an absolutely-positioned box. */
@@ -184,6 +163,9 @@ export function DependencyLinks({
   const slots = slotsProp ?? ganttSlots.dependencies?.links?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.dependencies?.links?.slotProps;
   const labels = useGanttLabels();
+  // A read-only chart drops the hit areas, so no link can become selected —
+  // which is also what keeps the Delete/Backspace shortcut below unreachable.
+  const readOnly = useGanttReadOnly();
 
   const links = useDependencyLinks();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -258,7 +240,7 @@ export function DependencyLinks({
     <Layer {...layerProps}>
       {links.map((link) => {
         const isSelected = link.id === selectedId;
-        if (!isSelected && !linkInView(link.points, visibleRect)) {
+        if (!isSelected && !linkInView(link.bounds, visibleRect)) {
           return null;
         }
         const head = arrow(link.points);
@@ -278,14 +260,15 @@ export function DependencyLinks({
         return (
           <Fragment key={link.id}>
             {/* Transparent hit-area divs to capture clicks */}
-            {segs.map(([a, b]) => (
-              <div
-                key={`hit-${a.x},${a.y}-${b.x},${b.y}`}
-                className={styles.hitArea}
-                style={hitAreaStyle(a, b)}
-                onClick={(e) => handleLinkClick(link.id, e)}
-              />
-            ))}
+            {!readOnly &&
+              segs.map(([a, b]) => (
+                <div
+                  key={`hit-${a.x},${a.y}-${b.x},${b.y}`}
+                  className={styles.hitArea}
+                  style={hitAreaStyle(a, b)}
+                  onClick={(e) => handleLinkClick(link.id, e)}
+                />
+              ))}
             {/* Visible segments */}
             {segs.map(([a, b], index) => {
               const segmentProps = mergeSlotProps(
@@ -296,12 +279,7 @@ export function DependencyLinks({
                 slotProps?.segment,
                 { link, isSelected, from: a, to: b, index },
               );
-              return (
-                <Segment
-                  key={`seg-${a.x},${a.y}-${b.x},${b.y}`}
-                  {...segmentProps}
-                />
-              );
+              return <Segment key={`seg-${a.x},${a.y}-${b.x},${b.y}`} {...segmentProps} />;
             })}
             <Arrow {...arrowProps} />
 
@@ -312,8 +290,7 @@ export function DependencyLinks({
                   {
                     className: styles.lagLabel,
                     style: { left: mid.x, top: mid.y },
-                    children:
-                      link.dep.lag > 0 ? `+${link.dep.lag}d` : `${link.dep.lag}d`,
+                    children: link.dep.lag > 0 ? `+${link.dep.lag}d` : `${link.dep.lag}d`,
                   },
                   slotProps?.lagLabel,
                   { link, isSelected, lag: link.dep.lag },
@@ -324,7 +301,7 @@ export function DependencyLinks({
         );
       })}
 
-      {selectedLink && deletePos && (
+      {!readOnly && selectedLink && deletePos && (
         <DeleteButton
           {...mergeSlotProps(
             {

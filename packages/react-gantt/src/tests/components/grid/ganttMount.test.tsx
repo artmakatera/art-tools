@@ -1,8 +1,8 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { Gantt } from '../../../Gantt';
-import { UNMEASURED_FALLBACK_COUNT } from '../../../core/constants';
-import type { GanttTask } from '../../../types';
+import { render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { Gantt } from "../../../Gantt";
+import { UNMEASURED_FALLBACK_COUNT } from "../../../core/constants";
+import type { GanttTask } from "../../../types";
 
 /** Flat list of `count` sequential 3-day tasks starting 2026-01-01. */
 function makeTasks(count: number): GanttTask[] {
@@ -17,15 +17,15 @@ function makeTasks(count: number): GanttTask[] {
       endDate,
       duration: 3,
       progress: 0,
-      type: 'task',
+      type: "task",
       parentId: null,
     });
   }
   return tasks;
 }
 
-describe('<Gantt /> initial mount', () => {
-  it('renders a bounded window while the viewport is unmeasured', () => {
+describe("<Gantt /> initial mount", () => {
+  it("renders a bounded window while the viewport is unmeasured", () => {
     // jsdom never measures (clientWidth/clientHeight stay 0), so this exercises
     // the exact state of the first browser commit — before useLayoutEffect
     // reports real metrics. Without the fallback cap this would commit every
@@ -36,8 +36,8 @@ describe('<Gantt /> initial mount', () => {
 
     // `.row` matches TaskListRow, Bar, and CalendarRow; discount the calendar
     // scale rows, then both remaining sides (task list + bars) must be capped.
-    const rows = container.querySelectorAll('.row').length;
-    const calendarRows = container.querySelectorAll('.calendar .row').length;
+    const rows = container.querySelectorAll(".row").length;
+    const calendarRows = container.querySelectorAll(".calendar .row").length;
     const taskRows = rows - calendarRows;
     expect(taskRows).toBeGreaterThan(0);
     expect(taskRows).toBeLessThanOrEqual(UNMEASURED_FALLBACK_COUNT * 2);

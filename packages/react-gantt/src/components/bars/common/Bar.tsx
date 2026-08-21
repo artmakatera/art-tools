@@ -1,12 +1,12 @@
-import { memo, useState } from "react";
+import { memo, startTransition, useState } from "react";
 import {
+  type BarCommit,
   computeTaskPixels,
   type DatePatch,
   pxToDate,
-  pxToEndDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
-import { useGanttLabels, useGanttSelectedId } from "../../../context/GanttContext";
+import { useGanttLabels, useGanttReadOnly, useGanttSelectedId } from "../../../context/contexts";
 import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
@@ -21,9 +21,9 @@ interface BarProps {
   origin: Date;
   colWidth: number;
   rowHeight: number;
-  snapToDay: boolean;
   unit: CalendarUnit;
   onUpdate: (id: Id, patch: DatePatch) => void;
+  onCommit: (id: Id, commit: BarCommit) => void;
   override?: Partial<TaskState>;
   onOverride: (id: Id, patch: DatePatch | null) => void;
   onTaskClick?: (task: GanttTask) => void;
@@ -36,26 +36,20 @@ export const Bar = memo(function Bar({
   origin,
   colWidth,
   rowHeight,
-  snapToDay,
   unit,
   override,
   onOverride,
   onUpdate,
+  onCommit,
   onTaskClick,
   rowIndexOffset,
 }: BarProps) {
   const labels = useGanttLabels();
+  const readOnly = useGanttReadOnly();
   const selectedId = useGanttSelectedId();
   const isSelected = selectedId === task.id;
 
-  const { left, width, progress } = computeTaskPixels(
-    task,
-    override || {},
-    origin,
-    colWidth,
-    unit,
-    { snapToDay },
-  );
+  const { left, width, progress } = computeTaskPixels(task, override || {}, origin, colWidth, unit);
   const top = index * rowHeight;
   const visualLeft = left;
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
@@ -63,14 +57,16 @@ export const Bar = memo(function Bar({
 
   const [hovered, setHovered] = useState(false);
 
+  // `endDate` is exclusive (ADR-014), so the bar's right edge maps straight to it —
+  // no day subtracted back off.
   const moveAt = (newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth, unit),
-    endDate: pxToEndDate(newLeft + width, origin, colWidth, unit),
+    endDate: pxToDate(newLeft + width, origin, colWidth, unit),
   });
 
   const resizeAt = (newWidth: number, newLeft: number): DatePatch => ({
     startDate: pxToDate(newLeft, origin, colWidth, unit),
-    endDate: pxToEndDate(newLeft + newWidth, origin, colWidth, unit),
+    endDate: pxToDate(newLeft + newWidth, origin, colWidth, unit),
   });
 
   const handleOverride = (patch: DatePatch) => {
@@ -78,9 +74,60 @@ export const Bar = memo(function Bar({
   };
 
   const handleUpdate = (id: Id, patch: DatePatch) => {
-    onUpdate(id, patch);
-    onOverride(id, null);
+    startTransition(() => {
+      onUpdate(id, patch);
+      onOverride(id, null);
+    });
   };
+
+  // Commits carry INTENT, not the two dates the pixels happened to land on: a move
+  // must preserve working time, which pixel width cannot express once a calendar
+  // exists. Clearing the override unconditionally is also what makes a bar dropped
+  // in non-working time visibly settle back — a commit that resolves to no change
+  // schedules no log update, so the preview clear is the only thing in the
+  // transition and the bar settles on the next render.
+  const handleCommit = (commit: BarCommit) => {
+    startTransition(() => {
+      onCommit(task.id, commit);
+      onOverride(task.id, null);
+    });
+  };
+
+  const commitMoveAt = (newLeft: number): BarCommit => ({
+    kind: "move",
+    startDate: pxToDate(newLeft, origin, colWidth, unit),
+  });
+
+  // A read-only bar is handed no editing handlers at all, rather than handlers
+  // that decline: each affordance (drag listener, resizer, progress handle)
+  // renders only when its callbacks arrive, so omitting them removes the
+  // affordance itself — nothing to grab, nothing to explain away.
+  const moveHandlers = readOnly
+    ? {}
+    : {
+        onMove: (newVisualLeft: number) => handleOverride(moveAt(newVisualLeft)),
+        onMoveEnd: (newVisualLeft: number) => handleCommit(commitMoveAt(newVisualLeft)),
+      };
+
+  const progressHandlers = readOnly
+    ? {}
+    : {
+        onProgressChange: (p: number) => handleOverride({ progress: p }),
+        onProgressEnd: (p: number) => handleUpdate(task.id, { progress: p }),
+      };
+
+  const resizeHandlers = readOnly
+    ? {}
+    : {
+        onResize: (newWidth: number, newVisualLeft: number) =>
+          handleOverride(resizeAt(newWidth, newVisualLeft)),
+        onResizeEnd: (edge: "start" | "end", edgePx: number) =>
+          handleCommit(
+            edge === "start"
+              ? { kind: "resizeStart", startDate: pxToDate(edgePx, origin, colWidth, unit) }
+              : { kind: "resizeEnd", endDate: pxToDate(edgePx, origin, colWidth, unit) },
+          ),
+      };
 
   const a11y: BarA11yProps = {
     role: "gridcell",
@@ -101,13 +148,15 @@ export const Bar = memo(function Bar({
       role="row"
       aria-rowindex={rowIndexOffset + index + 1}
     >
-      <ConnectorHandles
-        taskId={task.id}
-        barLeft={visualLeft}
-        barWidth={width}
-        barCenterY={barCenterY}
-        show={hovered}
-      />
+      {!readOnly && (
+        <ConnectorHandles
+          taskId={task.id}
+          barLeft={visualLeft}
+          barWidth={width}
+          barCenterY={barCenterY}
+          show={hovered}
+        />
+      )}
 
       {task.type === "milestone" && (
         <MilestoneBar
@@ -117,8 +166,7 @@ export const Bar = memo(function Bar({
           colWidth={colWidth}
           title={task.name}
           a11y={a11y}
-          onMove={(newCenter) => handleOverride(moveAt(newCenter))}
-          onMoveEnd={(newCenter) => handleUpdate(task.id, moveAt(newCenter))}
+          {...moveHandlers}
         />
       )}
       {task.type === "summary" && (
@@ -131,12 +179,8 @@ export const Bar = memo(function Bar({
           title={task.name}
           a11y={a11y}
           progress={progress}
-          onProgressChange={(p) => handleOverride({ progress: p })}
-          onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
-          onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
-          onMoveEnd={(newVisualLeft) =>
-            handleUpdate(task.id, moveAt(newVisualLeft))
-          }
+          {...progressHandlers}
+          {...moveHandlers}
         />
       )}
       {task.type === "task" || !task.type ? (
@@ -149,18 +193,9 @@ export const Bar = memo(function Bar({
           title={task.name}
           a11y={a11y}
           progress={progress}
-          onProgressChange={(p) => handleOverride({ progress: p })}
-          onProgressEnd={(p) => handleUpdate(task.id, { progress: p })}
-          onMove={(newVisualLeft) => handleOverride(moveAt(newVisualLeft))}
-          onMoveEnd={(newVisualLeft) =>
-            handleUpdate(task.id, moveAt(newVisualLeft))
-          }
-          onResize={(newWidth, newVisualLeft) =>
-            handleOverride(resizeAt(newWidth, newVisualLeft))
-          }
-          onResizeEnd={(newWidth, newVisualLeft) =>
-            handleUpdate(task.id, resizeAt(newWidth, newVisualLeft))
-          }
+          {...progressHandlers}
+          {...moveHandlers}
+          {...resizeHandlers}
         />
       ) : null}
     </div>

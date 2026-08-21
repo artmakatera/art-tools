@@ -1,7 +1,7 @@
 import type { ComponentProps, ElementType, ReactNode } from "react";
 import type { Id } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
-import { useGanttLabels } from "../../context/GanttContext";
+import { useGanttLabels } from "../../context/contexts";
 import styles from "./TaskList.module.css";
 
 const INDENT_PX = 16;
@@ -97,11 +97,7 @@ export function TreeCell({
 
   return (
     <Root {...rootProps}>
-      {isParent ? (
-        <ExpandButton {...buttonProps} />
-      ) : (
-        <Placeholder {...placeholderProps} />
-      )}
+      {isParent ? <ExpandButton {...buttonProps} /> : <Placeholder {...placeholderProps} />}
       {children}
     </Root>
   );

@@ -1,6 +1,6 @@
 import type { ChangeLog, GanttTask, Id, TaskCommand } from "../types";
-import { getEndDate } from "./dateUtils";
 import { LRUCache } from "./lruCache";
+import { endInstantOf, LINEAR_CONTEXT, type SchedulingContext } from "./taskDates";
 
 type TaskRecordsByParentId = Map<Id | null, GanttTask[]>;
 
@@ -18,12 +18,15 @@ export type ResolvedTaskMap = Map<Id, GanttTask>;
  * `(tasks, log)` so callers that already hold the resolved state don't pay for
  * a second replay.
  */
-export function getTaskList(resolvedById: ResolvedTaskMap): GanttTask[] {
+export function getTaskList(
+  resolvedById: ResolvedTaskMap,
+  ctx: SchedulingContext = LINEAR_CONTEXT,
+): GanttTask[] {
   const taskByParentId = groupTaskByParentId(resolvedById.values());
   const roots = taskByParentId.get(null) ?? [];
   const flattened: GanttTask[] = [];
   for (const root of roots) {
-    appendSubtree(root, taskByParentId, flattened);
+    appendSubtree(root, taskByParentId, flattened, ctx);
   }
   return flattened;
 }
@@ -42,10 +45,7 @@ export function seedResolvedTasks(tasks: GanttTask[]): ResolvedTaskMap {
  * the seed tasks, returning the effective tasks keyed by id in display order.
  * Pure full replay — prefer `resolveCommittedTasksCached` in render paths.
  */
-export function resolveCommittedTasks(
-  tasks: GanttTask[],
-  log: ChangeLog,
-): ResolvedTaskMap {
+export function resolveCommittedTasks(tasks: GanttTask[], log: ChangeLog): ResolvedTaskMap {
   let resolved = seedResolvedTasks(tasks);
   for (let k = 0; k < log.cursor; k++) {
     resolved = applyCommands(resolved, log.transactions[k]!);
@@ -194,38 +194,61 @@ function appendSubtree(
   task: GanttTask,
   taskByParentId: TaskRecordsByParentId,
   out: GanttTask[],
+  ctx: SchedulingContext,
 ): GanttTask {
   const children = taskByParentId.get(task.id);
   if (!children || children.length === 0) {
-    out.push(task);
-    return task;
+    const leaf = materializeEnd(task, ctx);
+    out.push(leaf);
+    return leaf;
   }
 
   const slot = out.length;
   out.push(task);
   const effectiveChildren: GanttTask[] = [];
   for (const child of children) {
-    effectiveChildren.push(appendSubtree(child, taskByParentId, out));
+    effectiveChildren.push(appendSubtree(child, taskByParentId, out, ctx));
   }
-  const effective = getParentTaskData(task, effectiveChildren);
+  const effective = getParentTaskData(task, effectiveChildren, ctx);
   out[slot] = effective;
   return effective;
+}
+
+/**
+ * Give every task in the display list a concrete exclusive `endDate` (ADR-019).
+ *
+ * This is where the calendar is applied, once. Downstream — `computeTaskPixels`,
+ * the dependency-link geometry, `getMinMaxDates`, zoom, `buildDatesFromTasks` —
+ * reads plain dates and needs no calendar awareness at all.
+ *
+ * Identity is preserved when nothing changes, so an already-dated task is not
+ * re-allocated on every render.
+ */
+function materializeEnd(task: GanttTask, ctx: SchedulingContext): GanttTask {
+  const end = endInstantOf(task, ctx);
+  if (task.endDate && task.endDate.getTime() === end.getTime()) {
+    return task;
+  }
+  if (!task.endDate && end === task.startDate) {
+    return task;
+  }
+  return { ...task, endDate: end };
 }
 
 export function getParentTaskData(
   task: GanttTask,
   children: GanttTask[],
+  ctx: SchedulingContext = LINEAR_CONTEXT,
 ): GanttTask {
   // Only summary tasks roll their children's dates/progress up. A parent typed
   // "task" or "milestone" (or untyped) keeps its own data and renders as a
   // regular bar, even when it has children.
   if (task.type !== "summary" || children.length === 0) {
-    return task;
+    return materializeEnd(task, ctx);
   }
 
-  let { startDate, endDate: taskEndDate, duration } = children[0]!;
-
-  let endDate = getEndDate(startDate, taskEndDate, duration);
+  let startDate = children[0]!.startDate;
+  let endDate = endInstantOf(children[0]!, ctx);
   let progressSum = 0;
   let notMilestoneCount = 0;
 
@@ -234,8 +257,12 @@ export function getParentTaskData(
       startDate = child.startDate;
     }
 
-    if (child.endDate && (!endDate || child.endDate > endDate)) {
-      endDate = child.endDate;
+    // Resolve every child, not just those carrying an explicit endDate: a
+    // `{ startDate, duration }` child used to contribute only its start, so the
+    // parent silently under-reported its own span.
+    const childEnd = endInstantOf(child, ctx);
+    if (childEnd > endDate) {
+      endDate = childEnd;
     }
 
     // Milestones are moments, not work: they contribute neither progress nor
@@ -247,8 +274,7 @@ export function getParentTaskData(
     }
   }
 
-  const progress =
-    notMilestoneCount === 0 ? 0 : Math.round(progressSum / notMilestoneCount);
+  const progress = notMilestoneCount === 0 ? 0 : Math.round(progressSum / notMilestoneCount);
 
   return {
     ...task,

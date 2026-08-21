@@ -1,11 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
 import type { GanttTask, Id } from "../types";
+import { useLatestRef } from "./useLatestRef";
 
 export function useExpand(tasksList: GanttTask[]) {
   const parentIds = useMemo(() => {
     const ids = new Set<Id>();
     for (const t of tasksList) {
-      if (t.parentId != null) ids.add(t.parentId);
+      if (t.parentId != null) {
+        ids.add(t.parentId);
+      }
     }
     return ids;
   }, [tasksList]);
@@ -15,28 +18,33 @@ export function useExpand(tasksList: GanttTask[]) {
   const toggleExpand = useCallback((id: Id) => {
     setCollapsedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }, []);
 
-  const taskById = useMemo(() => {
-    const map = new Map<Id, GanttTask>();
-    for (const t of tasksList) {
-      map.set(t.id, t);
-    }
-    return map;
-  }, [tasksList]);
+  const tasksListRef = useLatestRef(tasksList);
 
-  // Expand every collapsed ancestor of `id` so the task becomes visible. Walks
-  // the parentId chain and removes those ids from the collapsed set. Returns the
-  // previous set unchanged when nothing was collapsed, to avoid needless renders.
+  // Returns the previous set unchanged when nothing was collapsed, so a reveal
+  // that has no work to do does not trigger a render.
+  //
+  // The id → task index is built here rather than memoized per render: nothing
+  // reads it during render, so an eager index would tax every edit (~15ms at
+  // 100k tasks) to serve a walk that only happens on an explicit reveal — and
+  // only when something is actually collapsed.
   const revealAncestors = useCallback(
     (id: Id) => {
       setCollapsedIds((prev) => {
         if (prev.size === 0) {
           return prev;
+        }
+        const taskById = new Map<Id, GanttTask>();
+        for (const t of tasksListRef.current) {
+          taskById.set(t.id, t);
         }
         const next = new Set(prev);
         let changed = false;
@@ -50,23 +58,30 @@ export function useExpand(tasksList: GanttTask[]) {
         return changed ? next : prev;
       });
     },
-    [taskById],
+    [tasksListRef],
   );
 
   const expandedIds = useMemo(() => {
     const expanded = new Set<Id>();
     for (const id of parentIds) {
-      if (!collapsedIds.has(id)) expanded.add(id);
+      if (!collapsedIds.has(id)) {
+        expanded.add(id);
+      }
     }
     return expanded;
   }, [parentIds, collapsedIds]);
 
   const visibleTasks = useMemo(() => {
-    if (collapsedIds.size === 0) return tasksList;
+    if (collapsedIds.size === 0) {
+      return tasksList;
+    }
     const hiddenAncestors = new Set<Id>();
     const result: GanttTask[] = [];
     for (const task of tasksList) {
-      if (task.parentId != null && (hiddenAncestors.has(task.parentId) || collapsedIds.has(task.parentId))) {
+      if (
+        task.parentId != null &&
+        (hiddenAncestors.has(task.parentId) || collapsedIds.has(task.parentId))
+      ) {
         hiddenAncestors.add(task.id);
         continue;
       }

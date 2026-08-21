@@ -7,16 +7,14 @@ import type {
   GanttTaskListSlots,
   GanttBarsSlots,
   ZoomLevel,
-} from "@am/react-gantt"
+} from "@am/react-gantt";
 import "@am/react-gantt/style.css";
 import { generateMockData } from "@am/mock-data/generator";
 import { TaskEditModal } from "./TaskEditModal";
 
 // Code-split the Gantt into its own async chunk so the page shell paints
 // immediately and the <Suspense> boundary below shows a fallback while it loads.
-const Gantt = lazy(() =>
-  import("@am/react-gantt").then((m) => ({ default: m.Gantt })),
-);
+const Gantt = lazy(() => import("@am/react-gantt").then((m) => ({ default: m.Gantt })));
 
 // Stable empty reference so the Gantt's `columns` prop doesn't change identity.
 
@@ -106,14 +104,22 @@ const zoomLevels: ZoomLevel[] = [
   {
     colWidth: 60,
     scales: [
-      { unit: "month", step: 1, format: (d) => d.toLocaleString(undefined, { month: "long", year: "numeric" }) },
+      {
+        unit: "month",
+        step: 1,
+        format: (d) => d.toLocaleString(undefined, { month: "long", year: "numeric" }),
+      },
       { unit: "day", step: 1, format: (d) => String(d.getDate()) },
     ],
   },
   {
     colWidth: 44,
     scales: [
-      { unit: "day", step: 1, format: (d) => d.toLocaleString(undefined, { weekday: "short", day: "numeric" }) },
+      {
+        unit: "day",
+        step: 1,
+        format: (d) => d.toLocaleString(undefined, { weekday: "short", day: "numeric" }),
+      },
       { unit: "hour", step: 1, format: (d) => `${pad2(d.getHours())}:00` },
     ],
   },
@@ -129,10 +135,9 @@ function GanttWithTaskList() {
   // dataset and remounting <Gantt> (its `key` resets the edit log) is expensive.
   // Defer that work so the input stays responsive and rapid keystrokes coalesce
   // into one rebuild instead of one per digit.
-  const { tasks, dependencies: seededDeps } = mockData
+  const { tasks, dependencies: seededDeps } = mockData;
 
   const [dependencies, setDependencies] = useState<TaskDependency[]>(seededDeps);
-
 
   const ganttRef = useRef<GanttHandle>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
@@ -147,9 +152,10 @@ function GanttWithTaskList() {
 
   const addTask = useCallback(() => {
     // Start from the selected task (fall back to a default); span exactly one
-    // day (endDate inclusive), progress 0. Populate every GanttTask field.
-    const start =  new Date("2023-01-12");
-    const end = new Date(start); // 1 day: endDate is the inclusive last day
+    // day, progress 0. Populate every GanttTask field.
+    const start = new Date(2023, 0, 12);
+    // `endDate` is exclusive: a one-day task ends at the next midnight.
+    const end = new Date(2023, 0, 13);
     const task: GanttTask = {
       id: `new-${Date.now()}`,
       name: "New task",
@@ -166,7 +172,6 @@ function GanttWithTaskList() {
     setEditing(task);
   }, []);
 
-
   const undo = useCallback(() => ganttRef.current?.undo(), []);
   const redo = useCallback(() => ganttRef.current?.redo(), []);
 
@@ -181,16 +186,16 @@ function GanttWithTaskList() {
   );
   const handleDependencyDelete = useCallback(
     (dep: TaskDependency) =>
-      setDependencies((prev) =>
-        prev.filter((d) => !(d.from === dep.from && d.to === dep.to))
-      ),
+      setDependencies((prev) => prev.filter((d) => !(d.from === dep.from && d.to === dep.to))),
     [],
   );
 
   const closeEdit = useCallback(() => setEditing(null), []);
   const saveEdit = useCallback(
     (patch: TaskPatch) => {
-      if (editing) ganttRef.current?.updateTask(editing.id, patch);
+      if (editing) {
+        ganttRef.current?.updateTask(editing.id, patch);
+      }
       setEditing(null);
     },
     [editing],
@@ -203,9 +208,7 @@ function GanttWithTaskList() {
           {tasks.length} tasks · {dependencies.length} links
         </span>
         <span style={{ width: 1, height: 20, background: "#ddd" }} />
-        <button onClick={addTask}>
-          Add task 
-        </button>
+        <button onClick={addTask}>Add task</button>
         <button onClick={undo}>Undo</button>
         <button onClick={redo}>Redo</button>
         <span style={{ width: 1, height: 20, background: "#ddd" }} />
@@ -219,11 +222,7 @@ function GanttWithTaskList() {
           level {zoom.index + 1}/{zoom.count}
         </span>
       </div>
-      <Suspense
-        fallback={
-          <div style={{ padding: 16, color: "#666" }}>Loading Gantt…</div>
-        }
-      >
+      <Suspense fallback={<div style={{ padding: 16, color: "#666" }}>Loading Gantt…</div>}>
         <Gantt
           apiRef={ganttRef}
           tasks={tasks}
@@ -243,24 +242,21 @@ function GanttWithTaskList() {
           zoomKeyboard
         />
       </Suspense>
-      {editing && (
-        <TaskEditModal
-          task={editing}
-          onClose={closeEdit}
-          onSave={saveEdit}
-        />
-      )}
+      {editing && <TaskEditModal task={editing} onClose={closeEdit} onSave={saveEdit} />}
     </>
   );
 }
 
-
 export function App() {
-
   return (
-    <div style={{ margin: "0 auto", maxWidth: "1200px", padding: "16px", fontFamily: "system-ui, sans-serif" }}>
-
-
+    <div
+      style={{
+        margin: "0 auto",
+        maxWidth: "1200px",
+        padding: "16px",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
       <GanttWithTaskList />
     </div>
   );

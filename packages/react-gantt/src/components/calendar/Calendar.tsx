@@ -1,10 +1,10 @@
 import type { Scale } from "../../types";
 import type { IndexRange } from "../../core/virtualize";
 import styles from "./Calendar.module.css";
-import { CalendarRow,  } from "./CalendarRow";
+import { CalendarRow } from "./CalendarRow";
 import { DEFAULT_SCALES } from "../../core/scales";
 
-type CalendarProps = {
+export type CalendarProps = {
   colWidth: number;
   rowHeight: number;
   scales?: Scale[];

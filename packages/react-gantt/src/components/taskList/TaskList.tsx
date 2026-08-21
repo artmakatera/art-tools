@@ -6,20 +6,20 @@ import {
   useGanttSelectedId,
   useGanttTaskActions,
   useGanttTaskState,
-} from "../../context/GanttContext";
-import type { ColumnDef, GanttTask, Id } from "../../types";
+} from "../../context/contexts";
+import type { ColumnDef, Id } from "../../types";
 import { TaskListHeader } from "./TaskListHeader";
 import { TaskListRow } from "./TaskListRow";
 import type { GanttTaskListSlots } from "../../context/GanttSlotsContext";
-import { getMinMaxDates, resolveOrigin } from "../../core/dateUtils";
-import { computeTaskPixels } from "../../core/barUtils";
-import { resolveColumnStep, resolveColumnUnit } from "../../core/scales";
-import { scrollOffsetToReveal } from "../../core/scroll";
 import { rangeFromOffset } from "../../core/virtualize";
 import { ROW_OVERSCAN } from "../../core/constants";
 import { useColumnWidths } from "../../hooks/useColumnWidths";
+import { useLatestRef } from "../../hooks/useLatestRef";
 import { useViewportMeasure } from "../../hooks/useViewportMeasure";
 import styles from "./TaskList.module.css";
+
+/** Static, so it is hoisted out of the render path rather than re-allocated. */
+const BODY_STYLE = { flex: "1 1 auto", minHeight: 0 } as const;
 
 interface TaskListProps {
   columns?: ColumnDef[];
@@ -28,13 +28,12 @@ interface TaskListProps {
 }
 
 export function TaskList({ columns = [], taskList }: TaskListProps) {
-  const { visibleTasks, expandedIds, parentIds } =
-    useGanttTaskState();
-  const { toggleExpand, setSelectedId, onTaskClick } = useGanttTaskActions();
+  const { visibleTasks, expandedIds, parentIds } = useGanttTaskState();
+  const { toggleExpand, setSelectedId, onTaskClick, revealTask } = useGanttTaskActions();
   const selectedId = useGanttSelectedId();
-  const { rowHeight, colWidth, scales, padDays, height } = useGanttConfig();
+  const { rowHeight, scales, height } = useGanttConfig();
   const labels = useGanttLabels();
-  const { taskListRef, onTaskListScroll, gridRef } = useGanttScroll();
+  const { taskListRef, onTaskListScroll } = useGanttScroll();
 
   const { widths, onResizeStart } = useColumnWidths();
 
@@ -42,54 +41,27 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
   // header and rows render this same array, so they stay aligned by construction.
   const resolvedColumns = useMemo(
     () =>
-      columns.map((col) =>
-        widths[col.key] != null ? { ...col, width: widths[col.key] } : col,
-      ),
+      columns.map((col) => (widths[col.key] != null ? { ...col, width: widths[col.key] } : col)),
     [columns, widths],
   );
 
-  const scrollToTask = useCallback(
-    (task: GanttTask) => {
-      const grid = gridRef.current;
-      const range = getMinMaxDates(visibleTasks);
-      if (!grid || !range) {
-        return;
-      }
-      // Matches the grid's origin: buildDatesFromTasks aligns to the unit
-      // boundary containing min, padded outward by whole columns.
-      const unit = resolveColumnUnit(scales);
-      const origin = resolveOrigin(range.min, unit, padDays, resolveColumnStep(scales));
-      const { left, width } = computeTaskPixels(task, {}, origin, colWidth, unit, {
-        snapToDay: true, // TODO: make this configurable per Gantt instance
-      });
-      const nextLeft = scrollOffsetToReveal(
-        left,
-        width,
-        grid.scrollLeft,
-        grid.clientWidth,
-        colWidth, // keep one column of padding
-      );
-      if (nextLeft !== grid.scrollLeft) {
-        grid.scrollLeft = nextLeft;
-      }
-    },
-    [gridRef, visibleTasks, padDays, colWidth, scales],
-  );
+  // Dispatched through a latest-ref so `handleSelect` is identity-stable
+  // forever: it is handed to every memoized row, and closing over `visibleTasks`
+  // directly would re-render the whole window on every edit, expand or zoom.
+  // (Same pattern as `useRevealTask`.)
+  const selectRef = useLatestRef((id: Id) => {
+    setSelectedId(id);
 
-  const handleSelect = useCallback(
-    (id: Id) => {
-      setSelectedId(id);
+    const task = visibleTasks.find((t) => t.id === id);
+    if (task) {
+      onTaskClick?.(task);
+      // Horizontal only: clicking a row must not also scroll it vertically, since
+      // the row the user just clicked is by definition already on screen.
+      revealTask(id, { horizontal: true, vertical: false });
+    }
+  });
+  const handleSelect = useCallback((id: Id) => selectRef.current(id), [selectRef]);
 
-      const task = visibleTasks.find((t) => t.id === id);
-      if (task) {
-        onTaskClick?.(task);
-        scrollToTask(task); // existing horizontal grid reveal — unchanged
-      }
-    },
-    [setSelectedId, visibleTasks, onTaskClick, scrollToTask],
-  );
-
-  // Depth map: how many levels deep each task is
   const depthMap = useMemo(() => {
     const map = new Map<Id, number>();
     for (const t of visibleTasks) {
@@ -115,14 +87,12 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     return map;
   }, [visibleTasks]);
 
-  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(
-    taskListRef,
-    {
-      trackHorizontal: false,
-    },
-  );
+  const { viewport: listViewport, scheduleMeasure } = useViewportMeasure(taskListRef, {
+    trackHorizontal: false,
+  });
 
-  // Re-measure on scroll (after syncing the grid), then window the rows.
+  // Order matters: sync the grid first, then measure, so the windowing reads the
+  // scroll position both panes have settled on.
   const handleScroll = useCallback(() => {
     onTaskListScroll();
     scheduleMeasure();
@@ -137,8 +107,6 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     visibleTasks.length,
     ROW_OVERSCAN,
   );
-
-  const bodyStyle = { flex: "1 1 auto", minHeight: 0 };
 
   return (
     <div
@@ -160,12 +128,16 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
       <div
         ref={taskListRef}
         className={styles.body}
-        style={bodyStyle}
+        style={BODY_STYLE}
         onScroll={handleScroll}
         role="presentation"
       >
         <div className={styles.rows} role="rowgroup">
-          <div style={{ height: rowRange.start * rowHeight }} role="presentation" aria-hidden="true" />
+          <div
+            style={{ height: rowRange.start * rowHeight }}
+            role="presentation"
+            aria-hidden="true"
+          />
           {Array.from({ length: rowRange.end - rowRange.start }, (_, i) => {
             const index = rowRange.start + i;
             const task = visibleTasks[index]!;

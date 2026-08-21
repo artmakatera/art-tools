@@ -11,8 +11,8 @@ function task(id: string, overrides: Partial<GanttTask> = {}): GanttTask {
   return {
     id,
     name: `Task ${id}`,
-    startDate: new Date("2026-01-01"),
-    endDate: new Date("2026-01-10"),
+    startDate: new Date(2026, 0, 1),
+    endDate: new Date(2026, 0, 10),
     ...overrides,
   };
 }
@@ -76,10 +76,7 @@ describe("resolveCommittedTasks", () => {
 
   it("only replays transactions before the cursor", () => {
     const renamed = task("1", { name: "Renamed" });
-    const resolved = resolveCommittedTasks(
-      seed,
-      log([[{ type: "update", task: renamed }]], 0),
-    );
+    const resolved = resolveCommittedTasks(seed, log([[{ type: "update", task: renamed }]], 0));
     expect(resolved.get("1")?.name).toBe("Task 1");
   });
 });
@@ -157,26 +154,85 @@ describe("getTaskList", () => {
   it("rolls parent dates and progress up from children", () => {
     const resolved = resolveCommittedTasks(
       [
-        task("p", { type: "summary", startDate: new Date("2026-06-01"), endDate: new Date("2026-06-02"), progress: 0 }),
+        task("p", {
+          type: "summary",
+          startDate: new Date(2026, 5, 1),
+          endDate: new Date(2026, 5, 2),
+          progress: 0,
+        }),
         task("c1", {
           parentId: "p",
-          startDate: new Date("2026-01-05"),
-          endDate: new Date("2026-01-10"),
+          startDate: new Date(2026, 0, 5),
+          endDate: new Date(2026, 0, 10),
           progress: 40,
         }),
         task("c2", {
           parentId: "p",
-          startDate: new Date("2026-01-01"),
-          endDate: new Date("2026-01-20"),
+          startDate: new Date(2026, 0, 1),
+          endDate: new Date(2026, 0, 20),
           progress: 80,
         }),
       ],
       log([]),
     );
     const [parent] = getTaskList(resolved);
-    expect(parent!.startDate).toEqual(new Date("2026-01-01"));
-    expect(parent!.endDate).toEqual(new Date("2026-01-20"));
+    expect(parent!.startDate).toEqual(new Date(2026, 0, 1));
+    expect(parent!.endDate).toEqual(new Date(2026, 0, 20));
     expect(parent!.progress).toBe(60);
+  });
+
+  it("widens the parent for a child defined only by duration", () => {
+    // Regression: the roll-up used to widen only for children carrying an
+    // explicit endDate, so a `{ startDate, duration }` child contributed just its
+    // start and the parent silently under-reported its own span.
+    const resolved = resolveCommittedTasks(
+      [
+        task("p", { type: "summary", startDate: new Date(2026, 0, 5), endDate: undefined }),
+        task("c1", {
+          parentId: "p",
+          startDate: new Date(2026, 0, 5),
+          endDate: undefined,
+          duration: 10,
+        }),
+      ],
+      log([]),
+    );
+    const [parent] = getTaskList(resolved);
+    expect(parent!.startDate).toEqual(new Date(2026, 0, 5));
+    expect(parent!.endDate).toEqual(new Date(2026, 0, 15));
+  });
+
+  it("materializes an exclusive endDate on every task in the display list", () => {
+    // ADR-019: the calendar is applied once, here, so the whole render path
+    // downstream reads plain dates and needs no calendar awareness.
+    const resolved = resolveCommittedTasks(
+      [
+        task("p", { type: "summary", startDate: new Date(2026, 0, 5), endDate: undefined }),
+        task("c1", {
+          parentId: "p",
+          startDate: new Date(2026, 0, 5),
+          endDate: undefined,
+          duration: 2,
+        }),
+        task("c2", { parentId: "p", startDate: new Date(2026, 0, 7), endDate: undefined }),
+      ],
+      log([]),
+    );
+    const [, c1, c2] = getTaskList(resolved);
+    expect(c1!.endDate).toEqual(new Date(2026, 0, 7));
+    // A task that is already an instant is left alone rather than given a
+    // redundant endDate — materializing it would allocate a fresh object every
+    // render and defeat the identity preservation the memo chain depends on.
+    // The `endDate ?? startDate` fallback downstream covers it.
+    expect(c2!.endDate).toBeUndefined();
+  });
+
+  it("preserves task identity when nothing needs materializing", () => {
+    const resolved = resolveCommittedTasks([task("a"), task("b", { endDate: undefined })], log([]));
+    const first = getTaskList(resolved);
+    const second = getTaskList(resolved);
+    expect(second[0]).toBe(first[0]);
+    expect(second[1]).toBe(first[1]);
   });
 
   it("excludes milestone progress from the parent roll-up", () => {
@@ -222,19 +278,19 @@ describe("getTaskList", () => {
     expect(parent!.progress).toBe(0);
   });
 
-  it("does NOT roll up a parent typed \"task\" — it keeps its own data", () => {
+  it('does NOT roll up a parent typed "task" — it keeps its own data', () => {
     const resolved = resolveCommittedTasks(
       [
         task("p", {
           type: "task",
-          startDate: new Date("2026-06-01"),
-          endDate: new Date("2026-06-02"),
+          startDate: new Date(2026, 5, 1),
+          endDate: new Date(2026, 5, 2),
           progress: 5,
         }),
         task("c1", {
           parentId: "p",
-          startDate: new Date("2026-01-01"),
-          endDate: new Date("2026-01-20"),
+          startDate: new Date(2026, 0, 1),
+          endDate: new Date(2026, 0, 20),
           progress: 80,
         }),
       ],
@@ -242,27 +298,27 @@ describe("getTaskList", () => {
     );
     const [parent, child] = getTaskList(resolved);
     // Parent keeps its own dates/progress; children are still emitted below it.
-    expect(parent!.startDate).toEqual(new Date("2026-06-01"));
-    expect(parent!.endDate).toEqual(new Date("2026-06-02"));
+    expect(parent!.startDate).toEqual(new Date(2026, 5, 1));
+    expect(parent!.endDate).toEqual(new Date(2026, 5, 2));
     expect(parent!.progress).toBe(5);
     expect(child!.id).toBe("c1");
   });
 
-  it("does NOT roll up an untyped parent — only \"summary\" rolls up", () => {
+  it('does NOT roll up an untyped parent — only "summary" rolls up', () => {
     const resolved = resolveCommittedTasks(
       [
-        task("p", { startDate: new Date("2026-06-01"), endDate: new Date("2026-06-02"), progress: 5 }),
+        task("p", { startDate: new Date(2026, 5, 1), endDate: new Date(2026, 5, 2), progress: 5 }),
         task("c1", {
           parentId: "p",
-          startDate: new Date("2026-01-01"),
-          endDate: new Date("2026-01-20"),
+          startDate: new Date(2026, 0, 1),
+          endDate: new Date(2026, 0, 20),
           progress: 80,
         }),
       ],
       log([]),
     );
     const [parent] = getTaskList(resolved);
-    expect(parent!.startDate).toEqual(new Date("2026-06-01"));
+    expect(parent!.startDate).toEqual(new Date(2026, 5, 1));
     expect(parent!.progress).toBe(5);
   });
 
@@ -271,23 +327,27 @@ describe("getTaskList", () => {
     // t is a regular task, so its effective span is its own; s rolls up t's own.
     const resolved = resolveCommittedTasks(
       [
-        task("s", { type: "summary", startDate: new Date("2026-06-01"), endDate: new Date("2026-06-02") }),
+        task("s", {
+          type: "summary",
+          startDate: new Date(2026, 5, 1),
+          endDate: new Date(2026, 5, 2),
+        }),
         task("t", {
           parentId: "s",
           type: "task",
-          startDate: new Date("2026-01-01"),
-          endDate: new Date("2026-01-05"),
+          startDate: new Date(2026, 0, 1),
+          endDate: new Date(2026, 0, 5),
         }),
         task("l", {
           parentId: "t",
-          startDate: new Date("2026-01-01"),
-          endDate: new Date("2026-01-20"),
+          startDate: new Date(2026, 0, 1),
+          endDate: new Date(2026, 0, 20),
         }),
       ],
       log([]),
     );
     const [summary] = getTaskList(resolved);
-    expect(summary!.startDate).toEqual(new Date("2026-01-01"));
-    expect(summary!.endDate).toEqual(new Date("2026-01-05")); // t's own end, not l's Jan 20
+    expect(summary!.startDate).toEqual(new Date(2026, 0, 1));
+    expect(summary!.endDate).toEqual(new Date(2026, 0, 5)); // t's own end, not l's Jan 20
   });
 });

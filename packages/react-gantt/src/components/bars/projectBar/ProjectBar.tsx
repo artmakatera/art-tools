@@ -40,10 +40,11 @@ interface ProjectBarProps {
   title: string;
   a11y?: BarA11yProps;
   progress: number;
-  onProgressChange: (newProgress: number) => void;
-  onProgressEnd: (newProgress: number) => void;
-  onMove: (newLeft: number) => void;
-  onMoveEnd: (newLeft: number) => void;
+  /** Editing handlers; omitted on a read-only chart (see `TaskBar`). */
+  onProgressChange?: (newProgress: number) => void;
+  onProgressEnd?: (newProgress: number) => void;
+  onMove?: (newLeft: number) => void;
+  onMoveEnd?: (newLeft: number) => void;
   slots?: ProjectBarSlots;
   slotProps?: ProjectBarSlotProps;
 }

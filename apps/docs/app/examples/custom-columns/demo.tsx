@@ -30,7 +30,8 @@ const columns: ColumnDef[] = [
             fontSize: 11,
             padding: "2px 8px",
             borderRadius: 999,
-            background: label === "Done" ? "#dcfce7" : label === "In progress" ? "#dbeafe" : "#f1f5f9",
+            background:
+              label === "Done" ? "#dcfce7" : label === "In progress" ? "#dbeafe" : "#f1f5f9",
             color: label === "Done" ? "#166534" : label === "In progress" ? "#1e40af" : "#475569",
           }}
         >
@@ -44,7 +45,9 @@ const columns: ColumnDef[] = [
     header: "Days",
     width: 60,
     render: (task) => {
-      if (!task.endDate) return "—";
+      if (!task.endDate) {
+        return "—";
+      }
       const ms = task.endDate.getTime() - task.startDate.getTime();
       return Math.round(ms / 86_400_000) + 1;
     },

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { ColumnDef, GanttTask, Id } from "../../types";
-import { useGanttTaskActions } from "../../context/GanttContext";
+import { useGanttTaskActions } from "../../context/contexts";
 import { TreeCell, type TreeCellSlotConfig } from "./TreeCell";
 import styles from "./TaskList.module.css";
 

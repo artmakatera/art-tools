@@ -12,12 +12,10 @@ export interface ZoomLevel {
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const yearLabel = (d: Date) => String(d.getFullYear());
 const quarterLabel = (d: Date) => `Q${Math.floor(d.getMonth() / 3) + 1}`;
-const monthLong = (d: Date) =>
-  d.toLocaleString(undefined, { month: "long", year: "numeric" });
+const monthLong = (d: Date) => d.toLocaleString(undefined, { month: "long", year: "numeric" });
 const monthShort = (d: Date) => d.toLocaleString(undefined, { month: "short" });
 const dayOfMonth = (d: Date) => String(d.getDate());
-const weekdayDay = (d: Date) =>
-  d.toLocaleString(undefined, { weekday: "short", day: "numeric" });
+const weekdayDay = (d: Date) => d.toLocaleString(undefined, { weekday: "short", day: "numeric" });
 const hourLabel = (d: Date) => `${pad2(d.getHours())}:00`;
 
 /**

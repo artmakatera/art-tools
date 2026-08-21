@@ -1,10 +1,9 @@
 import type React from "react";
 import type { ComponentProps, ElementType } from "react";
-import type { ColumnDef, GanttTask, Scale } from "../../types";
+import type { ColumnDef, Scale } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import styles from "./TaskList.module.css";
 import { DEFAULT_SCALES } from "../../core/scales";
-import { addDays } from "../../core/dateUtils";
 
 /** State passed to the function form of the header (container) slotProps. */
 export interface TaskListHeaderOwnerState {
@@ -33,10 +32,7 @@ export interface TaskListHeaderSlotProps {
   columnResizeHandle?: SlotPropsInput<ComponentProps<"div">, TaskListHeaderCellOwnerState>;
 }
 
-export type TaskListHeaderSlotConfig = SlotConfig<
-  TaskListHeaderSlots,
-  TaskListHeaderSlotProps
->;
+export type TaskListHeaderSlotConfig = SlotConfig<TaskListHeaderSlots, TaskListHeaderSlotProps>;
 
 interface TaskListHeaderProps {
   columns: ColumnDef[];
@@ -118,93 +114,3 @@ export function TaskListHeader({
     </Header>
   );
 }
-
-/** Builds the task inserted by the actions-column "add after" button: a blank
- *  one-day task starting the day after the clicked row, under the same parent. */
-function buildActionTask(task: GanttTask): GanttTask {
-  const start = addDays(task.startDate, 1);
-  return {
-    id: `task-${Date.now()}`,
-    name: "New task",
-    startDate: start,
-    endDate: start,
-    duration: 1,
-    progress: 0,
-    type: "task",
-    parentId: task.parentId ?? null,
-  };
-}
-
-export const DEFAULT_COLUMNS: ColumnDef[] = [
-    {
-    key: "__action",
-    header: "  ",
-    width: 120,
-    render: (task, api) => {
-      return  <div style={{ display: "flex", gap: "8px"}}>
-        <button
-          type="button"
-          title="Edit"
-          aria-label={api.labels.editTask(task)}
-          onClick={(e) => {
-            e.stopPropagation();
-            api.editTask(task);
-          }}
-        >
-          <span aria-hidden="true">&#9998;</span>
-        </button>
-        <button
-          type="button"
-          title="Add after"
-          aria-label={api.labels.addTaskAfter(task)}
-          onClick={(e) => {
-            e.stopPropagation();
-            const created = buildActionTask(task);
-            api.createTask(created, task.id);
-            api.editTask(created);
-          }}
-        >
-          <span aria-hidden="true">&#10133;</span>
-        </button>
-        <button
-          type="button"
-          title="Delete"
-          aria-label={api.labels.deleteTask(task)}
-          style={{ fontSize: 9 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            api.deleteTask(task.id);
-          }}
-        >
-          <span aria-hidden="true">&#10060;</span>
-        </button>
-      </div>
-    }
-  },
-  {
-    key: "__name",
-    header: "Task Name",
-    render: (task: GanttTask) => task.name,
-    width: 200,
-    isTreeColumn: true,
-  },
-  {
-    key: "__start",
-    header: "Start",
-    width: 90,
-    render: (task: GanttTask) => task.startDate.toLocaleDateString(),
-  },
-  {
-    key: "__end",
-    header: "End",
-    width: 90,
-    render: (task: GanttTask) => task.endDate?.toLocaleDateString() ?? "—",
-  },
-  {
-    key: "__progress",
-    header: "Progress, %",
-    width: 90,
-    render: (task: GanttTask) => `${task.progress ?? 0}%`,
-  },
-
-];
