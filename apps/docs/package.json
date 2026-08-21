@@ -2,7 +2,7 @@
   "name": "@am/docs",
   "version": "0.0.0",
   "private": true,
-  "description": "Examples gallery for @am/react-gantt — each route renders a live chart beside the source that produced it",
+  "description": "Examples gallery for @am-tools/react-gantt — each route renders a live chart beside the source that produced it",
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3000",
@@ -13,8 +13,8 @@
     "lint:fix": "oxlint --fix"
   },
   "dependencies": {
+    "@am-tools/react-gantt": "workspace:*",
     "@am/mock-data": "workspace:*",
-    "@am/react-gantt": "workspace:*",
     "@shikijs/langs": "^4.4.2",
     "@shikijs/themes": "^4.4.2",
     "next": "16.3.0",

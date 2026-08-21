@@ -1,11 +1,30 @@
 {
-  "name": "@am/react-gantt",
+  "name": "@am-tools/react-gantt",
   "version": "0.0.0",
-  "private": true,
-  "description": "React Gantt component library",
+  "description": "Composable, virtualized Gantt chart for React — dependencies, working-time calendars, undo/redo, and slot-based theming.",
+  "keywords": [
+    "gantt",
+    "gantt-chart",
+    "project-management",
+    "react",
+    "scheduling",
+    "timeline",
+    "typescript",
+    "virtualized"
+  ],
+  "homepage": "https://github.com/artmakatera/react-gantt-edge#readme",
+  "bugs": {
+    "url": "https://github.com/artmakatera/react-gantt-edge/issues"
+  },
+  "license": "MIT",
+  "author": "Artem Makatera",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artmakatera/react-gantt-edge.git",
+    "directory": "packages/react-gantt"
+  },
   "files": [
-    "dist",
-    "src/style.css.d.ts"
+    "dist"
   ],
   "type": "module",
   "sideEffects": [
@@ -16,17 +35,28 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./style.css": {
-      "types": "./src/style.css.d.ts",
+      "types": "./dist/style.css.d.ts",
       "style": "./dist/style.css",
       "default": "./dist/style.css"
-    }
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
+    "prepublishOnly": "pnpm run build",
     "build": "vite build",
     "dev": "vite build --watch",
     "check-types": "tsc --noEmit",
@@ -41,6 +71,7 @@
   "devDependencies": {
     "@am/config-typescript": "workspace:*",
     "@am/oxlint-config": "workspace:*",
+    "@microsoft/api-extractor": "^7.59.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -58,5 +89,8 @@
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

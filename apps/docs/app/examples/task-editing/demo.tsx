@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Gantt, type GanttHandle, type GanttTask, type TaskPatch } from "@am/react-gantt";
+import { Gantt, type GanttHandle, type GanttTask, type TaskPatch } from "@am-tools/react-gantt";
 import { simpleTasks } from "@/lib/demo-tasks";
 
 /** `<input type="date">` wants YYYY-MM-DD in *local* time, not an ISO UTC string. */

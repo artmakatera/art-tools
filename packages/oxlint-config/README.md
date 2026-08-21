@@ -21,7 +21,7 @@ oxlint's config schema is strict — unknown keys are a hard parse error, so the
 live as comments in the JSON.
 
 - **`import/no-unassigned-import`** — side-effect imports are load-bearing in this repo, not
-  oversights. Stylesheets (`@am/react-gantt/style.css`, `./globals.css`) and Next's `server-only`
+  oversights. Stylesheets (`@am-tools/react-gantt/style.css`, `./globals.css`) and Next's `server-only`
   poison pill exist purely for their side effect and have nothing to assign.
 - **`jsx-a11y/click-events-have-key-events`**, **`jsx-a11y/no-static-element-interactions`** — the
   Gantt's rows _are_ keyboard-operable, but through a `keydown` handler delegated to the pane

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Gantt, type ColumnDef, type GanttTask } from "@am/react-gantt";
+import { Gantt, type ColumnDef, type GanttTask } from "@am-tools/react-gantt";
 import { simpleTasks } from "@/lib/demo-tasks";
 
 const STATUS = (progress: number) =>

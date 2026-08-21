@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-10 px-6 py-16">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold tracking-tight">@am/react-gantt</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">@am-tools/react-gantt</h1>
         <p className="text-slate-600 dark:text-slate-400">
           A composable, virtualized Gantt chart for React. Every example below is live, and the code
           shown beneath it is the file that rendered it.
@@ -17,12 +17,12 @@ export default function HomePage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Install</h2>
         <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm dark:border-slate-800 dark:bg-slate-900">
-          pnpm add @am/react-gantt
+          pnpm add @am-tools/react-gantt
         </pre>
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Then import the stylesheet once, at your app&rsquo;s entry point:{" "}
           <code className="font-mono text-[13px]">
-            import &quot;@am/react-gantt/style.css&quot;;
+            import &quot;@am-tools/react-gantt/style.css&quot;;
           </code>
         </p>
       </section>

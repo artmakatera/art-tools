@@ -11,7 +11,7 @@ export function Nav() {
   return (
     <nav aria-label="Examples" className="flex flex-col gap-6 text-sm">
       <Link href="/" className="font-semibold tracking-tight hover:underline">
-        @am/react-gantt
+        @am-tools/react-gantt
       </Link>
 
       {EXAMPLE_GROUPS.map((group) => (

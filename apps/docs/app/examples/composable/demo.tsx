@@ -1,6 +1,6 @@
 "use client";
 
-import { GanttGrid, GanttProvider, TaskList, type ColumnDef } from "@am/react-gantt";
+import { GanttGrid, GanttProvider, TaskList, type ColumnDef } from "@am-tools/react-gantt";
 import { treeTasks } from "@/lib/demo-tasks";
 
 const columns: ColumnDef[] = [

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { Gantt, type GanttBarsSlots, type GanttTaskListSlots } from "@am/react-gantt";
+import { Gantt, type GanttBarsSlots, type GanttTaskListSlots } from "@am-tools/react-gantt";
 import { treeTasks } from "@/lib/demo-tasks";
 
 /** A replacement for the default ▸/▾ expander. */

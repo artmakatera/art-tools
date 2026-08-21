@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // @am/mock-data ships raw TypeScript (its exports map points at src/*.ts), so
-  // Next has to compile it. @am/react-gantt is deliberately NOT listed: it is
+  // Next has to compile it. @am-tools/react-gantt is deliberately NOT listed: it is
   // prebuilt ESM+CJS, and transpiling it would neither help nor — the thing
   // people reach for this flag hoping for — inject the "use client" directives
   // it lacks. Every demo owns its own client boundary instead.

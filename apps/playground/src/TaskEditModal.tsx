@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { GanttTask, TaskPatch } from "@am/react-gantt";
+import type { GanttTask, TaskPatch } from "@am-tools/react-gantt";
 
 interface TaskEditModalProps {
   task: GanttTask;

@@ -1,7 +1,63 @@
 {
   "$comment": "Agent state: the backlog and its status. One feature is 'in_progress' at a time. Update `status` and `evidence` in the same change that lands the work — never ahead of it. See CLAUDE.md > Definition of done.",
-  "activeFeature": null,
+  "activeFeature": "npm-publish-readiness",
   "features": [
+    {
+      "id": "npm-publish-readiness",
+      "name": "Make the library publishable to npm as @am-tools/react-gantt",
+      "description": "The library has never been published. It is `private: true`, has no license, no repository metadata, and no build guard — a publish from a clean checkout would ship an empty tarball because `dist/` is gitignored and nothing forces a build. Rename from the unowned two-character `@am` scope to `@am-tools/react-gantt`, add the missing manifest metadata and an MIT license, fix the exports map so no condition escapes `dist/`, and wire up Changesets plus GitHub Actions with npm provenance. Nothing is published as part of this work.",
+      "status": "in_progress",
+      "priority": "high",
+      "dependencies": [],
+      "doneCriteria": [
+        "`packages/react-gantt/package.json` is not private, is named @am-tools/react-gantt, and carries publishConfig.access public, license, repository (with `directory`), homepage, bugs, keywords, engines",
+        "A `prepublishOnly` script rebuilds `dist` — a publish from a fresh clone cannot ship an empty tarball",
+        "MIT LICENSE exists at the repo root and inside packages/react-gantt",
+        "No `exports` condition points outside `dist/`; `files` is exactly [\"dist\"]",
+        "`npm pack --dry-run` lists dist/**, package.json, README.md, LICENSE and nothing else — no src/, no tests, no tsconfig",
+        "`publint` and `@arethetypeswrong/cli` both report no errors",
+        "Changesets is configured with a pending initial changeset; `pnpm changeset status` is clean",
+        "CI and release workflows exist under .github/workflows/",
+        "No occurrence of the old `@am/react-gantt` specifier survives outside dist/ and node_modules",
+        "./init.sh passes and its real output is in progress.md"
+      ],
+      "files": [
+        "packages/react-gantt/package.json",
+        "packages/react-gantt/vite.config.ts",
+        "packages/react-gantt/tsconfig.build.json",
+        "package.json",
+        "turbo.json",
+        ".gitignore",
+        ".npmrc",
+        ".changeset/",
+        ".github/workflows/",
+        "LICENSE"
+      ],
+      "blockedBy": "Every doneCriteria entry is satisfied except the last: `./init.sh` still exits 1 at `pnpm format:check` on packages/react-gantt/README.md. That failure predates this work (feature `baseline-format-debt`) and is not caused by it — lint, check-types, test and build are all green, and format:check was reduced back from 6 failing files to the same 1 it failed on before. Clear `baseline-format-debt` and this feature is done with no further code change.",
+      "evidence": "Recorded 2026-08-21. pnpm lint: 0 errors, 1 warning (pre-existing clsx default-import in TaskResizer.tsx:1). pnpm check-types: 5/5 workspaces pass. pnpm test: 485 passed across 43 files. pnpm build: 3/3 tasks successful, including both consumer apps. pnpm format:check: 1 file fails (packages/react-gantt/README.md) — pre-existing, see blockedBy. publint: 'All good!'. @arethetypeswrong/cli --exclude-entrypoints style.css: 'No problems found', green on node10/node16-CJS/node16-ESM/bundler. npm pack --dry-run: 11 files, 256.5 kB packed — LICENSE, README.md, package.json, dist/{index.cjs,index.mjs,index.d.ts,index.d.cts,style.css,style.css.d.ts} and two .js.map; no src/, tests, or tsconfig. changeset status: one pending minor for @am-tools/react-gantt."
+    },
+    {
+      "id": "use-client-boundary",
+      "name": "Decide the \"use client\" story for published consumers",
+      "description": "The library ships no \"use client\" directives; the comment in apps/docs/next.config.ts is explicit that every demo owns its own client boundary. That works for demos in this repo, where each page adds the directive itself. An external Next.js App Router consumer who imports <Gantt /> into a server component gets a confusing server-component error instead of a clear one. Surfaced while preparing the npm release (npm-publish-readiness) and deliberately left alone: adding directives changes behaviour and needs an ADR first. Decide between banner-injecting \"use client\" at the top of the bundle, marking only the entry, or documenting the wrapper requirement and leaving the code as-is.",
+      "status": "planned",
+      "priority": "medium",
+      "dependencies": ["npm-publish-readiness"],
+      "doneCriteria": [
+        "An ADR records the choice and what was rejected — in particular why the library does or does not take on the client boundary for its consumers",
+        "If directives are added, the CJS and ESM bundles both carry them and the existing apps/docs demos still work unchanged",
+        "packages/react-gantt/README.md states plainly what an App Router consumer has to do",
+        "The rationale comment in apps/docs/next.config.ts is updated if the reasoning it records stops being true",
+        "./init.sh passes"
+      ],
+      "files": [
+        "packages/react-gantt/src/index.ts",
+        "packages/react-gantt/vite.config.ts",
+        "packages/react-gantt/README.md",
+        "docs/adr/"
+      ],
+      "evidence": null
+    },
     {
       "id": "roadmap-keyboard-anchor",
       "name": "Fix the dangling keyboard-navigation roadmap link",

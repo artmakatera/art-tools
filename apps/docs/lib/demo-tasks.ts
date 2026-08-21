@@ -1,4 +1,4 @@
-import type { GanttTask, TaskDependency } from "@am/react-gantt";
+import type { GanttTask, TaskDependency } from "@am-tools/react-gantt";
 
 /**
  * Small, readable fixtures for the examples.

@@ -1,4 +1,4 @@
-# @am/react-gantt
+# @am-tools/react-gantt
 
 A high-performance, composable Gantt chart component library for React. It renders
 thousands of tasks smoothly (rows **and** columns are virtualized on both axes),
@@ -37,7 +37,7 @@ MUI-style slot system for deep customization.
 ## Install
 
 ```bash
-pnpm add @am/react-gantt
+pnpm add @am-tools/react-gantt
 ```
 
 Peer dependencies: `react` and `react-dom` (`^18 || ^19`). The only runtime
@@ -46,7 +46,7 @@ dependency is [`clsx`](https://github.com/lukeed/clsx).
 Import the stylesheet once, near your app root:
 
 ```ts
-import "@am/react-gantt/style.css";
+import "@am-tools/react-gantt/style.css";
 ```
 
 ---
@@ -54,8 +54,8 @@ import "@am/react-gantt/style.css";
 ## Quick start
 
 ```tsx
-import { Gantt, type GanttTask } from "@am/react-gantt";
-import "@am/react-gantt/style.css";
+import { Gantt, type GanttTask } from "@am-tools/react-gantt";
+import "@am-tools/react-gantt/style.css";
 
 // Build dates with the (year, monthIndex, day) constructor, never an ISO string —
 // `new Date("2023-01-10")` parses as UTC midnight while the geometry reads local
@@ -119,7 +119,7 @@ view (task list pane + calendar/grid). For full layout control, compose the piec
 directly:
 
 ```tsx
-import { GanttProvider, TaskList, GanttGrid } from "@am/react-gantt";
+import { GanttProvider, TaskList, GanttGrid } from "@am-tools/react-gantt";
 
 <GanttProvider tasks={tasks} height={500}>
   <TaskList />

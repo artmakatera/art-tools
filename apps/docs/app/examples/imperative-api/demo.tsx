@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Gantt, type GanttHandle, type GanttTask } from "@am/react-gantt";
+import { Gantt, type GanttHandle, type GanttTask } from "@am-tools/react-gantt";
 import { simpleTasks } from "@/lib/demo-tasks";
 
 /**

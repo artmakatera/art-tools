@@ -98,6 +98,32 @@ decisions live. Before deleting one, work out which kind it is.
 (`// Use plain records for safe indexing`, `// Depth map: how many levels deep
 each task is` above a `depthMap`). If removing it loses no claim, it was noise.
 
+**Do not annotate config properties.** Settings in `package.json`,
+`tsconfig*.json`, `vite.config.ts`, `.gitignore`, and
+`.github/workflows/*.yml` get no explanatory comment — not for what the option
+does, not for why it was chosen, not for what would break without it. That
+belongs in `docs/adr/` or in `progress.md`, both of which hold it better and
+neither of which goes stale beside a line someone edits. A config file should
+read as a list of settings.
+
+```jsonc
+// Bad — three lines of rationale on one setting
+{
+  // The shared react-library config turns this on, which is right for local
+  // development but wrong for the published tarball: the maps resolve to
+  // ../src/*, and `files` ships only dist.
+  "declarationMap": false
+}
+
+// Good
+{ "declarationMap": false }
+```
+
+The narrow exception is a hand-written build step whose correctness depends on
+another setting — the `bundleTypes` / `emitCjsTypes` pairing in
+`packages/react-gantt/vite.config.ts`. That is an invariant, and it goes on the
+function, not on the property.
+
 Two consequences worth stating plainly: a rule of the form "remove comments
 except JSDoc" does not apply here — much of the rationale above lives in `//`
 comments (nearly all of `GanttContext.tsx`'s architecture notes do), while
@@ -113,21 +139,21 @@ DO Not commit by itself!
 `./init.sh` is the gate. Run it before claiming anything is done; its output is
 the evidence.
 
-| Command                                           | What it settles                                                                                                  |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `./init.sh`                                       | Everything below, in order. Fails fast.                                                                          |
-| `./init.sh --quick`                               | Skips install and build — the inner loop while iterating.                                                        |
-| `pnpm test`                                       | 485 tests across 43 files in `packages/react-gantt`.                                                             |
-| `pnpm check-types`                                | `tsc --noEmit` across all 5 workspaces.                                                                          |
-| `pnpm lint`                                       | oxlint. Warnings do not fail; errors do.                                                                         |
-| `pnpm format:check`                               | oxfmt. **Currently red** on one file — see `baseline-format-debt`.                                               |
-| `pnpm build`                                      | Turborepo build of every package.                                                                                |
-| `pnpm --filter @am/react-gantt test -- <pattern>` | A single test file, while iterating.                                                                             |
-| `pnpm bench`                                      | Perf benchmarks in `apps/playground`. Run these for anything touching virtualization or the resolution pipeline. |
+| Command                                                 | What it settles                                                                                                  |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `./init.sh`                                             | Everything below, in order. Fails fast.                                                                          |
+| `./init.sh --quick`                                     | Skips install and build — the inner loop while iterating.                                                        |
+| `pnpm test`                                             | 485 tests across 43 files in `packages/react-gantt`.                                                             |
+| `pnpm check-types`                                      | `tsc --noEmit` across all 5 workspaces.                                                                          |
+| `pnpm lint`                                             | oxlint. Warnings do not fail; errors do.                                                                         |
+| `pnpm format:check`                                     | oxfmt. **Currently red** on one file — see `baseline-format-debt`.                                               |
+| `pnpm build`                                            | Turborepo build of every package.                                                                                |
+| `pnpm --filter @am-tools/react-gantt test -- <pattern>` | A single test file, while iterating.                                                                             |
+| `pnpm bench`                                            | Perf benchmarks in `apps/playground`. Run these for anything touching virtualization or the resolution pipeline. |
 
 Two things about running the apps:
 
-- `pnpm dev` builds `@am/react-gantt` **before** either app starts. Both consume
+- `pnpm dev` builds `@am-tools/react-gantt` **before** either app starts. Both consume
   its `dist`, so skipping that ordering makes a clean checkout fail to resolve
   the import. It is not optional sequencing.
 - `docs/` is prose; `apps/docs/` is the runnable Next.js gallery. The names

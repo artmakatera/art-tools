@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Gantt, type GanttHandle, type ZoomLevel } from "@am/react-gantt";
+import { Gantt, type GanttHandle, type ZoomLevel } from "@am-tools/react-gantt";
 import { treeTasks } from "@/lib/demo-tasks";
 
 /**

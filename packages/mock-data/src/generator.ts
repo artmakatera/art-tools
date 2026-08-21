@@ -1,4 +1,4 @@
-import type { GanttTask, TaskDependency, TaskDependencyType } from "@am/react-gantt";
+import type { GanttTask, TaskDependency, TaskDependencyType } from "@am-tools/react-gantt";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock data generator

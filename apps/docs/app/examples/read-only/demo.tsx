@@ -1,6 +1,6 @@
 "use client";
 
-import { Gantt } from "@am/react-gantt";
+import { Gantt } from "@am-tools/react-gantt";
 import { mockTasks } from "@am/mock-data/sample";
 
 export function ReadOnlyDemo() {

@@ -13,10 +13,14 @@
     "format:check": "oxfmt --check",
     "test": "turbo run test",
     "test:watch": "vitest",
-    "bench": "turbo run bench"
+    "bench": "turbo run bench",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only",
+    "release": "turbo run build --filter=@am-tools/react-gantt && changeset publish"
   },
   "devDependencies": {
     "@am/oxlint-config": "workspace:*",
+    "@changesets/cli": "^3.0.1",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
     "turbo": "^2.9.16",

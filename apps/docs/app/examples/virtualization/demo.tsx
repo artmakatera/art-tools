@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
-import { Gantt } from "@am/react-gantt";
+import { Gantt } from "@am-tools/react-gantt";
 import { generateMockData } from "@am/mock-data/generator";
 
 const SIZES = [1_000, 10_000, 100_000];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Gantt, type GanttCalendar, type GanttTask } from "@am/react-gantt";
+import { Gantt, type GanttCalendar, type GanttTask } from "@am-tools/react-gantt";
 
 /**
  * A `calendar` makes non-working time real: the scheduler, drag, and the

@@ -7,14 +7,14 @@ import type {
   GanttTaskListSlots,
   GanttBarsSlots,
   ZoomLevel,
-} from "@am/react-gantt";
-import "@am/react-gantt/style.css";
+} from "@am-tools/react-gantt";
+import "@am-tools/react-gantt/style.css";
 import { generateMockData } from "@am/mock-data/generator";
 import { TaskEditModal } from "./TaskEditModal";
 
 // Code-split the Gantt into its own async chunk so the page shell paints
 // immediately and the <Suspense> boundary below shows a fallback while it loads.
-const Gantt = lazy(() => import("@am/react-gantt").then((m) => ({ default: m.Gantt })));
+const Gantt = lazy(() => import("@am-tools/react-gantt").then((m) => ({ default: m.Gantt })));
 
 // Stable empty reference so the Gantt's `columns` prop doesn't change identity.
 
