@@ -12,6 +12,9 @@ MUI-style slot system for deep customization.
 - **Fast** — windowed rendering with overscan, an incremental resolve cache, and
   purpose-scoped React contexts so hot updates don't re-render stable subtrees.
 
+**[Live examples & documentation →](https://art-tools-docs.vercel.app)** — every
+example is interactive, with the source that rendered it shown underneath.
+
 ---
 
 ## Table of contents
