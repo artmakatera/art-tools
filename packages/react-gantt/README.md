@@ -497,6 +497,37 @@ const barSlots: GanttBarsSlots = {
 Per-component slot types (`*Slots`, `*SlotProps`, `*SlotConfig`, `*OwnerState`) are
 all exported from the package entry.
 
+#### Bar tooltips
+
+`bars.tooltip` is one slot covering all three bar types, and it is **empty by
+default** — bars carry a native `title` and nothing more until you fill it. Setting
+it suppresses that native `title`, so the two do not stack (ADR-022).
+
+```tsx
+import { Gantt, GanttBarTooltip } from "@art-tools/react-gantt";
+
+// The built-in tooltip: name, dates, progress.
+<Gantt tasks={tasks} height={500} bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }} />;
+```
+
+Your own component receives `task`, the resolved `progress`, `displayEnd`, `open`,
+and two ways to position itself — `anchorName` for CSS anchor positioning and
+`anchorRef` (the bar's DOM node) for JS positioning libraries:
+
+```tsx
+const Tip = ({ task, displayEnd, anchorRef }: BarTooltipProps) => /* ... */;
+```
+
+Read `displayEnd` rather than `task.endDate`: stored ends are **exclusive** instants,
+so a Mon–Fri task's raw `endDate` is Saturday (ADR-014).
+
+Two things worth knowing. The tooltip is hover-only, because bars are not focusable
+yet — the accessible name stays on the bar itself, so screen readers are unaffected.
+And `GanttBarTooltip` places itself with the `popover` attribute plus CSS anchor
+positioning, so it escapes the grid's scroll clipping without a portal and flips
+below the bar when there is no room above; where CSS anchor positioning is
+unavailable it hides itself and the native `title` takes over.
+
 ---
 
 ## Accessibility

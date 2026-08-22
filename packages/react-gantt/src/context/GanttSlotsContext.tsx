@@ -8,6 +8,7 @@ import type { BarProgressSlotConfig } from "../components/bars/progress/BarProgr
 import type { BarProgressResizeHandleSlotConfig } from "../components/bars/progress/BarProgressResizeHandle";
 import type { TaskResizerSlotConfig } from "../components/bars/taskBar/TaskResizer";
 import type { ConnectorHandlesSlotConfig } from "../components/bars/common/ConnectorHandles";
+import type { BarTooltipSlotConfig } from "../components/bars/common/BarTooltip";
 import type { DependencyLinksSlotConfig } from "../components/dependency-links/DependencyLinks";
 import type { DependencyPreviewSlotConfig } from "../components/dependency-links/DependencyPreview";
 import type { CalendarRowSlotConfig } from "../components/calendar/CalendarRow";
@@ -30,6 +31,12 @@ export interface GanttBarsSlots {
   barProgressResizeHandle?: BarProgressResizeHandleSlotConfig;
   taskResizer?: TaskResizerSlotConfig;
   connectorHandles?: ConnectorHandlesSlotConfig;
+  /**
+   * One slot for all three bar types, rendered by `Bar` — which already tracks
+   * hover and holds the task. Empty by default: no tooltip is rendered and the
+   * bar keeps its native `title` (ADR-022).
+   */
+  tooltip?: BarTooltipSlotConfig;
 }
 
 /** Slots for dependency links. Delivered via context. */

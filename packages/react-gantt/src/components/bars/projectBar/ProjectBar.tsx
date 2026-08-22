@@ -1,4 +1,4 @@
-import type { ComponentProps, ElementType } from "react";
+import type { ComponentProps, ElementType, Ref } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
@@ -45,6 +45,8 @@ interface ProjectBarProps {
   onProgressEnd?: (newProgress: number) => void;
   onMove?: (newLeft: number) => void;
   onMoveEnd?: (newLeft: number) => void;
+  /** Forwarded to the root element, for a tooltip slot to anchor against. */
+  barRef?: Ref<HTMLDivElement>;
   slots?: ProjectBarSlots;
   slotProps?: ProjectBarSlotProps;
 }
@@ -62,6 +64,7 @@ export function ProjectBar({
   onProgressEnd,
   onMove,
   onMoveEnd,
+  barRef,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: ProjectBarProps) {
@@ -99,6 +102,7 @@ export function ProjectBar({
 
   return (
     <Root
+      ref={barRef}
       left={left}
       top={top}
       width={width}

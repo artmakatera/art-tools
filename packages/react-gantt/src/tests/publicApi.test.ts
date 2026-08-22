@@ -23,6 +23,7 @@ describe("public API", () => {
       "DEFAULT_ZOOM_INDEX",
       "DEFAULT_ZOOM_LEVELS",
       "Gantt",
+      "GanttBarTooltip",
       "GanttGrid",
       "GanttProvider",
       "GanttSlotsProvider",

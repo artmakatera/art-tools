@@ -1,4 +1,4 @@
-import type { ComponentProps, ElementType } from "react";
+import type { ComponentProps, ElementType, Ref } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
@@ -33,6 +33,8 @@ interface MilestoneBarProps {
   /** Editing handlers; omitted on a read-only chart (see `TaskBar`). */
   onMove?: (newCenterLeft: number) => void;
   onMoveEnd?: (newCenterLeft: number) => void;
+  /** Forwarded to the root element, for a tooltip slot to anchor against. */
+  barRef?: Ref<HTMLDivElement>;
   slots?: MilestoneBarSlots;
   slotProps?: MilestoneBarSlotProps;
 }
@@ -46,6 +48,7 @@ export function MilestoneBar({
   a11y,
   onMove,
   onMoveEnd,
+  barRef,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: MilestoneBarProps) {
@@ -58,8 +61,11 @@ export function MilestoneBar({
   const Root = slots?.root ?? DraggableBar;
   const Shape = slots?.shape ?? "div";
 
+  // When `a11y` is supplied it owns the native tooltip, including deliberately
+  // omitting it under a tooltip slot. The `title` prop is only the fallback for
+  // standalone use of this component outside a chart.
   const rootProps = mergeSlotProps(
-    { className: styles.milestone, title, ...a11y },
+    { className: styles.milestone, ...a11y, title: a11y ? a11y.title : title },
     slotProps?.root,
     ownerState,
   );
@@ -72,6 +78,7 @@ export function MilestoneBar({
 
   return (
     <Root
+      ref={barRef}
       left={centerLeft - size / 2}
       top={top}
       width={size}

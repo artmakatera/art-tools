@@ -1,6 +1,9 @@
 .task {
   position: absolute;
   box-sizing: border-box;
+  /* Inherited from `.row`, and only set when a tooltip slot is configured.
+   * Unset resolves invalid-at-computed-value-time, i.e. `anchor-name: none`. */
+  anchor-name: var(--am-gantt-bar-anchor);
   background-color: var(--am-gantt-task-bg);
   border-radius: var(--am-gantt-task-border-radius);
   --am-gantt-bar-progress-bg: var(--am-gantt-task-bg-progress);

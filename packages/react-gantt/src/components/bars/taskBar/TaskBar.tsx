@@ -1,4 +1,4 @@
-import type { ComponentProps, ElementType } from "react";
+import type { ComponentProps, ElementType, Ref } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
@@ -51,6 +51,12 @@ interface TaskBarProps {
   onResizeEnd?: (edge: "start" | "end", edgePx: number) => void;
   onMove?: (newLeft: number) => void;
   onMoveEnd?: (newLeft: number) => void;
+  /**
+   * Forwarded to the root element, for a tooltip slot to anchor against. Named
+   * `barRef` rather than `ref` because this component is not itself a
+   * `forwardRef` — React would intercept the prop.
+   */
+  barRef?: Ref<HTMLDivElement>;
   slots?: TaskBarSlots;
   slotProps?: TaskBarSlotProps;
 }
@@ -70,6 +76,7 @@ export function TaskBar({
   onResizeEnd,
   onMove,
   onMoveEnd,
+  barRef,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: TaskBarProps) {
@@ -99,14 +106,18 @@ export function TaskBar({
     ownerState,
   );
 
+  // The label's native tooltip follows `a11y.title`, not the `title` prop: the
+  // prop is the visible text, `a11y.title` is the native tooltip, and a chart
+  // with a tooltip slot suppresses only the latter.
   const labelProps = mergeSlotProps(
-    { className: styles.taskContent, title, children: title },
+    { className: styles.taskContent, title: a11y?.title, children: title },
     slotProps?.label,
     ownerState,
   );
 
   return (
     <Root
+      ref={barRef}
       left={left}
       top={top}
       width={width}

@@ -1,4 +1,9 @@
-import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
+import {
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { useDrag } from "../../../hooks/useDrag";
 
 export interface BarA11yProps {
@@ -7,7 +12,12 @@ export interface BarA11yProps {
   "aria-colspan": number;
   "aria-label": string;
   "aria-selected": boolean | undefined;
-  title: string;
+  /**
+   * The native browser tooltip. Optional because a chart with a tooltip slot
+   * suppresses it — two tooltips would stack. `aria-label` is unaffected, so
+   * the accessible name survives either way.
+   */
+  title?: string;
 }
 
 interface DraggableBarProps extends Omit<
@@ -29,21 +39,27 @@ interface DraggableBarProps extends Omit<
   children?: ReactNode;
 }
 
-export function DraggableBar({
-  left,
-  top,
-  width,
-  height,
-  colWidth,
-  dragAnchor,
-  className,
-  title,
-  style,
-  onMove,
-  onMoveEnd,
-  children,
-  ...rest
-}: DraggableBarProps) {
+// forwardRef rather than a plain `ref` prop: `peerDependencies` allows React 18,
+// where a function component cannot receive `ref` as an ordinary prop. The ref is
+// what a tooltip slot anchors to (see BarTooltipProps.anchorRef).
+export const DraggableBar = forwardRef<HTMLDivElement, DraggableBarProps>(function DraggableBar(
+  {
+    left,
+    top,
+    width,
+    height,
+    colWidth,
+    dragAnchor,
+    className,
+    title,
+    style,
+    onMove,
+    onMoveEnd,
+    children,
+    ...rest
+  },
+  ref,
+) {
   const readOnly = !onMove && !onMoveEnd;
   const onMouseDown = useDrag({
     onStart: () => ({ start: dragAnchor }),
@@ -62,6 +78,7 @@ export function DraggableBar({
   return (
     <div
       {...rest}
+      ref={ref}
       className={className}
       style={{ left, top, width, height, cursor: readOnly ? "default" : "move", ...style }}
       title={title}
@@ -70,4 +87,4 @@ export function DraggableBar({
       {children}
     </div>
   );
-}
+});

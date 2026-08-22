@@ -1,3 +1,9 @@
+/*
+ * `--am-gantt-bar-anchor` is set here, inline, when a tooltip slot is
+ * configured: the bar reads it as `anchor-name` and the tooltip as
+ * `position-anchor`, so both sides of the pairing inherit one value from this
+ * shared parent (ADR-022).
+ */
 .row {
   position: absolute;
   left: 0;
