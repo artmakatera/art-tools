@@ -6,45 +6,81 @@
 **Decision.** `GanttBarsSlots` gains `tooltip?: BarTooltipSlotConfig`, rendered by `Bar` rather than
 by the three bar components, and empty by default. `GanttBarTooltip` is exported as an opt-in
 implementation. The slot component receives the task, the resolved progress, an already-inclusive
-`displayEnd`, plus both an `anchorRef` (the bar's DOM node) and an `anchorName` — the two families of
-tooltip need different things, and supplying only one would exclude the other.
+`displayEnd`, an `anchorRef` (the bar's DOM node), and an optional `delayMs`. An `anchorName` ident
+was part of this shape while placement was CSS-anchored; it is gone, along with `anchor-name` on the
+three bar classes and the row's `--am-gantt-bar-anchor`.
 
 `Bar` is the render site because it already tracks `hovered` for `ConnectorHandles`, so no new
 hover re-render is introduced, and because one slot there replaces three duplicated ones.
 
-**Placement is the `popover` attribute plus CSS anchor positioning.** The library has no portal and
-the grid is `overflow: auto` on both axes, so an inline tooltip is clipped at the grid's edge.
-`popover` promotes the element into the **top layer**, which escapes that clipping without a portal
-and, unlike a bare `position: fixed`, is also immune to ancestor containing blocks and to stacking
-contexts — no z-index has to out-rank the calendar header. `position-try-fallbacks: flip-block`
-flips the tooltip below the bar when there is no room above it.
+**Placement is computed in JS from the cursor, with `position: fixed` and inline `left`/`top`.**
+Bottom-right of the pointer by default, flipped left or up rather than allowed off-screen, and never
+inside the sticky calendar's band. It appears after a 500ms dwell, is positioned once when that
+delay elapses, and does not follow the pointer afterwards. The dwell restarts per bar, because the
+timer lives in the mounted tooltip and dies with it.
 
-`popover="manual"`, not `auto`: the tooltip's lifetime is the hover and `Bar` unmounts it on mouse
-leave, so light-dismiss and Esc have nothing to do, and an `auto` popover would additionally close
-unrelated popovers on the consumer's page.
+**Three CSS approaches were built and abandoned first, each for a structural reason.** They are
+recorded because each looks correct until measured, and re-proposing any of them would cost the same
+day again.
+
+_Anchored to the bar._ Every `position-area` band is derived from the anchor **rectangle's** centre
+and edges, so a bar wider than the viewport places the tooltip at its off-screen midpoint. Measured:
+a 2580px bar spanning x 593→3173 has its midpoint at 1883, and in a 1456px viewport the tooltip was
+put there. Not recoverable with fallbacks — all five block and inline fallbacks were injected,
+confirmed parsed (`"flip-block, start span-end, …"`), and the tooltip moved zero pixels, because
+every fallback is equally anchor-relative.
+
+_Anchored to a pointer-tracking probe._ This did fix the long-bar case and was verified in Chrome,
+but it put the pointer plumbing in `Bar` and still could not express the header constraint.
+
+_`popover` for the top layer._ Genuinely immune to both the stacking context and ancestor containing
+blocks — measured painting 181px past the scroll container's edge — but it requires a
+`showPopover()` effect and an override of the UA stylesheet's `inset: 0; margin: auto`, and the
+tooltip was wanted effect-free.
+
+**The stacking constraint is the reason placement, not layering, solves the header.** `.row` is
+`position: absolute; z-index: 3`, which makes it a stacking context, so a tooltip inside it is only
+ever layered against its siblings in that row. What competes with the calendar's `z-index: 30` is
+the row's **3**. No tooltip z-index can win, so `headerBottom` is a hard floor in the placement
+function rather than a preference. `position-try-fallbacks` cannot help here either: fallbacks fire
+on **overflow of the containing block**, and the tooltip overflows nothing — it is occluded by a
+sibling, which CSS anchor positioning has no way to express.
 
 **Rejected.** A render prop (`renderTooltip`) — it forks the customization model beside a
-deliberately single slot system. A library-owned tooltip _component_ in the sense of owning
-collision detection, delay, touch and dismissal — none of that is Gantt-domain, and the SSR example
-has to keep working. A bare `position: fixed` without `popover`, which was tried first: it escapes
-the grid's clipping only while no ancestor of the bar establishes a containing block, and it still
-fights the calendar header's `z-index: 30`. In the playground it drew a top-row tooltip clipped
-against the header, which is what prompted the move to the top layer.
+deliberately single slot system. A library-owned tooltip in the sense of owning touch, dismissal and
+collision detection against arbitrary elements — none of that is Gantt-domain, and the SSR example
+has to keep working.
 
 **Cost accepted, three parts.**
 
-One `useEffect` calling `showPopover()`, where the CSS-only version had none. The call is optional
-(`el?.showPopover?.()`) so that jsdom, which has no popover implementation, is unaffected.
+Two render passes. Placement depends on the tooltip's own measured size, which depends on its
+content, so the first pass renders `visibility: hidden` purely to be measured and a `useLayoutEffect`
+writes the final position before paint. No flicker, but the component is no longer effect-free.
 
-Anchor positioning is Baseline 2026 but not universal, and the popover UA stylesheet centres an
-un-anchored popover in the middle of the viewport. `BarTooltip.module.css` therefore hides the
-tooltip under `@supports not (position-anchor: --x)` and degrades to the native `title`.
+One document-level `mousemove` listener, registered on the first tooltip mount and never removed.
 
-`flip-block` covers the block axis only. CSS anchor positioning has no equivalent of a shift
-middleware — only discrete fallback positions — so a bar whose centre sits within half a tooltip's
-width of the viewport edge can still overflow on the inline axis. Measured as not occurring at the
-right edge of a 1680px viewport; if it becomes a problem, the fix is `span-inline-start` fallbacks
-rather than JS measurement.
+It cannot be per-instance, and the reason is worth stating precisely because the obvious reading is
+wrong. The DOM has no "where is the cursor now" API, so the position must come from an event. The
+event order for a pointer entering an element is `mouseover` → `mouseenter` → `mousemove`, which
+suggests a listener registered during the mount would catch the move that caused it. It does not: a
+single physical move dispatches all three **synchronously inside one input event**, and React flushes
+the resulting effects only afterwards, so the listener is late by exactly one event. Verified in
+Chrome — a mount-time listener saw nothing at all when the pointer moved onto a bar and stopped,
+which is the canonical tooltip gesture. Passing the entry point down from `Bar`'s `mouseenter` also
+works and was tried, but it puts pointer state in `Bar` for a value only the tooltip wants.
+
+Lazy rather than at import time: `dist` is a single bundled module, so an import-time
+`addEventListener` would attach for every consumer of the library, including those that never render
+a tooltip. It would also throw under SSR.
+
+The residual cost is the **first hover of a page load**, which has no sample yet and falls back to
+just below the bar, horizontally clamped into the viewport so a bar wider than the screen still
+places the tooltip somewhere visible.
+
+The header rule is untestable in jsdom. `headerBottomOf` walks up for an ancestor whose computed
+`overflow-y` is `auto`, and jsdom applies no CSS-module styles, so the walk finds nothing and the
+constraint drops to 0. The viewport flips are covered by unit tests; the header avoidance is
+browser-verified only.
 
 **The tooltip is hover-only, and that is deliberate, not an oversight.** Bars are not focusable:
 every control inside them is `tabIndex: -1` and only the grid container takes `tabIndex = 0`, so

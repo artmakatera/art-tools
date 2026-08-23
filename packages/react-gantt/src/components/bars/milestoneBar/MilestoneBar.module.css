@@ -1,7 +1,5 @@
 .milestone {
   position: absolute;
-  /* See the note on `.task` in TaskBar.module.css. */
-  anchor-name: var(--am-gantt-bar-anchor);
 }
 
 .milestoneShape {

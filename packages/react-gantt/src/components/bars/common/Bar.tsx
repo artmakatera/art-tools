@@ -1,4 +1,5 @@
-import { memo, startTransition, useId, useRef, useState, type CSSProperties } from "react";
+import { clsx } from "clsx";
+import { memo, startTransition, useRef, useState } from "react";
 import {
   type BarCommit,
   computeTaskPixels,
@@ -23,16 +24,6 @@ import type { BarTooltipOwnerState } from "./BarTooltip";
 import { ConnectorHandles } from "./ConnectorHandles";
 import type { BarA11yProps } from "./DraggableBar";
 import styles from "./Bar.module.css";
-
-/**
- * `anchor-name` must be a dashed-ident, and `useId()` output is not one — it
- * contains colons. Derived from `useId` rather than `task.id` because `Id` is
- * `string | number`: an arbitrary string is not a valid ident, and sanitizing
- * two distinct ids can collide onto the same name.
- */
-function anchorNameFrom(id: string): string {
-  return `--am-gantt-bar-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-}
 
 interface BarProps {
   task: GanttTask;
@@ -72,7 +63,6 @@ export const Bar = memo(function Bar({
   const tooltipConfig = useGanttSlots().bars?.tooltip;
   const Tooltip = tooltipConfig?.slots?.tooltip;
   const barRef = useRef<HTMLDivElement>(null);
-  const anchorName = anchorNameFrom(useId());
 
   const { left, width, progress } = computeTaskPixels(task, override || {}, origin, colWidth, unit);
   const top = index * rowHeight;
@@ -167,6 +157,8 @@ export const Bar = memo(function Bar({
     title: Tooltip ? undefined : task.name,
   };
 
+  // `open` is hover, not visibility: the built-in tooltip waits out its own
+  // dwell delay before appearing, and a consumer's may do something else again.
   const tooltipOwnerState: BarTooltipOwnerState = {
     task,
     progress,
@@ -176,16 +168,8 @@ export const Bar = memo(function Bar({
 
   return (
     <div
-      className={styles.row}
-      // The anchor ident is set here, on the shared parent, so the bar
-      // (`anchor-name`) and the tooltip (`position-anchor`) both inherit one
-      // value. Only set when a tooltip slot exists, so the bars' `anchor-name`
-      // otherwise resolves to `none`.
-      style={
-        Tooltip
-          ? ({ top, height: rowHeight, "--am-gantt-bar-anchor": anchorName } as CSSProperties)
-          : { top, height: rowHeight }
-      }
+      className={clsx(styles.row, hovered && Tooltip && styles.rowTooltipOpen)}
+      style={{ top, height: rowHeight }}
       onClick={onTaskClick ? () => onTaskClick(task) : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -253,7 +237,6 @@ export const Bar = memo(function Bar({
         <Tooltip
           {...mergeSlotProps({}, tooltipConfig?.slotProps?.tooltip, tooltipOwnerState)}
           anchorRef={barRef}
-          anchorName={anchorName}
           {...tooltipOwnerState}
         />
       )}

@@ -510,23 +510,32 @@ import { Gantt, GanttBarTooltip } from "@art-tools/react-gantt";
 <Gantt tasks={tasks} height={500} bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }} />;
 ```
 
+`GanttBarTooltip` appears after a 500ms hover dwell, positions itself
+bottom-right of the cursor, and flips left or up rather than running off the
+viewport. Tune the dwell through the usual `slotProps` channel:
+
+```tsx
+bars={{ tooltip: { slots: { tooltip: GanttBarTooltip }, slotProps: { tooltip: { delayMs: 250 } } } }}
+```
+
 Your own component receives `task`, the resolved `progress`, `displayEnd`, `open`,
-and two ways to position itself — `anchorName` for CSS anchor positioning and
-`anchorRef` (the bar's DOM node) for JS positioning libraries:
+and `anchorRef` — the bar's DOM node, for positioning against the bar itself:
 
 ```tsx
 const Tip = ({ task, displayEnd, anchorRef }: BarTooltipProps) => /* ... */;
 ```
 
 Read `displayEnd` rather than `task.endDate`: stored ends are **exclusive** instants,
-so a Mon–Fri task's raw `endDate` is Saturday (ADR-014).
+so a Mon–Fri task's raw `endDate` is Saturday (ADR-014). And note `open` means
+_hovered_, not _visible_ — the built-in tooltip is still counting out its dwell for
+the first 500ms of that.
 
-Two things worth knowing. The tooltip is hover-only, because bars are not focusable
-yet — the accessible name stays on the bar itself, so screen readers are unaffected.
-And `GanttBarTooltip` places itself with the `popover` attribute plus CSS anchor
-positioning, so it escapes the grid's scroll clipping without a portal and flips
-below the bar when there is no room above; where CSS anchor positioning is
-unavailable it hides itself and the native `title` takes over.
+Two things worth knowing if you write your own. The tooltip is hover-only, because
+bars are not focusable yet; the accessible name stays on the bar, so screen readers
+are unaffected either way. And a tooltip rendered in this slot **cannot paint over
+the sticky calendar header** — its row is a stacking context, so no z-index reaches
+past it. `GanttBarTooltip` handles that by never placing itself in the header's
+band; a custom one should do the same rather than reach for `z-index` (ADR-022).
 
 ---
 

@@ -1,8 +1,6 @@
 .project {
   position: absolute;
   box-sizing: border-box;
-  /* See the note on `.task` in TaskBar.module.css. */
-  anchor-name: var(--am-gantt-bar-anchor);
   background-color: var(--am-gantt-project-bg);
   border-radius: 4px;
   overflow: hidden;

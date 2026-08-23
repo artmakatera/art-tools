@@ -1,38 +1,21 @@
 /*
- * Three declarations carry the whole approach and none is optional.
+ * `left`/`top` are written inline by BarTooltip.tsx, which places the tooltip
+ * from the cursor and keeps it inside the viewport and clear of the sticky
+ * calendar. Nothing here positions it — see that file for why CSS anchor
+ * positioning could not (ADR-022).
  *
- * The `popover` attribute (set in BarTooltip.tsx) promotes this into the top
- * layer, which is what escapes the grid's `overflow: auto` — the library has no
- * portal. Unlike a bare `position: fixed`, the top layer is also immune to
- * ancestor containing blocks and to stacking contexts, so no z-index has to
- * out-rank the calendar header.
- *
- * `position-anchor` reads the ident set on `.row` in Bar.tsx, which both the bar
- * (`anchor-name`) and this element inherit. Promotion to the top layer changes
- * painting, not DOM position, so that inheritance still holds.
- *
- * `position-try-fallbacks: flip-block` is what stops a top-row tooltip being
- * drawn over the calendar header: with no room above, it flips below instead.
- * The gap is a symmetric `margin-block`, so flipping needs no second value.
+ * `position: fixed` is what escapes the grid's `overflow: auto`; the library has
+ * no portal. It works only while no ancestor of the bar establishes a containing
+ * block — see the invariant comment in Bar.module.css.
  */
 .tooltip {
-  /* Undo the popover UA stylesheet, which centres the element in the viewport
-   * with `inset: 0; margin: auto` and adds its own border/padding/background. */
-  inset: auto;
-  margin: 0;
-  border: 0;
-  overflow: visible;
-
   position: fixed;
-  position-anchor: var(--am-gantt-bar-anchor);
-  position-area: block-start;
-  position-try-fallbacks: flip-block;
-  margin-block: var(--am-gantt-tooltip-gap, 6px);
 
-  /* Hide once the bar itself is scrolled out of the grid. Mandatory for a
-   * top-layer element, which would otherwise float over the whole page after
-   * its anchor is gone. */
-  position-visibility: anchors-visible;
+  /* Does not beat the calendar header, and cannot: `.row` is a stacking context,
+   * so the row's own z-index is what competes with the header's 30. This only
+   * orders the tooltip within its row — which is why placement keeps clear of
+   * the header band instead of trying to out-rank it. */
+  z-index: var(--am-gantt-tooltip-z-index, 40);
 
   width: max-content;
   max-width: var(--am-gantt-tooltip-max-width, 260px);
@@ -44,18 +27,6 @@
   line-height: 1.45;
   box-shadow: var(--am-gantt-tooltip-shadow, 0 4px 12px rgb(15 23 42 / 25%));
   pointer-events: none;
-}
-
-/*
- * Without anchor positioning the popover UA styles centre this in the middle of
- * the viewport, which is worse than no tooltip. Degrade to the native `title`
- * instead — Bar.tsx only suppresses that attribute, it does not remove the
- * accessible name.
- */
-@supports not (position-anchor: --x) {
-  .tooltip {
-    display: none;
-  }
 }
 
 .name {

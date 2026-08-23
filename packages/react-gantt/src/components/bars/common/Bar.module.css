@@ -1,8 +1,14 @@
 /*
- * `--am-gantt-bar-anchor` is set here, inline, when a tooltip slot is
- * configured: the bar reads it as `anchor-name` and the tooltip as
- * `position-anchor`, so both sides of the pairing inherit one value from this
- * shared parent (ADR-022).
+ * `position: absolute` + a non-auto `z-index` makes this a stacking context, so
+ * a tooltip rendered inside it can never out-rank the sticky calendar (30) — the
+ * row's own 3 is what competes. That is why the tooltip is placed to avoid the
+ * header band rather than to paint over it (ADR-022).
+ *
+ * Do not add `transform`, `filter`, `contain`, `will-change` or `perspective`
+ * here, to the grid, or to anything between them. Each establishes a containing
+ * block for fixed-position descendants, and the tooltip is `position: fixed`
+ * precisely so it escapes the grid's `overflow: auto` without a portal. Adding
+ * one re-clips it silently, and no test can observe that.
  */
 .row {
   position: absolute;
@@ -15,4 +21,18 @@
 
 .row:last-child {
   border-bottom: none;
+}
+
+/*
+ * While a tooltip is open, lift its row one step above the other rows. Every row
+ * carries the same z-index, so without this a *later* row's bar paints over the
+ * tooltip of an earlier one — the tooltip lives inside its row's stacking
+ * context and cannot escape it.
+ *
+ * One step, not more: this must stay below --am-gantt-calendar-z-index (30), or
+ * the hovered bar itself would paint over the sticky header as it scrolls under
+ * it. Clearing the header is placement's job, not layering's (ADR-022).
+ */
+.rowTooltipOpen {
+  z-index: calc(var(--am-gantt-task-bar-z-index, 3) + 1);
 }
