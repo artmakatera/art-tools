@@ -18,7 +18,7 @@ import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
 import { TaskBar } from "../taskBar/TaskBar";
-import type { BarTooltipOwnerState } from "./BarTooltip";
+import type { BarTooltipOwnerState } from "../barTooltip";
 import { ConnectorHandles } from "./ConnectorHandles";
 import type { BarA11yProps } from "./DraggableBar";
 import styles from "./Row.module.css";
@@ -159,11 +159,11 @@ export const Row = memo(function Row({
     title: Tooltip ? undefined : task.name,
   };
 
-  // `open` is absent on purpose: the bar owns the hover that opens the tooltip,
-  // so it fills that in. `progress` is override-aware during a drag, and
-  // `displayEnd` is inclusive (ADR-014) so no consumer rediscovers that
+  // Data only — nothing here says whether the tooltip is showing, because that is
+  // the slot's own state (ADR-022). `progress` is override-aware during a drag,
+  // and `displayEnd` is inclusive (ADR-014) so no consumer rediscovers that
   // `task.endDate` is exclusive.
-  const tooltipData: Omit<BarTooltipOwnerState, "open"> = {
+  const tooltipData: BarTooltipOwnerState = {
     task,
     progress,
     displayEnd: displayEndOf(task, schedulingContext),

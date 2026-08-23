@@ -1,14 +1,7 @@
-import {
-  useRef,
-  useState,
-  type ComponentPropsWithoutRef,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { useRef, type ComponentPropsWithoutRef, type CSSProperties, type ReactNode } from "react";
 
 import { useDrag } from "../../../hooks/useDrag";
-import type { BarTooltipOwnerState } from "./BarTooltip";
-import { BarTooltipConsumer } from "./BarTooltipConsumer";
+import { BarTooltipConsumer, type BarTooltipOwnerState } from "../barTooltip";
 
 export interface BarA11yProps {
   role: string;
@@ -52,7 +45,7 @@ interface DraggableBarProps extends Omit<
    * `slots.root` removes the tooltip unless the replacement forwards this prop
    * on to a `DraggableBar` of its own (ADR-022).
    */
-  tooltip?: Omit<BarTooltipOwnerState, "open">;
+  tooltip?: BarTooltipOwnerState;
   children?: ReactNode;
 }
 
@@ -75,7 +68,6 @@ export function DraggableBar({
   ...rest
 }: DraggableBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState(false);
 
   const readOnly = !onMove && !onMoveEnd;
   const onMouseDown = useDrag({
@@ -93,7 +85,11 @@ export function DraggableBar({
   const movable = Boolean(onMove || onMoveEnd);
 
   return (
-    <BarTooltipConsumer tooltip={tooltip} anchorRef={barRef} open={Boolean(hovered)} taskPosition={{ left, top, width, height }}>
+    <BarTooltipConsumer tooltip={tooltip} anchorRef={barRef}>
+      {/* Handed to the slot as its `children`, and the slot is what mounts
+          `BarTooltipTrigger` around it. So this div carries no hover wiring of
+          its own, and the handlers below are purely the consumer's — the trigger
+          composes with them by cloning, rather than replacing them. */}
       <div
         {...rest}
         ref={barRef}
@@ -101,16 +97,8 @@ export function DraggableBar({
         style={{ left, top, width, height, cursor: readOnly ? "default" : "move", ...style }}
         title={title}
         onMouseDown={movable ? onMouseDown : undefined}
-        // Composed, not replaced — a consumer's `slotProps.root` handler must still
-        // fire, and the a11y payload may carry its own.
-        onMouseEnter={(event) => {
-          onMouseEnter?.(event);
-          setHovered(true);
-        }}
-        onMouseLeave={(event) => {
-          onMouseLeave?.(event);
-          setHovered(false);
-        }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
         {children}
       </div>

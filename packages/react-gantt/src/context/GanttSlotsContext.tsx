@@ -8,7 +8,7 @@ import type { BarProgressSlotConfig } from "../components/bars/progress/BarProgr
 import type { BarProgressResizeHandleSlotConfig } from "../components/bars/progress/BarProgressResizeHandle";
 import type { TaskResizerSlotConfig } from "../components/bars/taskBar/TaskResizer";
 import type { ConnectorHandlesSlotConfig } from "../components/bars/common/ConnectorHandles";
-import type { BarTooltipSlotConfig } from "../components/bars/common/BarTooltip";
+import type { BarTooltipSlotConfig } from "../components/bars/barTooltip";
 import type { DependencyLinksSlotConfig } from "../components/dependency-links/DependencyLinks";
 import type { DependencyPreviewSlotConfig } from "../components/dependency-links/DependencyPreview";
 import type { CalendarRowSlotConfig } from "../components/calendar/CalendarRow";

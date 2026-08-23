@@ -1,11 +1,15 @@
-import { act, fireEvent, render } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
+import { useState } from "react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Gantt } from "../../../Gantt";
-import { GanttBarTooltip } from "../../../components/bars/common/BarTooltip";
-import type { BarTooltipProps } from "../../../components/bars/common/BarTooltip";
+import {
+  BarTooltipRoot,
+  BarTooltipTrigger,
+  GanttBarTooltip,
+  useBarTooltip,
+} from "../../../components/bars/barTooltip";
+import type { BarTooltipProps } from "../../../components/bars/barTooltip";
 import type { GanttTask } from "../../../types";
-
-const DELAY = 500;
 
 function makeTasks(): GanttTask[] {
   return [
@@ -21,67 +25,69 @@ function makeTasks(): GanttTask[] {
   ];
 }
 
+/** Matches `GanttBarTooltip`'s own formatting, so the test is locale-agnostic. */
+function formatted(date: Date) {
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
 /**
  * Scoped by the bar's public hook class, not by `[role="gridcell"]` — the task
  * list is a treegrid whose cells match that role and come first in document
- * order. The tooltip triggers on the `bar`; the `row` still drives the connector
- * handles.
+ * order. The tooltip opens from the `bar`; the `row` drives the connector handles.
  */
 function barAndRow(container: HTMLElement) {
   const bar = container.querySelector(".am-gantt-bar-task") as HTMLElement;
   return { bar, row: bar.parentElement as HTMLElement };
 }
 
-/** Records the props the slot was called with, so we can assert on them. */
+/** Reads the open state out of the enclosing root — a slot has no `open` prop. */
+function Marker({ name }: { name: string }) {
+  return useBarTooltip()?.open ? <div data-testid="probe">{name}</div> : null;
+}
+
+/**
+ * Records the props the slot was called with, so we can assert on them.
+ *
+ * Built the way a custom tooltip is meant to be: own the open state with
+ * `BarTooltipRoot`, wrap `children` in the trigger, and read `open` from context.
+ */
 function makeProbe() {
   const seen: BarTooltipProps[] = [];
   const Probe = (props: BarTooltipProps) => {
     seen.push(props);
-    return <div data-testid="probe">{props.task.name}</div>;
+    return (
+      <BarTooltipRoot anchorRef={props.anchorRef}>
+        <BarTooltipTrigger>{props.children}</BarTooltipTrigger>
+        <Marker name={props.task.name} />
+      </BarTooltipRoot>
+    );
   };
   return { seen, Probe };
 }
 
-/** Nothing renders synchronously any more — the tooltip waits out its dwell. */
-function waitOutDelay() {
-  act(() => {
-    vi.advanceTimersByTime(DELAY);
-  });
+/**
+ * Queried from `document.body`, not from the render container: the tooltip is
+ * portalled there to escape the row's stacking context, which puts it outside
+ * `container` by design.
+ */
+function tooltipEl() {
+  return document.body.querySelector('[role="tooltip"]') as HTMLElement | null;
 }
 
-/**
- * The tooltip reads the pointer from a `mousemove` listener it registers on
- * mount, so a move dispatched *before* the hover is invisible to it — which is
- * exactly the real ordering, since `mousemove` follows `mouseover`.
- */
 function pointTo(x: number, y: number) {
   fireEvent.mouseMove(document, { clientX: x, clientY: y });
 }
 
 /**
- * Queried from `document.body`, not from the render container: the tooltip is
- * portalled there so it can escape the row's stacking context, which puts it
- * outside `container` by design.
+ * jsdom reports every rect as zero, and both the placement clamp and the
+ * pointer-outside guard deliberately ignore zero-size rects as "not laid out".
+ * Tests that need either to engage have to supply real numbers.
  */
-function tooltipOf(_container?: HTMLElement) {
-  return document.body.querySelector('[role="tooltip"]') as HTMLElement | null;
-}
-
-/** jsdom gives every element a zero rect; the placement tests need real numbers. */
-function stubTooltipSize(width: number, height: number) {
+function stubRects(match: (el: HTMLElement) => boolean, rect: Partial<DOMRect>) {
   const original = HTMLElement.prototype.getBoundingClientRect;
   HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
-    if (this.getAttribute("role") === "tooltip") {
-      return {
-        width,
-        height,
-        top: 0,
-        left: 0,
-        right: width,
-        bottom: height,
-        x: 0,
-        y: 0,
-      } as DOMRect;
+    if (match(this)) {
+      return { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, ...rect } as DOMRect;
     }
     return original.call(this);
   };
@@ -90,153 +96,135 @@ function stubTooltipSize(width: number, height: number) {
   };
 }
 
+const isTooltip = (el: HTMLElement) => el.getAttribute("role") === "tooltip";
+const isBar = (el: HTMLElement) => el.classList.contains("am-gantt-bar-task");
+
+function renderChart(slot: BarTooltipProps extends never ? never : unknown = GanttBarTooltip) {
+  return render(
+    <Gantt
+      tasks={makeTasks()}
+      height={400}
+      bars={{ tooltip: { slots: { tooltip: slot as never } } }}
+    />,
+  );
+}
+
 describe("bar tooltip slot", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("renders nothing and keeps the native title when no slot is configured", () => {
-    const { container, queryByTestId } = render(<Gantt tasks={makeTasks()} height={400} />);
+    const { container } = render(<Gantt tasks={makeTasks()} height={400} />);
     const { bar } = barAndRow(container);
-    waitOutDelay();
 
-    expect(queryByTestId("probe")).toBeNull();
-    expect(tooltipOf(container)).toBeNull();
+    fireEvent.mouseEnter(bar);
+    expect(tooltipEl()).toBeNull();
     expect(bar.getAttribute("title")).toBe("Write the spec");
   });
 
-  it("waits out the dwell delay before the built-in tooltip appears", () => {
-    const { container } = render(
-      <Gantt
-        tasks={makeTasks()}
-        height={400}
-        bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
-      />,
-    );
+  it("opens on bar hover with no dwell delay", () => {
+    const { container } = renderChart();
     fireEvent.mouseEnter(barAndRow(container).bar);
-
-    act(() => {
-      vi.advanceTimersByTime(DELAY - 1);
-    });
-    expect(tooltipOf(container)).toBeNull();
-
-    act(() => {
-      vi.advanceTimersByTime(1);
-    });
-    expect(tooltipOf(container)).not.toBeNull();
+    expect(tooltipEl()).not.toBeNull();
   });
 
-  it("never appears when the pointer leaves before the delay elapses", () => {
-    const { container } = render(
-      <Gantt
-        tasks={makeTasks()}
-        height={400}
-        bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
-      />,
-    );
-    const { bar } = barAndRow(container);
-
-    fireEvent.mouseEnter(bar);
-    act(() => {
-      vi.advanceTimersByTime(DELAY - 50);
-    });
-    fireEvent.mouseLeave(bar);
-    waitOutDelay();
-
-    expect(tooltipOf(container)).toBeNull();
-  });
-
-  it("renders no tooltip when slots.root is replaced — the accepted cost", () => {
-    // The tooltip is rendered by DraggableBar, which is only the *default* root,
-    // so a custom root that ignores the `tooltip` prop shows nothing (ADR-022).
-    // Pinned so the trade-off is visible rather than discovered.
-    const CustomRoot = (props: { className?: string; children?: React.ReactNode }) => (
-      <div data-testid="custom-root" className={props.className}>
-        {props.children}
-      </div>
-    );
+  it("does not open from the row, only from the bar", () => {
     const { Probe } = makeProbe();
-    const { getByTestId, queryByTestId } = render(
-      <Gantt
-        tasks={makeTasks()}
-        height={400}
-        bars={{
-          taskBar: { slots: { root: CustomRoot } },
-          tooltip: { slots: { tooltip: Probe } },
-        }}
-      />,
-    );
-
-    fireEvent.mouseEnter(getByTestId("custom-root"));
-    waitOutDelay();
-    expect(queryByTestId("probe")).toBeNull();
-  });
-
-  it("does not trigger from the row, only from the bar", () => {
-    const { Probe } = makeProbe();
-    const { container, queryByTestId } = render(
-      <Gantt tasks={makeTasks()} height={400} bars={{ tooltip: { slots: { tooltip: Probe } } }} />,
-    );
+    const { container, queryByTestId } = renderChart(Probe);
     const { bar, row } = barAndRow(container);
 
-    // The row spans the whole timeline width, so hovering it means hovering
-    // empty space that may be months away from the task.
+    // A row spans the whole timeline width, so hovering it means hovering empty
+    // space that may be months away from the task.
     fireEvent.mouseEnter(row);
-    waitOutDelay();
     expect(queryByTestId("probe")).toBeNull();
 
     fireEvent.mouseEnter(bar);
-    waitOutDelay();
     expect(queryByTestId("probe")).not.toBeNull();
   });
 
-  it("unmounts the slot on mouse leave", () => {
-    const { Probe } = makeProbe();
-    const { container, queryByTestId } = render(
-      <Gantt tasks={makeTasks()} height={400} bars={{ tooltip: { slots: { tooltip: Probe } } }} />,
-    );
+  it("closes on mouse leave", () => {
+    const { container } = renderChart();
     const { bar } = barAndRow(container);
 
     fireEvent.mouseEnter(bar);
-    waitOutDelay();
-    expect(queryByTestId("probe")).not.toBeNull();
+    expect(tooltipEl()).not.toBeNull();
 
     fireEvent.mouseLeave(bar);
+    expect(tooltipEl()).toBeNull();
+  });
+
+  it("keeps the same bar node across a hover", () => {
+    // The slot wrapping the bar unconditionally is what guarantees this. Mounting
+    // it only while open remounted the bar on every hover, which left the pointer
+    // over a detached node so `mouseleave` never arrived (ADR-022).
+    const { container } = renderChart();
+    const { bar } = barAndRow(container);
+
+    fireEvent.mouseEnter(bar);
+    expect(barAndRow(container).bar).toBe(bar);
+  });
+
+  it("never opens for a slot that omits root and trigger", () => {
+    // The cost of the state living in the slot, stated as a test: a slot that
+    // renders `children` bare gets no hover behaviour at all, silently.
+    const Bare = (props: BarTooltipProps) => (
+      <>
+        {props.children}
+        <Marker name={props.task.name} />
+      </>
+    );
+    const { container, queryByTestId } = renderChart(Bare);
+
+    fireEvent.mouseEnter(barAndRow(container).bar);
     expect(queryByTestId("probe")).toBeNull();
+  });
+
+  it("lets a slot bring its own open state, for a third-party tooltip", () => {
+    // The reason the chart holds no open state: a slot backed by Base UI, Radix
+    // or Floating UI arrives with its own root and trigger, and must not have to
+    // reconcile them with ours (ADR-022).
+    const ThirdParty = (props: BarTooltipProps) => {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <div
+            data-testid="foreign-trigger"
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
+          >
+            {props.children}
+          </div>
+          {open ? <div data-testid="foreign-popup">{props.task.name}</div> : null}
+        </>
+      );
+    };
+    const { getByTestId, queryByTestId } = renderChart(ThirdParty);
+
+    fireEvent.mouseEnter(getByTestId("foreign-trigger"));
+    expect(queryByTestId("foreign-popup")).not.toBeNull();
+
+    fireEvent.mouseLeave(getByTestId("foreign-trigger"));
+    expect(queryByTestId("foreign-popup")).toBeNull();
   });
 
   it("suppresses the native title once a slot is configured, keeping aria-label", () => {
-    const { Probe } = makeProbe();
-    const { container } = render(
-      <Gantt tasks={makeTasks()} height={400} bars={{ tooltip: { slots: { tooltip: Probe } } }} />,
-    );
+    const { container } = renderChart();
     const { bar } = barAndRow(container);
 
     expect(bar.getAttribute("title")).toBeNull();
     expect(bar.getAttribute("aria-label")).toBeTruthy();
   });
 
-  it("hands the slot the task, resolved progress, displayEnd and the bar ref", () => {
+  it("hands the slot the task, resolved progress, an inclusive displayEnd and the bar ref", () => {
     const { seen, Probe } = makeProbe();
-    const { container } = render(
-      <Gantt tasks={makeTasks()} height={400} bars={{ tooltip: { slots: { tooltip: Probe } } }} />,
-    );
-    const { bar, row } = barAndRow(container);
-    fireEvent.mouseEnter(bar);
-    waitOutDelay();
+    const { container } = renderChart(Probe);
+    fireEvent.mouseEnter(barAndRow(container).bar);
 
     const props = seen.at(-1)!;
     expect(props.task.id).toBe("t0");
     expect(props.progress).toBe(40);
-    expect(props.open).toBe(true);
     // Stored end is the exclusive instant Jan 10; the inclusive date is Jan 9 (ADR-014).
     expect(props.displayEnd?.getDate()).toBe(9);
-    expect(props.anchorRef.current).toBe(bar);
-    expect(props.anchorRef.current).not.toBe(row);
+    // The ref object is handed over; React populates `.current` after commit, so
+    // its value at first render is not what this asserts.
+    expect(props.anchorRef).toHaveProperty("current");
   });
 
   it("still renders under readOnly — a tooltip is information, not an affordance", () => {
@@ -250,11 +238,20 @@ describe("bar tooltip slot", () => {
       />,
     );
     fireEvent.mouseEnter(barAndRow(container).bar);
-    waitOutDelay();
     expect(queryByTestId("probe")).not.toBeNull();
   });
 
-  it("merges slotProps.tooltip className and style into the slot", () => {
+  it("portals the tooltip out of the chart container", () => {
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar);
+
+    // Escaping `.row`'s stacking context is the whole reason for the portal, so
+    // being outside the container is the behaviour, not an accident (ADR-022).
+    expect(container.querySelector('[role="tooltip"]')).toBeNull();
+    expect(tooltipEl()).not.toBeNull();
+  });
+
+  it("merges slotProps.tooltip className with the internal class", () => {
     const { container } = render(
       <Gantt
         tasks={makeTasks()}
@@ -268,67 +265,120 @@ describe("bar tooltip slot", () => {
       />,
     );
     fireEvent.mouseEnter(barAndRow(container).bar);
-    waitOutDelay();
 
-    const tip = tooltipOf(container)!;
+    const tip = tooltipEl()!;
     expect(tip.className).toMatch(/my-tip/);
-    expect(tip.className).toMatch(/tooltip/); // internal default class survives
+    expect(tip.className).toMatch(/tooltip/);
   });
 
-  it("GanttBarTooltip renders the name, dates and rounded progress", () => {
-    const { container } = render(
+  it("renders no tooltip when slots.root is replaced — the accepted cost", () => {
+    // The tooltip is rendered by DraggableBar, only the *default* root, so a
+    // custom root that ignores the `tooltip` prop shows nothing (ADR-022).
+    const CustomRoot = (props: { className?: string; children?: React.ReactNode }) => (
+      <div data-testid="custom-root" className={props.className}>
+        {props.children}
+      </div>
+    );
+    const { Probe } = makeProbe();
+    const { getByTestId, queryByTestId } = render(
       <Gantt
         tasks={makeTasks()}
         height={400}
-        bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
+        bars={{ taskBar: { slots: { root: CustomRoot } }, tooltip: { slots: { tooltip: Probe } } }}
       />,
     );
-    fireEvent.mouseEnter(barAndRow(container).bar);
-    waitOutDelay();
 
-    // Scoped to the tooltip: the name and the dates also appear in the task list.
-    const tip = tooltipOf(container)!;
+    fireEvent.mouseEnter(getByTestId("custom-root"));
+    expect(queryByTestId("probe")).toBeNull();
+  });
+
+  it("GanttBarTooltip renders the name, both dates and rounded progress", () => {
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar);
+
+    // Scoped to the tooltip: the name and dates also appear in the task list.
+    const tip = tooltipEl()!;
     expect(tip.textContent).toContain("Write the spec");
     expect(tip.textContent).toContain("40%");
-    expect(tip.textContent).toContain(new Date(2026, 0, 5).toLocaleDateString());
-    expect(tip.textContent).toContain(new Date(2026, 0, 9).toLocaleDateString());
+    expect(tip.textContent).toContain(formatted(new Date(2026, 0, 5)));
+    expect(tip.textContent).toContain(formatted(new Date(2026, 0, 9)));
+  });
+});
+
+describe("bar tooltip closing guards", () => {
+  let restore: (() => void) | undefined;
+
+  afterEach(() => {
+    restore?.();
+    restore = undefined;
+  });
+
+  it("closes on scroll, which no pointer check can catch", () => {
+    // A stationary cursor during a wheel scroll produces no mousemove at all, so
+    // the bar can leave from under the pointer with no `mouseout` (ADR-022).
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar);
+    expect(tooltipEl()).not.toBeNull();
+
+    fireEvent.scroll(document);
+    expect(tooltipEl()).toBeNull();
+  });
+
+  it("closes when a pointer move lands outside the bar", () => {
+    restore = stubRects(isBar, {
+      left: 100,
+      top: 100,
+      right: 300,
+      bottom: 140,
+      width: 200,
+      height: 40,
+    });
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar);
+    expect(tooltipEl()).not.toBeNull();
+
+    pointTo(200, 120); // inside
+    expect(tooltipEl()).not.toBeNull();
+
+    pointTo(600, 500); // outside
+    expect(tooltipEl()).toBeNull();
+  });
+
+  it("ignores an unmeasured bar rather than closing immediately", () => {
+    // Every rect is zero in jsdom, and on a real first paint too. Trusting a
+    // zero-size rect would read every pointer position as outside.
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar);
+
+    pointTo(600, 500);
+    expect(tooltipEl()).not.toBeNull();
   });
 });
 
 describe("bar tooltip placement", () => {
   const W = 150;
   const H = 90;
-  let restoreSize: (() => void) | undefined;
+  let restore: (() => void) | undefined;
 
   beforeEach(() => {
-    vi.useFakeTimers();
     window.innerWidth = 1024;
     window.innerHeight = 768;
-    restoreSize = stubTooltipSize(W, H);
+    // Only the tooltip is measured, so the bar stays "unmeasured" and the
+    // pointer-outside guard stays out of the way while the cursor moves.
+    restore = stubRects(isTooltip, { width: W, height: H, right: W, bottom: H });
   });
 
   afterEach(() => {
-    restoreSize?.();
-    restoreSize = undefined;
-    vi.useRealTimers();
+    restore?.();
+    restore = undefined;
   });
 
   function openAt(x: number, y: number) {
-    const view = render(
-      <Gantt
-        tasks={makeTasks()}
-        height={400}
-        bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
-      />,
-    );
-    // Enter first: the module-level pointer listener starts on the first tooltip
-    // mount, so a move dispatched before that is never seen. Mirrors the real
-    // constraint rather than working around it.
-    fireEvent.mouseEnter(barAndRow(view.container).bar);
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar);
     pointTo(x, y);
-    waitOutDelay();
-    const tip = tooltipOf(view.container)!;
-    return { tip, left: parseFloat(tip.style.left), top: parseFloat(tip.style.top) };
+    const tip = tooltipEl()!;
+    return { left: parseFloat(tip.style.left), top: parseFloat(tip.style.top) };
   }
 
   it("sits below-right of the cursor by default", () => {
@@ -337,20 +387,18 @@ describe("bar tooltip placement", () => {
     expect(top).toBeGreaterThan(400);
   });
 
-  it("flips to the left of the cursor near the right edge", () => {
-    // 1000 + offset + 150 overflows 1024, so it must flip.
+  it("flips to the left of the cursor rather than clamping through it", () => {
+    // Clamping to the far edge would drag the tooltip back *under* the pointer.
     const { left } = openAt(1000, 400);
-    expect(left).toBeLessThan(1000);
-    expect(left + W).toBeLessThanOrEqual(1024);
+    expect(left + W).toBeLessThanOrEqual(1000);
   });
 
   it("flips above the cursor near the bottom edge", () => {
     const { top } = openAt(400, 740);
-    expect(top).toBeLessThan(740);
-    expect(top + H).toBeLessThanOrEqual(768);
+    expect(top + H).toBeLessThanOrEqual(740);
   });
 
-  it("stays inside the viewport with the cursor in the bottom-right corner", () => {
+  it("stays inside the bounds with the cursor in the corner", () => {
     const { left, top } = openAt(1020, 760);
     expect(left).toBeGreaterThanOrEqual(0);
     expect(top).toBeGreaterThanOrEqual(0);
@@ -358,40 +406,16 @@ describe("bar tooltip placement", () => {
     expect(top + H).toBeLessThanOrEqual(768);
   });
 
-  it("follows the pointer during the dwell, then uses where it ended up", () => {
-    const view = render(
-      <Gantt
-        tasks={makeTasks()}
-        height={400}
-        bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
-      />,
-    );
-    // Enter, drift to 200, then to 600 before the delay fires: the tooltip should
-    // appear next to 600, the last position seen.
-    fireEvent.mouseEnter(barAndRow(view.container).bar);
-    pointTo(200, 300);
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-    pointTo(600, 300);
-    act(() => {
-      vi.advanceTimersByTime(DELAY);
-    });
+  it("stops tracking once the pointer is outside the bounds", () => {
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar);
 
-    const left = parseFloat(tooltipOf(view.container)!.style.left);
-    expect(left).toBeGreaterThan(600);
-    expect(left).toBeLessThan(700);
-  });
+    pointTo(400, 400);
+    const settled = tooltipEl()!.style.left;
 
-  it("does not reposition once shown — placement is frozen", () => {
-    const { tip, left, top } = openAt(400, 400);
-
-    pointTo(700, 500);
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-
-    expect(parseFloat(tip.style.left)).toBe(left);
-    expect(parseFloat(tip.style.top)).toBe(top);
+    // Past the viewport edge there is nothing to place against, so the position
+    // is left alone rather than recomputed for a pointer off the chart.
+    pointTo(5000, 400);
+    expect(tooltipEl()!.style.left).toBe(settled);
   });
 });

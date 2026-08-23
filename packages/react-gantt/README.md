@@ -518,32 +518,59 @@ The bar's default root is what renders it, so **replacing `slots.root` removes t
 tooltip**. A custom root can restore it by forwarding the `tooltip` prop it
 receives on to a `DraggableBar`.
 
-`GanttBarTooltip` appears after a 500ms hover dwell, positions itself
-bottom-right of the cursor, and flips left or up rather than running off the
-viewport. Tune the dwell through the usual `slotProps` channel:
+`GanttBarTooltip` opens immediately on hover, sits bottom-right of the cursor and
+follows it, and flips left or up rather than running off the edge.
+
+##### Writing your own
+
+The slot is a **wrapper**: it receives the bar as `children` and has to render it.
+There is no `open` prop, because the chart holds no open state — showing and hiding
+is entirely the slot's business. That is what lets the slot be a third-party
+tooltip, which arrives with its own root and trigger:
 
 ```tsx
-bars={{ tooltip: { slots: { tooltip: GanttBarTooltip }, slotProps: { tooltip: { delayMs: 250 } } } }}
+import { Tooltip } from "@base-ui-components/react/tooltip";
+
+const Tip = ({ task, children }: BarTooltipProps) => (
+  <Tooltip.Root>
+    <Tooltip.Trigger render={children as React.ReactElement} />
+    <Tooltip.Portal>
+      <Tooltip.Popup>{task.name}</Tooltip.Popup>
+    </Tooltip.Portal>
+  </Tooltip.Root>
+);
 ```
 
-Your own component receives `task`, the resolved `progress`, `displayEnd`, `open`,
-and `anchorRef` — the bar's DOM node, for positioning against the bar itself:
+For the library's own hover behaviour with different markup, compose the three
+primitives instead. `BarTooltipTrigger` merges onto the element you give it rather
+than wrapping it, so it adds no DOM and keeps your handlers:
 
 ```tsx
-const Tip = ({ task, displayEnd, anchorRef }: BarTooltipProps) => /* ... */;
+import { BarTooltipRoot, BarTooltipTrigger, useBarTooltip } from "@art-tools/react-gantt";
+
+const Popup = ({ task }: { task: GanttTask }) =>
+  useBarTooltip()?.open ? <div className="tip">{task.name}</div> : null;
+
+const Tip = ({ task, children, anchorRef }: BarTooltipProps) => (
+  <BarTooltipRoot anchorRef={anchorRef}>
+    <BarTooltipTrigger>{children}</BarTooltipTrigger>
+    <Popup task={task} />
+  </BarTooltipRoot>
+);
 ```
 
-Read `displayEnd` rather than `task.endDate`: stored ends are **exclusive** instants,
-so a Mon–Fri task's raw `endDate` is Saturday (ADR-014). And note `open` means
-_hovered_, not _visible_ — the built-in tooltip is still counting out its dwell for
-the first 500ms of that.
+Alongside `children`, the slot receives `task`, the resolved `progress`,
+`displayEnd`, and `anchorRef` — the bar's DOM node, for positioning against the
+bar rather than the cursor. Read `displayEnd` rather than `task.endDate`: stored
+ends are **exclusive** instants, so a Mon–Fri task's raw `endDate` is Saturday
+(ADR-014).
 
-Two things worth knowing if you write your own. The tooltip is hover-only, because
-bars are not focusable yet; the accessible name stays on the bar, so screen readers
-are unaffected either way. And a tooltip rendered in this slot **cannot paint over
-the sticky calendar header** — its row is a stacking context, so no z-index reaches
-past it. `GanttBarTooltip` handles that by never placing itself in the header's
-band; a custom one should do the same rather than reach for `z-index` (ADR-022).
+Two more things. The tooltip is hover-only, because bars are not focusable yet;
+the accessible name stays on the bar, so screen readers are unaffected either way.
+And a tooltip rendered **in place cannot paint over the sticky calendar header** —
+its row is a stacking context, so no z-index reaches past it. Portal it out, as
+`GanttBarTooltip` and the Base UI example above both do; reaching for `z-index`
+will not work (ADR-022).
 
 ---
 
