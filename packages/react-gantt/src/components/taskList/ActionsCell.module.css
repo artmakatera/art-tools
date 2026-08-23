@@ -1,0 +1,17 @@
+.actionsCell {
+  display: flex;
+  gap: 2px;
+}
+
+.actionsCell button {
+  font: inherit;
+  font-feature-settings: inherit;
+  font-variation-settings: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  opacity: 1;
+  background-color: #0000;
+  border-radius: 0;
+  border: 0;
+  cursor: pointer;
+}

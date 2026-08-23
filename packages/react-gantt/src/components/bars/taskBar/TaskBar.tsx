@@ -1,6 +1,7 @@
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
+import type { BarTooltipOwnerState } from "../barTooltip";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./TaskBar.module.css";
@@ -51,6 +52,11 @@ interface TaskBarProps {
   onResizeEnd?: (edge: "start" | "end", edgePx: number) => void;
   onMove?: (newLeft: number) => void;
   onMoveEnd?: (newLeft: number) => void;
+  /**
+   * Task data handed to the root so it can render the tooltip slot. Forwarded
+   * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
+   */
+  tooltip?: BarTooltipOwnerState;
   slots?: TaskBarSlots;
   slotProps?: TaskBarSlotProps;
 }
@@ -70,6 +76,7 @@ export function TaskBar({
   onResizeEnd,
   onMove,
   onMoveEnd,
+  tooltip,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: TaskBarProps) {
@@ -99,14 +106,18 @@ export function TaskBar({
     ownerState,
   );
 
+  // The label's native tooltip follows `a11y.title`, not the `title` prop: the
+  // prop is the visible text, `a11y.title` is the native tooltip, and a chart
+  // with a tooltip slot suppresses only the latter.
   const labelProps = mergeSlotProps(
-    { className: styles.taskContent, title, children: title },
+    { className: styles.taskContent, title: a11y?.title, children: title },
     slotProps?.label,
     ownerState,
   );
 
   return (
     <Root
+      tooltip={tooltip}
       left={left}
       top={top}
       width={width}

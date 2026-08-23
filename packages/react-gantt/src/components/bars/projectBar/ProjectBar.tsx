@@ -1,6 +1,7 @@
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
+import type { BarTooltipOwnerState } from "../barTooltip";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./ProjectBar.module.css";
@@ -45,6 +46,11 @@ interface ProjectBarProps {
   onProgressEnd?: (newProgress: number) => void;
   onMove?: (newLeft: number) => void;
   onMoveEnd?: (newLeft: number) => void;
+  /**
+   * Task data handed to the root so it can render the tooltip slot. Forwarded
+   * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
+   */
+  tooltip?: BarTooltipOwnerState;
   slots?: ProjectBarSlots;
   slotProps?: ProjectBarSlotProps;
 }
@@ -62,6 +68,7 @@ export function ProjectBar({
   onProgressEnd,
   onMove,
   onMoveEnd,
+  tooltip,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: ProjectBarProps) {
@@ -99,6 +106,7 @@ export function ProjectBar({
 
   return (
     <Root
+      tooltip={tooltip}
       left={left}
       top={top}
       width={width}

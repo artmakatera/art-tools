@@ -28,7 +28,7 @@ describe("column catalogue", () => {
       "__end",
       "__progress",
     ]);
-    expect(DEFAULT_COLUMNS.map((c) => c.width)).toEqual([120, 200, 90, 90, 90]);
+    expect(DEFAULT_COLUMNS.map((c) => c.width)).toEqual([100, 200, 90, 90, 90]);
   });
 
   it("marks exactly the name column as the tree column", () => {

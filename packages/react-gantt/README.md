@@ -1,9 +1,9 @@
 # @art-tools/react-gantt
 
-A high-performance, composable Gantt chart component library for React. It renders
-thousands of tasks smoothly (rows **and** columns are virtualized on both axes),
-ships a full undo/redo transaction model, cascading dependency scheduling, and a
-MUI-style slot system for deep customization.
+A high-performance, composable Gantt chart component library for React. It stays
+smooth at **100,000 tasks** — rows **and** columns are virtualized, so the row
+count barely affects render cost — and ships a full undo/redo transaction model,
+cascading dependency scheduling, and a slot system for deep customization.
 
 - **Composable** — drop in the all-in-one `<Gantt />`, or assemble
   `<GanttProvider>` + `<TaskList>` + `<GanttGrid>` yourself.
@@ -11,6 +11,7 @@ MUI-style slot system for deep customization.
   edit progress, expand/collapse hierarchy.
 - **Fast** — windowed rendering with overscan, an incremental resolve cache, and
   purpose-scoped React contexts so hot updates don't re-render stable subtrees.
+  See it at [100,000 tasks](https://art-tools-docs.vercel.app/examples/virtualization).
 
 **[Live examples & documentation →](https://art-tools-docs.vercel.app)** — every
 example is interactive, with the source that rendered it shown underneath.
@@ -110,8 +111,11 @@ calendar header stays pinned.
 > the [imperative API](#imperative-api) and action columns, keeping undo/redo intact.
 > See [`docs/data-structures.md`](./docs/data-structures.md) for the full model.
 
-A complete, interactive example (10,000 tasks, custom slots, edit modal, undo/redo)
-lives in [`apps/playground/src/App.tsx`](../../apps/playground/src/App.tsx).
+Complete, interactive examples — [100,000 tasks](https://art-tools-docs.vercel.app/examples/virtualization),
+[custom slots](https://art-tools-docs.vercel.app/examples/slots),
+[an edit dialog](https://art-tools-docs.vercel.app/examples/task-editing) and
+[undo/redo](https://art-tools-docs.vercel.app/examples/imperative-api) — each show
+the source that rendered them.
 
 ---
 
@@ -303,7 +307,7 @@ The reasoning behind each of these — including what was rejected — is record
 
 ## Task bars
 
-`Bar` ([`src/components/bars/common/Bar.tsx`](./src/components/bars/common/Bar.tsx))
+`Row` ([`src/components/bars/common/Row.tsx`](./src/components/bars/common/Row.tsx))
 computes each row's pixel geometry and dispatches on `type`:
 
 - **`task`** → `TaskBar` — draggable, resizable, with a progress fill and label.
@@ -497,6 +501,81 @@ const barSlots: GanttBarsSlots = {
 Per-component slot types (`*Slots`, `*SlotProps`, `*SlotConfig`, `*OwnerState`) are
 all exported from the package entry.
 
+#### Bar tooltips
+
+`bars.tooltip` is one slot covering all three bar types, and it is **empty by
+default** — bars carry a native `title` and nothing more until you fill it. Setting
+it suppresses that native `title`, so the two do not stack (ADR-022).
+
+```tsx
+import { Gantt, GanttBarTooltip } from "@art-tools/react-gantt";
+
+// The built-in tooltip: name, dates, progress.
+<Gantt tasks={tasks} height={500} bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }} />;
+```
+
+It triggers on the **bar**, not the row — a row spans the whole timeline width, so
+a row-scoped trigger would fire over empty space far from the task. (The connector
+handles still use row hover, so they appear as you approach a bar.)
+
+The bar's default root is what renders it, so **replacing `slots.root` removes the
+tooltip**. A custom root can restore it by forwarding the `tooltip` prop it
+receives on to a `DraggableBar`.
+
+`GanttBarTooltip` opens immediately on hover, sits bottom-right of the cursor and
+follows it, and flips left or up rather than running off the edge.
+
+##### Writing your own
+
+The slot is a **wrapper**: it receives the bar as `children` and has to render it.
+There is no `open` prop, because the chart holds no open state — showing and hiding
+is entirely the slot's business. That is what lets the slot be a third-party
+tooltip, which arrives with its own root and trigger:
+
+```tsx
+import { Tooltip } from "@base-ui/react/tooltip";
+
+const Tip = ({ task, children }: BarTooltipProps) => (
+  <Tooltip.Root>
+    <Tooltip.Trigger render={children as React.ReactElement} />
+    <Tooltip.Portal>
+      <Tooltip.Popup>{task.name}</Tooltip.Popup>
+    </Tooltip.Portal>
+  </Tooltip.Root>
+);
+```
+
+For the library's own hover behaviour with different markup, compose the three
+primitives instead. `BarTooltipTrigger` merges onto the element you give it rather
+than wrapping it, so it adds no DOM and keeps your handlers:
+
+```tsx
+import { BarTooltipRoot, BarTooltipTrigger, useBarTooltip } from "@art-tools/react-gantt";
+
+const Popup = ({ task }: { task: GanttTask }) =>
+  useBarTooltip()?.open ? <div className="tip">{task.name}</div> : null;
+
+const Tip = ({ task, children, anchorRef }: BarTooltipProps) => (
+  <BarTooltipRoot anchorRef={anchorRef}>
+    <BarTooltipTrigger>{children}</BarTooltipTrigger>
+    <Popup task={task} />
+  </BarTooltipRoot>
+);
+```
+
+Alongside `children`, the slot receives `task`, the resolved `progress`,
+`displayEnd`, and `anchorRef` — the bar's DOM node, for positioning against the
+bar rather than the cursor. Read `displayEnd` rather than `task.endDate`: stored
+ends are **exclusive** instants, so a Mon–Fri task's raw `endDate` is Saturday
+(ADR-014).
+
+Two more things. The tooltip is hover-only, because bars are not focusable yet;
+the accessible name stays on the bar, so screen readers are unaffected either way.
+And a tooltip rendered **in place cannot paint over the sticky calendar header** —
+its row is a stacking context, so no z-index reaches past it. Portal it out, as
+`GanttBarTooltip` and the Base UI example above both do; reaching for `z-index`
+will not work (ADR-022).
+
 ---
 
 ## Accessibility
@@ -605,7 +684,7 @@ and `-offset`.
   `.d.ts` (via `vite-plugin-dts`) and a single `style.css`; `react`/`react-dom` are
   externalized.
 - **Tests** — Vitest + `@testing-library/react` (jsdom) under `src/tests/` and
-  `test/`; benchmarks (`vitest bench`) live in the playground.
+  `test/`; perf benchmarks run with `pnpm bench`.
 
 ---
 

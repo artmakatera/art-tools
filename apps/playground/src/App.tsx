@@ -8,6 +8,7 @@ import type {
   GanttBarsSlots,
   ZoomLevel,
 } from "@art-tools/react-gantt";
+import { GanttBarTooltip } from "@art-tools/react-gantt";
 import "@art-tools/react-gantt/style.css";
 import { generateMockData } from "@am/mock-data/generator";
 import { TaskEditModal } from "./TaskEditModal";
@@ -81,6 +82,15 @@ const barSlots: GanttBarsSlots = {
   },
 };
 
+// 3. The `tooltip` slot is empty by default — bars then carry only a native
+//    `title`. Two whole configs rather than one spread at render time, because
+//    the toggle below picks between them and both must stay referentially
+//    stable (see the note above).
+const barSlotsWithTooltip: GanttBarsSlots = {
+  ...barSlots,
+  tooltip: { slots: { tooltip: GanttBarTooltip } },
+};
+
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 // The timeline is configured by a zoom ladder (coarse → fine) instead of a
@@ -142,6 +152,7 @@ function GanttWithTaskList() {
   const ganttRef = useRef<GanttHandle>(null);
   const [editing, setEditing] = useState<GanttTask | null>(null);
   const [zoom, setZoom] = useState({ index: 0, count: 0 });
+  const [tooltip, setTooltip] = useState(true);
 
   const zoomIn = useCallback(() => ganttRef.current?.zoomIn(), []);
   const zoomOut = useCallback(() => ganttRef.current?.zoomOut(), []);
@@ -221,6 +232,13 @@ function GanttWithTaskList() {
         <span style={{ color: "#666" }}>
           level {zoom.index + 1}/{zoom.count}
         </span>
+        <span style={{ width: 1, height: 20, background: "#ddd" }} />
+        {/* Off is the library default: bars fall back to the native `title`,
+            which is the comparison worth having in front of you. */}
+        <label style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <input type="checkbox" checked={tooltip} onChange={(e) => setTooltip(e.target.checked)} />
+          Tooltip
+        </label>
       </div>
       <Suspense fallback={<div style={{ padding: 16, color: "#666" }}>Loading Gantt…</div>}>
         <Gantt
@@ -232,7 +250,7 @@ function GanttWithTaskList() {
           zoomLevels={zoomLevels}
           defaultZoomIndex={DEFAULT_ZOOM}
           taskList={taskListSlots}
-          bars={barSlots}
+          bars={tooltip ? barSlotsWithTooltip : barSlots}
           onTaskEdit={setEditing}
           onTasksChange={handleTasksChange}
           onDependencyCreate={handleDependencyCreate}

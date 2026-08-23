@@ -18,7 +18,7 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
   {
     key: ACTION_COLUMN_KEY,
     header: "  ",
-    width: 120,
+    width: 100,
     render: (task, api) => <ActionsCell task={task} api={api} />,
   },
   {

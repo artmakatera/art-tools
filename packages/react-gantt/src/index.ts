@@ -18,6 +18,12 @@ export {
 export { TaskBar } from "./components/bars/taskBar/TaskBar";
 export { ProjectBar } from "./components/bars/projectBar/ProjectBar";
 export { MilestoneBar } from "./components/bars/milestoneBar/MilestoneBar";
+export {
+  BarTooltipRoot,
+  BarTooltipTrigger,
+  GanttBarTooltip,
+  useBarTooltip,
+} from "./components/bars/barTooltip";
 export { Calendar } from "./components/calendar/Calendar";
 // `Calendar` requires a virtualization window, whose type was not exported — so
 // the exported component was literally impossible to type a call to.
@@ -104,6 +110,14 @@ export type {
   ConnectorHandlesSlotConfig,
   ConnectorHandlesOwnerState,
 } from "./components/bars/common/ConnectorHandles";
+export type {
+  BarTooltipSlots,
+  BarTooltipSlotProps,
+  BarTooltipSlotConfig,
+  BarTooltipOwnerState,
+  BarTooltipProps,
+  BarTooltipContextValue,
+} from "./components/bars/barTooltip";
 export type {
   DependencyLinksSlots,
   DependencyLinksSlotProps,

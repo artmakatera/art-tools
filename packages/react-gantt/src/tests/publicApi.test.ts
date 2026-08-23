@@ -18,11 +18,14 @@ describe("public API", () => {
   it("exports exactly this set of values", () => {
     expect(Object.keys(api).toSorted()).toEqual([
       "ACTION_COLUMN_KEY",
+      "BarTooltipRoot",
+      "BarTooltipTrigger",
       "Calendar",
       "DEFAULT_COLUMNS",
       "DEFAULT_ZOOM_INDEX",
       "DEFAULT_ZOOM_LEVELS",
       "Gantt",
+      "GanttBarTooltip",
       "GanttGrid",
       "GanttProvider",
       "GanttSlotsProvider",
@@ -34,6 +37,7 @@ describe("public API", () => {
       "displayEndDate",
       "endInstantFromDisplayDate",
       "mergeSlotProps",
+      "useBarTooltip",
       "useGanttReadOnly",
       "useGanttSlots",
     ]);

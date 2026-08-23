@@ -6,16 +6,24 @@ import {
   pxToDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
-import { useGanttLabels, useGanttReadOnly, useGanttSelectedId } from "../../../context/contexts";
+import {
+  useGanttLabels,
+  useGanttReadOnly,
+  useGanttSelectedId,
+  useGanttWorkCalendar,
+} from "../../../context/contexts";
+import { useGanttSlots } from "../../../context/GanttSlotsContext";
+import { displayEndOf } from "../../../core/taskDates";
 import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
 import { ProjectBar } from "../projectBar/ProjectBar";
 import { TaskBar } from "../taskBar/TaskBar";
+import type { BarTooltipOwnerState } from "../barTooltip";
 import { ConnectorHandles } from "./ConnectorHandles";
 import type { BarA11yProps } from "./DraggableBar";
-import styles from "./Bar.module.css";
+import styles from "./Row.module.css";
 
-interface BarProps {
+interface RowProps {
   task: GanttTask;
   index: number;
   origin: Date;
@@ -30,7 +38,7 @@ interface BarProps {
   rowIndexOffset: number;
 }
 
-export const Bar = memo(function Bar({
+export const Row = memo(function Row({
   task,
   index,
   origin,
@@ -43,11 +51,17 @@ export const Bar = memo(function Bar({
   onCommit,
   onTaskClick,
   rowIndexOffset,
-}: BarProps) {
+}: RowProps) {
   const labels = useGanttLabels();
   const readOnly = useGanttReadOnly();
   const selectedId = useGanttSelectedId();
   const isSelected = selectedId === task.id;
+
+  const schedulingContext = useGanttWorkCalendar();
+  // Read only to decide whether to suppress the native `title` — that has to
+  // happen where `a11y` is assembled, which is here. The tooltip itself is
+  // rendered by the bar.
+  const Tooltip = useGanttSlots().bars?.tooltip?.slots?.tooltip;
 
   const { left, width, progress } = computeTaskPixels(task, override || {}, origin, colWidth, unit);
   const top = index * rowHeight;
@@ -55,6 +69,19 @@ export const Bar = memo(function Bar({
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
   const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
 
+  // The handles bracket the bar's *painted* box, which for a milestone is not
+  // its date span. A milestone is an instant, so `computeTaskPixels` returns
+  // width 0, while `MilestoneBar` paints a `barHeight`-square diamond centred on
+  // `visualLeft` — mirrored from its own `centerLeft - size / 2`. Passing the raw
+  // span put the start handle over the diamond's left half and the end handle
+  // exactly on its centre, instead of outside it as on every other bar type.
+  const isMilestone = task.type === "milestone";
+  const handleLeft = isMilestone ? visualLeft - barHeight / 2 : visualLeft;
+  const handleWidth = isMilestone ? barHeight - 1 : width;
+
+  // Row-level hover, for the connector handles: they should appear as the
+  // pointer approaches the bar. The tooltip's own hover lives in the bar
+  // (DraggableBar), which is what renders it (ADR-022).
   const [hovered, setHovered] = useState(false);
 
   // `endDate` is exclusive (ADR-014), so the bar's right edge maps straight to it —
@@ -129,13 +156,27 @@ export const Bar = memo(function Bar({
           ),
       };
 
+  // The native `title` is dropped when a tooltip slot is configured: the browser
+  // tooltip would otherwise surface on top of the custom one. `aria-label` is
+  // untouched, so the accessible name is the same either way — which is also why
+  // dropping it is safe with a hover-only tooltip (ADR-022).
   const a11y: BarA11yProps = {
     role: "gridcell",
     "aria-colindex": Math.max(1, Math.floor(visualLeft / colWidth) + 1),
     "aria-colspan": Math.max(1, Math.round(width / colWidth)),
     "aria-label": labels.bar(task, { progress }),
     "aria-selected": isSelected || undefined,
-    title: task.name,
+    title: Tooltip ? undefined : task.name,
+  };
+
+  // Data only — nothing here says whether the tooltip is showing, because that is
+  // the slot's own state (ADR-022). `progress` is override-aware during a drag,
+  // and `displayEnd` is inclusive (ADR-014) so no consumer rediscovers that
+  // `task.endDate` is exclusive.
+  const tooltipData: BarTooltipOwnerState = {
+    task,
+    progress,
+    displayEnd: displayEndOf(task, schedulingContext),
   };
 
   return (
@@ -151,8 +192,8 @@ export const Bar = memo(function Bar({
       {!readOnly && (
         <ConnectorHandles
           taskId={task.id}
-          barLeft={visualLeft}
-          barWidth={width}
+          barLeft={handleLeft}
+          barWidth={handleWidth}
           barCenterY={barCenterY}
           show={hovered}
         />
@@ -160,6 +201,7 @@ export const Bar = memo(function Bar({
 
       {task.type === "milestone" && (
         <MilestoneBar
+          tooltip={tooltipData}
           size={barHeight}
           centerLeft={visualLeft}
           top={TASK_VERTICAL_PADDING}
@@ -171,6 +213,7 @@ export const Bar = memo(function Bar({
       )}
       {task.type === "summary" && (
         <ProjectBar
+          tooltip={tooltipData}
           left={visualLeft}
           top={TASK_VERTICAL_PADDING}
           width={width}
@@ -185,6 +228,7 @@ export const Bar = memo(function Bar({
       )}
       {task.type === "task" || !task.type ? (
         <TaskBar
+          tooltip={tooltipData}
           left={visualLeft}
           top={TASK_VERTICAL_PADDING}
           width={width}
@@ -202,4 +246,4 @@ export const Bar = memo(function Bar({
   );
 });
 
-Bar.displayName = "Bar";
+Row.displayName = "Row";
