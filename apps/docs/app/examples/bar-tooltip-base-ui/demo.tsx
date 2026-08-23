@@ -40,7 +40,6 @@ function BaseUiBarTooltip({ task, progress, displayEnd, children }: BarTooltipPr
   return (
     <Tooltip.Provider>
       <Tooltip.Root trackCursorAxis="both">
-
         <Tooltip.Trigger>{children as ReactElement}</Tooltip.Trigger>
         <Tooltip.Portal>
           <Tooltip.Positioner>

@@ -1,9 +1,9 @@
 # @art-tools/react-gantt
 
-A high-performance, composable Gantt chart component library for React. It renders
-thousands of tasks smoothly (rows **and** columns are virtualized on both axes),
-ships a full undo/redo transaction model, cascading dependency scheduling, and a
-slot system for deep customization.
+A high-performance, composable Gantt chart component library for React. It stays
+smooth at **100,000 tasks** — rows **and** columns are virtualized, so the row
+count barely affects render cost — and ships a full undo/redo transaction model,
+cascading dependency scheduling, and a slot system for deep customization.
 
 - **Composable** — drop in the all-in-one `<Gantt />`, or assemble
   `<GanttProvider>` + `<TaskList>` + `<GanttGrid>` yourself.
@@ -11,6 +11,7 @@ slot system for deep customization.
   edit progress, expand/collapse hierarchy.
 - **Fast** — windowed rendering with overscan, an incremental resolve cache, and
   purpose-scoped React contexts so hot updates don't re-render stable subtrees.
+  See it at [100,000 tasks](https://art-tools-docs.vercel.app/examples/virtualization).
 
 **[Live examples & documentation →](https://art-tools-docs.vercel.app)** — every
 example is interactive, with the source that rendered it shown underneath.
@@ -110,8 +111,11 @@ calendar header stays pinned.
 > the [imperative API](#imperative-api) and action columns, keeping undo/redo intact.
 > See [`docs/data-structures.md`](./docs/data-structures.md) for the full model.
 
-A complete, interactive example (10,000 tasks, custom slots, edit modal, undo/redo)
-lives in [`apps/playground/src/App.tsx`](../../apps/playground/src/App.tsx).
+Complete, interactive examples — [100,000 tasks](https://art-tools-docs.vercel.app/examples/virtualization),
+[custom slots](https://art-tools-docs.vercel.app/examples/slots),
+[an edit dialog](https://art-tools-docs.vercel.app/examples/task-editing) and
+[undo/redo](https://art-tools-docs.vercel.app/examples/imperative-api) — each show
+the source that rendered them.
 
 ---
 
@@ -680,7 +684,7 @@ and `-offset`.
   `.d.ts` (via `vite-plugin-dts`) and a single `style.css`; `react`/`react-dom` are
   externalized.
 - **Tests** — Vitest + `@testing-library/react` (jsdom) under `src/tests/` and
-  `test/`; benchmarks (`vitest bench`) live in the playground.
+  `test/`; perf benchmarks run with `pnpm bench`.
 
 ---
 

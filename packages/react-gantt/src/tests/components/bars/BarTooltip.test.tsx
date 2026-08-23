@@ -433,7 +433,7 @@ describe("bar tooltip without a GanttProvider", () => {
    * asserting `useGanttScroll()` crashed the popup on every HMR update.
    */
   it("opens on a standalone bar with no chart around it", () => {
-    const task = makeTasks()[0];
+    const task = makeTasks()[0]!;
     const progress = task.progress ?? 0;
 
     render(
@@ -459,7 +459,7 @@ describe("bar tooltip without a GanttProvider", () => {
   });
 
   it("falls back to the viewport when there is no grid to clamp against", () => {
-    const task = makeTasks()[0];
+    const task = makeTasks()[0]!;
     const restore = stubRects(isTooltip, { width: 120, height: 60 });
 
     try {

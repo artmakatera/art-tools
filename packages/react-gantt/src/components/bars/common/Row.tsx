@@ -69,6 +69,16 @@ export const Row = memo(function Row({
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
   const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
 
+  // The handles bracket the bar's *painted* box, which for a milestone is not
+  // its date span. A milestone is an instant, so `computeTaskPixels` returns
+  // width 0, while `MilestoneBar` paints a `barHeight`-square diamond centred on
+  // `visualLeft` — mirrored from its own `centerLeft - size / 2`. Passing the raw
+  // span put the start handle over the diamond's left half and the end handle
+  // exactly on its centre, instead of outside it as on every other bar type.
+  const isMilestone = task.type === "milestone";
+  const handleLeft = isMilestone ? visualLeft - barHeight / 2 : visualLeft;
+  const handleWidth = isMilestone ? barHeight - 1 : width;
+
   // Row-level hover, for the connector handles: they should appear as the
   // pointer approaches the bar. The tooltip's own hover lives in the bar
   // (DraggableBar), which is what renders it (ADR-022).
@@ -182,8 +192,8 @@ export const Row = memo(function Row({
       {!readOnly && (
         <ConnectorHandles
           taskId={task.id}
-          barLeft={visualLeft}
-          barWidth={width}
+          barLeft={handleLeft}
+          barWidth={handleWidth}
           barCenterY={barCenterY}
           show={hovered}
         />
