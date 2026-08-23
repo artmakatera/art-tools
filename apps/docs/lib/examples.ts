@@ -70,6 +70,19 @@ export const EXAMPLES: ExampleMeta[] = [
     group: "Customization",
   },
   {
+    slug: "bar-tooltip",
+    title: "Bar tooltips",
+    blurb: "The built-in tooltip is one line of opt-in, then themable through its CSS variables.",
+    group: "Customization",
+  },
+  {
+    slug: "bar-tooltip-base-ui",
+    title: "Tooltip from Base UI",
+    blurb:
+      "The same slot filled with a third-party tooltip that brings its own root, trigger and positioning.",
+    group: "Customization",
+  },
+  {
     slug: "theming-css-variables",
     title: "Theming with CSS variables",
     blurb: "Retheme the whole chart through --am-gantt-* custom properties, including dark mode.",

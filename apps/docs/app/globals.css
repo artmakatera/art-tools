@@ -39,6 +39,7 @@
   body {
     background-color: var(--color-white);
     color: var(--color-slate-900);
+    position: relative;
   }
 
   .dark body {

@@ -80,15 +80,10 @@ export function DraggableBar({
     autoScroll: true,
   });
 
-  // Hooks cannot be skipped, so the handler is always built and simply not
-  // attached when the bar is not movable.
   const movable = Boolean(onMove || onMoveEnd);
 
   return (
     <BarTooltipConsumer tooltip={tooltip} anchorRef={barRef}>
-      {/* Handed to the slot as its `children`, and the slot is what mounts
-          `BarTooltipTrigger` around it — so the handlers below are purely the
-          consumer's, and this div carries no hover wiring of its own. */}
       <div
         {...rest}
         ref={barRef}

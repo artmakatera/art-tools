@@ -15,6 +15,7 @@
   "dependencies": {
     "@am/mock-data": "workspace:*",
     "@art-tools/react-gantt": "workspace:*",
+    "@base-ui/react": "^1.7.0",
     "@shikijs/langs": "^4.4.2",
     "@shikijs/themes": "^4.4.2",
     "next": "16.3.0",

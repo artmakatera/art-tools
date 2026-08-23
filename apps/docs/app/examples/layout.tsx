@@ -9,7 +9,7 @@ export default function ExamplesLayout({ children }: { children: ReactNode }) {
           <Nav />
         </div>
       </aside>
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1 isolate">{children}</main>
     </div>
   );
 }

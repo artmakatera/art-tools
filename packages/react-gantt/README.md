@@ -529,7 +529,7 @@ is entirely the slot's business. That is what lets the slot be a third-party
 tooltip, which arrives with its own root and trigger:
 
 ```tsx
-import { Tooltip } from "@base-ui-components/react/tooltip";
+import { Tooltip } from "@base-ui/react/tooltip";
 
 const Tip = ({ task, children }: BarTooltipProps) => (
   <Tooltip.Root>
