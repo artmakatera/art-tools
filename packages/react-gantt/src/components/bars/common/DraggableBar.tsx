@@ -5,10 +5,10 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { useGanttSlots } from "../../../context/GanttSlotsContext";
-import { mergeSlotProps } from "../../../core/slots";
+
 import { useDrag } from "../../../hooks/useDrag";
 import type { BarTooltipOwnerState } from "./BarTooltip";
+import { BarTooltipConsumer } from "./BarTooltipConsumer";
 
 export interface BarA11yProps {
   role: string;
@@ -75,12 +75,7 @@ export function DraggableBar({
   ...rest
 }: DraggableBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
-  const tooltipConfig = useGanttSlots().bars?.tooltip;
-  // Both are required: a chart-level slot alone is not enough, because a bar with
-  // no task data has nothing to show. That keeps this component usable standalone.
-  const Tooltip = tooltip ? tooltipConfig?.slots?.tooltip : undefined;
   const [hovered, setHovered] = useState(false);
-  const open = Boolean(hovered && Tooltip);
 
   const readOnly = !onMove && !onMoveEnd;
   const onMouseDown = useDrag({
@@ -98,37 +93,27 @@ export function DraggableBar({
   const movable = Boolean(onMove || onMoveEnd);
 
   return (
-    <div
-      {...rest}
-      ref={barRef}
-      className={className}
-      style={{ left, top, width, height, cursor: readOnly ? "default" : "move", ...style }}
-      title={title}
-      // Read by `.row:has(…)` in Row.module.css, which lifts the row above its
-      // siblings while a tooltip is open. An attribute rather than a callback up
-      // to `Row`: the row needs the fact, not the state, and CSS can see it.
-      data-am-gantt-tooltip={open ? "open" : undefined}
-      onMouseDown={movable ? onMouseDown : undefined}
-      // Composed, not replaced — a consumer's `slotProps.root` handler must still
-      // fire, and the a11y payload may carry its own.
-      onMouseEnter={(event) => {
-        onMouseEnter?.(event);
-        setHovered(true);
-      }}
-      onMouseLeave={(event) => {
-        onMouseLeave?.(event);
-        setHovered(false);
-      }}
-    >
-      {children}
-      {open && Tooltip && tooltip && (
-        <Tooltip
-          {...mergeSlotProps({}, tooltipConfig?.slotProps?.tooltip, { ...tooltip, open })}
-          anchorRef={barRef}
-          {...tooltip}
-          open={open}
-        />
-      )}
-    </div>
+    <BarTooltipConsumer tooltip={tooltip} anchorRef={barRef} open={Boolean(hovered)} taskPosition={{ left, top, width, height }}>
+      <div
+        {...rest}
+        ref={barRef}
+        className={className}
+        style={{ left, top, width, height, cursor: readOnly ? "default" : "move", ...style }}
+        title={title}
+        onMouseDown={movable ? onMouseDown : undefined}
+        // Composed, not replaced — a consumer's `slotProps.root` handler must still
+        // fire, and the a11y payload may carry its own.
+        onMouseEnter={(event) => {
+          onMouseEnter?.(event);
+          setHovered(true);
+        }}
+        onMouseLeave={(event) => {
+          onMouseLeave?.(event);
+          setHovered(false);
+        }}
+      >
+        {children}
+      </div>
+    </BarTooltipConsumer>
   );
 }

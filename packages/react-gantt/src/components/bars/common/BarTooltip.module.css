@@ -1,21 +1,20 @@
 /*
  * `left`/`top` are written inline by BarTooltip.tsx, which places the tooltip
- * from the cursor and keeps it inside the viewport and clear of the sticky
- * calendar. Nothing here positions it — see that file for why CSS anchor
- * positioning could not (ADR-022).
+ * from the cursor. Nothing here positions it (ADR-022).
  *
- * `position: fixed` is what escapes the grid's `overflow: auto`; the library has
- * no portal. It works only while no ancestor of the bar establishes a containing
- * block — see the invariant comment in Row.module.css.
+ * The element is portalled to `document.body`, which is what makes the z-index
+ * below mean anything — rendered in place it sits inside `.row`, a stacking
+ * context, and could never out-rank the calendar header. Being outside the grid
+ * subtree is also what escapes its `overflow: auto`, so the containing-block
+ * caveat that used to apply here no longer does.
  */
 .tooltip {
   position: fixed;
 
-  /* Does not beat the calendar header, and cannot: `.row` is a stacking context,
-   * so the row's own z-index is what competes with the header's 30. This only
-   * orders the tooltip within its row — which is why placement keeps clear of
-   * the header band instead of trying to out-rank it. */
-  z-index: var(--am-gantt-tooltip-z-index, 40);
+  /* Ranks at the top level now, so it must clear the calendar header (30) and
+   * anything else the chart stacks. Themable for consumers whose own overlays
+   * sit higher. */
+  z-index: var(--am-gantt-tooltip-z-index, 1000);
 
   width: max-content;
   max-width: var(--am-gantt-tooltip-max-width, 260px);

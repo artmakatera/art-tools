@@ -58,8 +58,13 @@ function pointTo(x: number, y: number) {
   fireEvent.mouseMove(document, { clientX: x, clientY: y });
 }
 
-function tooltipOf(container: HTMLElement) {
-  return container.querySelector('[role="tooltip"]') as HTMLElement | null;
+/**
+ * Queried from `document.body`, not from the render container: the tooltip is
+ * portalled there so it can escape the row's stacking context, which puts it
+ * outside `container` by design.
+ */
+function tooltipOf(_container?: HTMLElement) {
+  return document.body.querySelector('[role="tooltip"]') as HTMLElement | null;
 }
 
 /** jsdom gives every element a zero rect; the placement tests need real numbers. */
