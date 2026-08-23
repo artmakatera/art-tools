@@ -1,5 +1,12 @@
-import { useState, type CSSProperties, type RefObject, useDeferredValue, useEffect } from "react";
-import { useGanttScroll } from "../../../context/contexts";
+import {
+  useContext,
+  useState,
+  type CSSProperties,
+  type RefObject,
+  useDeferredValue,
+  useEffect,
+} from "react";
+import { GanttScrollContext } from "../../../context/contexts";
 
 /** Gap between the cursor and the tooltip's nearest corner, px. */
 const CURSOR_OFFSET = 12;
@@ -23,7 +30,21 @@ export const useTooltipPosition = (
   tooltipRef: RefObject<HTMLDivElement | null>,
   open: boolean,
 ): CSSProperties => {
-  const gridRef = useGanttScroll().gridRef;
+  // Read the context, do not assert it: `useGanttScroll()` throws without a
+  // provider, and this hook must not. Two cases reach it with no provider above.
+  //
+  // `TaskBar`/`ProjectBar`/`MilestoneBar` are public exports that render
+  // standalone, and `GanttSlotsProvider` is public too — so a bar can be handed
+  // this tooltip with no chart around it, the same case that makes
+  // `useBarTooltip` return null rather than throw (ADR-022).
+  //
+  // The other is a hot reload. Re-evaluating `contexts.ts` mints a new context
+  // object, which the already-mounted provider is not providing; the throwing
+  // hook turned that into a crash on every HMR update with a tooltip open.
+  //
+  // Losing the grid only widens the bounds — the fallback below is the viewport,
+  // which is why degrading here costs nothing but a clamp.
+  const gridRef = useContext(GanttScrollContext)?.gridRef;
   const [positioningStyle, setPositiongStyle] = useState<CSSProperties>({
     left: -9999,
     top: -9999,

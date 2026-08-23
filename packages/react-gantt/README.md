@@ -3,7 +3,7 @@
 A high-performance, composable Gantt chart component library for React. It renders
 thousands of tasks smoothly (rows **and** columns are virtualized on both axes),
 ships a full undo/redo transaction model, cascading dependency scheduling, and a
-MUI-style slot system for deep customization.
+slot system for deep customization.
 
 - **Composable** — drop in the all-in-one `<Gantt />`, or assemble
   `<GanttProvider>` + `<TaskList>` + `<GanttGrid>` yourself.

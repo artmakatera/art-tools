@@ -1,6 +1,8 @@
 import type { ColumnApi, GanttTask } from "../../types";
 import { addDays } from "../../core/dateUtils";
 
+import styles from "./ActionsCell.module.css";
+
 /**
  * Builds the task inserted by the actions-column "add after" button: a blank
  * one-day task starting the day after the clicked row, under the same parent.
@@ -38,7 +40,7 @@ export function buildActionTask(task: GanttTask): GanttTask {
  */
 export function ActionsCell({ task, api }: { task: GanttTask; api: ColumnApi }) {
   return (
-    <div style={{ display: "flex", gap: "8px" }}>
+    <div className={styles.actionsCell}>
       <button
         type="button"
         title="Edit"

@@ -9,6 +9,8 @@ import {
   useBarTooltip,
 } from "../../../components/bars/barTooltip";
 import type { BarTooltipProps } from "../../../components/bars/barTooltip";
+import { TaskBar } from "../../../components/bars/taskBar/TaskBar";
+import { GanttSlotsProvider } from "../../../context/GanttSlotsContext";
 import type { GanttTask } from "../../../types";
 
 function makeTasks(): GanttTask[] {
@@ -417,5 +419,73 @@ describe("bar tooltip placement", () => {
     // is left alone rather than recomputed for a pointer off the chart.
     pointTo(5000, 400);
     expect(tooltipEl()!.style.left).toBe(settled);
+  });
+});
+
+describe("bar tooltip without a GanttProvider", () => {
+  /**
+   * `GanttSlotsProvider` and the three bar components are all public exports, so
+   * this composition is supported and must not throw — the same reason
+   * `useBarTooltip` returns null instead of erroring (ADR-022).
+   *
+   * It is also the case a hot reload produces: re-evaluating `contexts.ts` mints
+   * a new context object that the mounted provider is not providing, so an
+   * asserting `useGanttScroll()` crashed the popup on every HMR update.
+   */
+  it("opens on a standalone bar with no chart around it", () => {
+    const task = makeTasks()[0];
+    const progress = task.progress ?? 0;
+
+    render(
+      <GanttSlotsProvider value={{ bars: { tooltip: { slots: { tooltip: GanttBarTooltip } } } }}>
+        <TaskBar
+          width={120}
+          height={24}
+          left={0}
+          top={0}
+          colWidth={30}
+          title={task.name}
+          progress={progress}
+          tooltip={{ task, progress, displayEnd: new Date(2026, 0, 9) }}
+        />
+      </GanttSlotsProvider>,
+    );
+
+    const bar = document.body.querySelector(".am-gantt-bar-task") as HTMLElement;
+    fireEvent.mouseEnter(bar);
+
+    expect(tooltipEl()).not.toBeNull();
+    expect(tooltipEl()!.textContent).toContain("Write the spec");
+  });
+
+  it("falls back to the viewport when there is no grid to clamp against", () => {
+    const task = makeTasks()[0];
+    const restore = stubRects(isTooltip, { width: 120, height: 60 });
+
+    try {
+      render(
+        <GanttSlotsProvider value={{ bars: { tooltip: { slots: { tooltip: GanttBarTooltip } } } }}>
+          <TaskBar
+            width={120}
+            height={24}
+            left={0}
+            top={0}
+            colWidth={30}
+            title={task.name}
+            progress={0}
+            tooltip={{ task, progress: 0, displayEnd: new Date(2026, 0, 9) }}
+          />
+        </GanttSlotsProvider>,
+      );
+
+      const bar = document.body.querySelector(".am-gantt-bar-task") as HTMLElement;
+      fireEvent.mouseEnter(bar);
+      pointTo(1000, 400);
+
+      // Clamped to jsdom's 1024x768 window, not to a grid rect there is none of.
+      expect(Number.parseInt(tooltipEl()!.style.left, 10) + 120).toBeLessThanOrEqual(1024);
+    } finally {
+      restore();
+    }
   });
 });

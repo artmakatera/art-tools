@@ -66,6 +66,15 @@ handlers the element already has, so a consumer's `slotProps.root` keeps firing.
 the context is `null` and the trigger is a no-op rather than an error, because `TaskBar`/`ProjectBar`/
 `MilestoneBar` are public exports that render standalone.
 
+**No chart context is asserted either, for the same reason.** `useTooltipPosition` wants the grid
+rect to clamp against, and reads `GanttScrollContext` directly instead of through `useGanttScroll()`,
+which throws. Standalone bars are only half of it: `GanttSlotsProvider` is public too, so
+`GanttBarTooltip` can legitimately be handed to a bar with no chart around it. The other half is a
+hot reload — re-evaluating `contexts.ts` mints a new context object that the mounted provider is not
+providing, and the asserting hook turned that into a crash on every HMR update with a tooltip open.
+Degrading costs one clamp: with no grid the bounds fall back to the viewport, which is already the
+path a zero-size grid rect takes.
+
 **Consequence for the public API**, decided rather than incurred: `BarTooltipRoot`,
 `BarTooltipTrigger` and `useBarTooltip` are exported from the package entry, and
 `BarTooltipOwnerState` loses `open`. Without the primitives, a custom tooltip that wants the
