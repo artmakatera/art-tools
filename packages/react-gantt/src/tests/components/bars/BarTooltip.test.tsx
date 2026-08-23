@@ -145,6 +145,32 @@ describe("bar tooltip slot", () => {
     expect(tooltipOf(container)).toBeNull();
   });
 
+  it("renders no tooltip when slots.root is replaced — the accepted cost", () => {
+    // The tooltip is rendered by DraggableBar, which is only the *default* root,
+    // so a custom root that ignores the `tooltip` prop shows nothing (ADR-022).
+    // Pinned so the trade-off is visible rather than discovered.
+    const CustomRoot = (props: { className?: string; children?: React.ReactNode }) => (
+      <div data-testid="custom-root" className={props.className}>
+        {props.children}
+      </div>
+    );
+    const { Probe } = makeProbe();
+    const { getByTestId, queryByTestId } = render(
+      <Gantt
+        tasks={makeTasks()}
+        height={400}
+        bars={{
+          taskBar: { slots: { root: CustomRoot } },
+          tooltip: { slots: { tooltip: Probe } },
+        }}
+      />,
+    );
+
+    fireEvent.mouseEnter(getByTestId("custom-root"));
+    waitOutDelay();
+    expect(queryByTestId("probe")).toBeNull();
+  });
+
   it("does not trigger from the row, only from the bar", () => {
     const { Probe } = makeProbe();
     const { container, queryByTestId } = render(

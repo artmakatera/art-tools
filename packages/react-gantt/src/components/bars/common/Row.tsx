@@ -1,5 +1,4 @@
-import { clsx } from "clsx";
-import { memo, startTransition, useRef, useState } from "react";
+import { memo, startTransition, useState } from "react";
 import {
   type BarCommit,
   computeTaskPixels,
@@ -14,7 +13,6 @@ import {
   useGanttWorkCalendar,
 } from "../../../context/contexts";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
-import { mergeSlotProps } from "../../../core/slots";
 import { displayEndOf } from "../../../core/taskDates";
 import type { CalendarUnit, GanttTask, Id, TaskState } from "../../../types";
 import { MilestoneBar } from "../milestoneBar/MilestoneBar";
@@ -60,9 +58,10 @@ export const Row = memo(function Row({
   const isSelected = selectedId === task.id;
 
   const schedulingContext = useGanttWorkCalendar();
-  const tooltipConfig = useGanttSlots().bars?.tooltip;
-  const Tooltip = tooltipConfig?.slots?.tooltip;
-  const barRef = useRef<HTMLDivElement>(null);
+  // Read only to decide whether to suppress the native `title` — that has to
+  // happen where `a11y` is assembled, which is here. The tooltip itself is
+  // rendered by the bar.
+  const Tooltip = useGanttSlots().bars?.tooltip?.slots?.tooltip;
 
   const { left, width, progress } = computeTaskPixels(task, override || {}, origin, colWidth, unit);
   const top = index * rowHeight;
@@ -70,20 +69,10 @@ export const Row = memo(function Row({
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
   const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
 
-  // Two hover scopes, deliberately. `hovered` is the row, which is what the
-  // connector handles want — they should appear as the pointer approaches the
-  // bar. `barHovered` is the bar itself, which is what the tooltip wants: the row
-  // spans the entire timeline width, so a row-level trigger would fire over empty
-  // space months away from the task (ADR-022).
+  // Row-level hover, for the connector handles: they should appear as the
+  // pointer approaches the bar. The tooltip's own hover lives in the bar
+  // (DraggableBar), which is what renders it (ADR-022).
   const [hovered, setHovered] = useState(false);
-  const [barHovered, setBarHovered] = useState(false);
-
-  const hoverProps = Tooltip
-    ? {
-        onMouseEnter: () => setBarHovered(true),
-        onMouseLeave: () => setBarHovered(false),
-      }
-    : undefined;
 
   // `endDate` is exclusive (ADR-014), so the bar's right edge maps straight to it —
   // no day subtracted back off.
@@ -170,25 +159,23 @@ export const Row = memo(function Row({
     title: Tooltip ? undefined : task.name,
   };
 
-  // `open` is bar-hover, not visibility: the built-in tooltip waits out its own
-  // dwell delay before appearing, and a consumer's may do something else again.
-  const tooltipOwnerState: BarTooltipOwnerState = {
+  // `open` is absent on purpose: the bar owns the hover that opens the tooltip,
+  // so it fills that in. `progress` is override-aware during a drag, and
+  // `displayEnd` is inclusive (ADR-014) so no consumer rediscovers that
+  // `task.endDate` is exclusive.
+  const tooltipData: Omit<BarTooltipOwnerState, "open"> = {
     task,
     progress,
     displayEnd: displayEndOf(task, schedulingContext),
-    open: barHovered,
   };
 
   return (
     <div
-      className={clsx(styles.row, barHovered && Tooltip && styles.rowTooltipOpen)}
+      className={styles.row}
       style={{ top, height: rowHeight }}
       onClick={onTaskClick ? () => onTaskClick(task) : undefined}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => {
-        setHovered(false);
-        setBarHovered(false);
-      }}
+      onMouseLeave={() => setHovered(false)}
       role="row"
       aria-rowindex={rowIndexOffset + index + 1}
     >
@@ -204,8 +191,7 @@ export const Row = memo(function Row({
 
       {task.type === "milestone" && (
         <MilestoneBar
-          barRef={barRef}
-          hoverProps={hoverProps}
+          tooltip={tooltipData}
           size={barHeight}
           centerLeft={visualLeft}
           top={TASK_VERTICAL_PADDING}
@@ -217,8 +203,7 @@ export const Row = memo(function Row({
       )}
       {task.type === "summary" && (
         <ProjectBar
-          barRef={barRef}
-          hoverProps={hoverProps}
+          tooltip={tooltipData}
           left={visualLeft}
           top={TASK_VERTICAL_PADDING}
           width={width}
@@ -233,8 +218,7 @@ export const Row = memo(function Row({
       )}
       {task.type === "task" || !task.type ? (
         <TaskBar
-          barRef={barRef}
-          hoverProps={hoverProps}
+          tooltip={tooltipData}
           left={visualLeft}
           top={TASK_VERTICAL_PADDING}
           width={width}
@@ -248,17 +232,6 @@ export const Row = memo(function Row({
           {...resizeHandlers}
         />
       ) : null}
-
-      {/* Rendered regardless of `readOnly`: a tooltip is information, not an
-          affordance, so ADR-021 does not apply to it. Mounted only while open,
-          so nothing hangs in the tree for the other virtualized rows. */}
-      {barHovered && Tooltip && (
-        <Tooltip
-          {...mergeSlotProps({}, tooltipConfig?.slotProps?.tooltip, tooltipOwnerState)}
-          anchorRef={barRef}
-          {...tooltipOwnerState}
-        />
-      )}
     </div>
   );
 });

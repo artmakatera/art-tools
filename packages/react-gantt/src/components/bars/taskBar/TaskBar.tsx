@@ -1,6 +1,7 @@
-import type { ComponentProps, ElementType, Ref } from "react";
+import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
+import type { BarTooltipOwnerState } from "../common/BarTooltip";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./TaskBar.module.css";
@@ -52,17 +53,10 @@ interface TaskBarProps {
   onMove?: (newLeft: number) => void;
   onMoveEnd?: (newLeft: number) => void;
   /**
-   * Forwarded to the root element, for a tooltip slot to anchor against. Named
-   * `barRef` rather than `ref` because this component is not itself a
-   * `forwardRef` — React would intercept the prop.
+   * Task data handed to the root so it can render the tooltip slot. Forwarded
+   * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
    */
-  barRef?: Ref<HTMLDivElement>;
-  /**
-   * Hover handlers for the root element. The tooltip triggers on the bar rather
-   * than on its row, which spans the whole timeline width — a row-level trigger
-   * fires over empty space far from the task (ADR-022).
-   */
-  hoverProps?: Pick<ComponentProps<"div">, "onMouseEnter" | "onMouseLeave">;
+  tooltip?: Omit<BarTooltipOwnerState, "open">;
   slots?: TaskBarSlots;
   slotProps?: TaskBarSlotProps;
 }
@@ -82,8 +76,7 @@ export function TaskBar({
   onResizeEnd,
   onMove,
   onMoveEnd,
-  barRef,
-  hoverProps,
+  tooltip,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: TaskBarProps) {
@@ -102,7 +95,6 @@ export function TaskBar({
       className: `${styles.task} am-gantt-bar-task`,
       style: { lineHeight: `${height}px` },
       ...a11y,
-      ...hoverProps,
     },
     slotProps?.root,
     ownerState,
@@ -125,7 +117,7 @@ export function TaskBar({
 
   return (
     <Root
-      ref={barRef}
+      tooltip={tooltip}
       left={left}
       top={top}
       width={width}

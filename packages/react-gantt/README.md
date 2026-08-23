@@ -514,6 +514,10 @@ It triggers on the **bar**, not the row — a row spans the whole timeline width
 a row-scoped trigger would fire over empty space far from the task. (The connector
 handles still use row hover, so they appear as you approach a bar.)
 
+The bar's default root is what renders it, so **replacing `slots.root` removes the
+tooltip**. A custom root can restore it by forwarding the `tooltip` prop it
+receives on to a `DraggableBar`.
+
 `GanttBarTooltip` appears after a 500ms hover dwell, positions itself
 bottom-right of the cursor, and flips left or up rather than running off the
 viewport. Tune the dwell through the usual `slotProps` channel:

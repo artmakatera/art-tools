@@ -26,13 +26,17 @@
 /*
  * While a tooltip is open, lift its row one step above the other rows. Every row
  * carries the same z-index, so without this a *later* row's bar paints over the
- * tooltip of an earlier one — the tooltip lives inside its row's stacking
- * context and cannot escape it.
+ * tooltip of an earlier one — the tooltip lives inside its row's stacking context
+ * and cannot escape it.
+ *
+ * Driven by `:has()` on the attribute DraggableBar sets, not by a class from
+ * `Row`: the open state lives in the bar now, and CSS can see it without
+ * plumbing a callback back up.
  *
  * One step, not more: this must stay below --am-gantt-calendar-z-index (30), or
  * the hovered bar itself would paint over the sticky header as it scrolls under
  * it. Clearing the header is placement's job, not layering's (ADR-022).
  */
-.rowTooltipOpen {
+.row:has([data-am-gantt-tooltip="open"]) {
   z-index: calc(var(--am-gantt-task-bar-z-index, 3) + 1);
 }

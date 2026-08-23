@@ -1,6 +1,7 @@
-import type { ComponentProps, ElementType, Ref } from "react";
+import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
+import type { BarTooltipOwnerState } from "../common/BarTooltip";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
 import { BarProgress } from "../progress/BarProgress";
 import styles from "./ProjectBar.module.css";
@@ -45,14 +46,11 @@ interface ProjectBarProps {
   onProgressEnd?: (newProgress: number) => void;
   onMove?: (newLeft: number) => void;
   onMoveEnd?: (newLeft: number) => void;
-  /** Forwarded to the root element, for a tooltip slot to anchor against. */
-  barRef?: Ref<HTMLDivElement>;
   /**
-   * Hover handlers for the root element. The tooltip triggers on the bar rather
-   * than on its row, which spans the whole timeline width — a row-level trigger
-   * fires over empty space far from the task (ADR-022).
+   * Task data handed to the root so it can render the tooltip slot. Forwarded
+   * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
    */
-  hoverProps?: Pick<ComponentProps<"div">, "onMouseEnter" | "onMouseLeave">;
+  tooltip?: Omit<BarTooltipOwnerState, "open">;
   slots?: ProjectBarSlots;
   slotProps?: ProjectBarSlotProps;
 }
@@ -70,8 +68,7 @@ export function ProjectBar({
   onProgressEnd,
   onMove,
   onMoveEnd,
-  barRef,
-  hoverProps,
+  tooltip,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: ProjectBarProps) {
@@ -90,7 +87,6 @@ export function ProjectBar({
       className: styles.project,
       style: { lineHeight: `${height}px` },
       ...a11y,
-      ...hoverProps,
     },
     slotProps?.root,
     ownerState,
@@ -110,7 +106,7 @@ export function ProjectBar({
 
   return (
     <Root
-      ref={barRef}
+      tooltip={tooltip}
       left={left}
       top={top}
       width={width}

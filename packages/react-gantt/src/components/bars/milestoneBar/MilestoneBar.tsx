@@ -1,6 +1,7 @@
-import type { ComponentProps, ElementType, Ref } from "react";
+import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
+import type { BarTooltipOwnerState } from "../common/BarTooltip";
 import { DraggableBar, type BarA11yProps } from "../common/DraggableBar";
 import styles from "./MilestoneBar.module.css";
 
@@ -33,14 +34,11 @@ interface MilestoneBarProps {
   /** Editing handlers; omitted on a read-only chart (see `TaskBar`). */
   onMove?: (newCenterLeft: number) => void;
   onMoveEnd?: (newCenterLeft: number) => void;
-  /** Forwarded to the root element, for a tooltip slot to anchor against. */
-  barRef?: Ref<HTMLDivElement>;
   /**
-   * Hover handlers for the root element. The tooltip triggers on the bar rather
-   * than on its row, which spans the whole timeline width — a row-level trigger
-   * fires over empty space far from the task (ADR-022).
+   * Task data handed to the root so it can render the tooltip slot. Forwarded
+   * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
    */
-  hoverProps?: Pick<ComponentProps<"div">, "onMouseEnter" | "onMouseLeave">;
+  tooltip?: Omit<BarTooltipOwnerState, "open">;
   slots?: MilestoneBarSlots;
   slotProps?: MilestoneBarSlotProps;
 }
@@ -54,8 +52,7 @@ export function MilestoneBar({
   a11y,
   onMove,
   onMoveEnd,
-  barRef,
-  hoverProps,
+  tooltip,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: MilestoneBarProps) {
@@ -72,7 +69,7 @@ export function MilestoneBar({
   // omitting it under a tooltip slot. The `title` prop is only the fallback for
   // standalone use of this component outside a chart.
   const rootProps = mergeSlotProps(
-    { className: styles.milestone, ...a11y, ...hoverProps, title: a11y ? a11y.title : title },
+    { className: styles.milestone, ...a11y, title: a11y ? a11y.title : title },
     slotProps?.root,
     ownerState,
   );
@@ -85,7 +82,7 @@ export function MilestoneBar({
 
   return (
     <Root
-      ref={barRef}
+      tooltip={tooltip}
       left={centerLeft - size / 2}
       top={top}
       width={size}

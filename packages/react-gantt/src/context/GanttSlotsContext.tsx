@@ -32,9 +32,10 @@ export interface GanttBarsSlots {
   taskResizer?: TaskResizerSlotConfig;
   connectorHandles?: ConnectorHandlesSlotConfig;
   /**
-   * One slot for all three bar types, rendered by `Row` — which already tracks
-   * hover and holds the task. Empty by default: no tooltip is rendered and the
-   * bar keeps its native `title` (ADR-022).
+   * One slot for all three bar types, rendered by `DraggableBar` so it is
+   * scoped to the bar's own hover. Empty by default: no tooltip is rendered and
+   * the bar keeps its native `title`. Note it is lost if `slots.root` is
+   * replaced, since `DraggableBar` is only the default root (ADR-022).
    */
   tooltip?: BarTooltipSlotConfig;
 }

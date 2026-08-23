@@ -3,28 +3,19 @@
 - **Status:** Accepted
 - **Context:** Slots & theming — see the [glossary](../glossary.md) and the [ADR index](./README.md).
 
-**Decision.** `GanttBarsSlots` gains `tooltip?: BarTooltipSlotConfig`, rendered by `Row` rather than
-by the three bar components, and empty by default. `GanttBarTooltip` is exported as an opt-in
+**Decision.** `GanttBarsSlots` gains `tooltip?: BarTooltipSlotConfig`, rendered by `DraggableBar`,
+and empty by default. `GanttBarTooltip` is exported as an opt-in
 implementation. The slot component receives the task, the resolved progress, an already-inclusive
 `displayEnd`, an `anchorRef` (the bar's DOM node), and an optional `delayMs`. An `anchorName` ident
 was part of this shape while placement was CSS-anchored; it is gone, along with `anchor-name` on the
 three bar classes and the row's `--am-gantt-bar-anchor`.
 
-`Row` is the render site because it holds the task and the resolved progress, and because one slot
-there replaces three duplicated ones.
+**`DraggableBar` is the render site.** The tooltip sits inside the bar element, so it is scoped to
+the bar's own hover — a row spans the whole timeline width — and anchors to that element without a
+ref threaded down. `Row` keeps its own row-level `hovered` for `ConnectorHandles`.
 
-**The trigger is the bar; the row keeps its own hover for the connector handles.** `Row` carries two
-hover states rather than one. A row spans the entire timeline width, so a row-scoped trigger fires
-over empty space months away from the task — but the connector handles genuinely want row scope, so
-they appear as the pointer approaches the bar. Handlers reach the bar through a `hoverProps` prop on
-each of the three bar components.
-
-Rejected for this: rendering the tooltip inside `DraggableBar`. It is only the _default_ root
-(`Root = slots?.root ?? DraggableBar` in all three bars, and three tests replace it), so the tooltip
-would vanish for anyone customizing `slots.root` — a silent coupling between unrelated features. It
-would also mean threading `task`, `progress` and `displayEnd` through three components that have no
-interest in tooltips. Rendering it in each bar instead survives root replacement but duplicates the
-render three times, which is what choosing `Row` avoided in the first place.
+**The cost, accepted knowingly: `DraggableBar` is only the _default_ root.** Replacing `slots.root`
+removes the tooltip unless the replacement forwards the `tooltip` prop. Pinned by a test.
 
 **Placement is computed in JS from the cursor, with `position: fixed` and inline `left`/`top`.**
 Bottom-right of the pointer by default, flipped left or up rather than allowed off-screen, and never
