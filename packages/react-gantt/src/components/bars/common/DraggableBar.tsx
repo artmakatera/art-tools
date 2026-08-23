@@ -87,9 +87,8 @@ export function DraggableBar({
   return (
     <BarTooltipConsumer tooltip={tooltip} anchorRef={barRef}>
       {/* Handed to the slot as its `children`, and the slot is what mounts
-          `BarTooltipTrigger` around it. So this div carries no hover wiring of
-          its own, and the handlers below are purely the consumer's — the trigger
-          composes with them by cloning, rather than replacing them. */}
+          `BarTooltipTrigger` around it — so the handlers below are purely the
+          consumer's, and this div carries no hover wiring of its own. */}
       <div
         {...rest}
         ref={barRef}

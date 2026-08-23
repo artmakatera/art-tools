@@ -35,9 +35,7 @@ export interface BarTooltipProps extends BarTooltipOwnerState {
    * consumer has replaced `slots.root` with a component that does not forward
    * refs.
    *
-   * Declared because `BarTooltipConsumer` passes it: leaving it off the type made
-   * it invisible to anyone writing their own tooltip. The built-in one ignores
-   * it — it places from the cursor (ADR-022).
+   * The built-in tooltip ignores it — it places from the cursor (ADR-022).
    */
   anchorRef: RefObject<HTMLDivElement | null>;
 }

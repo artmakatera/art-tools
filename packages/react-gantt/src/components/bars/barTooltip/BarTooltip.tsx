@@ -78,9 +78,8 @@ function BarTooltipPopup({
  * it is never rendered by default.
  *
  * A wrapper, not a sibling: it renders the bar it is handed and mounts its own
- * root and trigger around it. Everything about opening therefore lives here, in
- * the slot — which is what makes it replaceable by a third-party tooltip that
- * brings its own (ADR-022).
+ * root and trigger around it, so it holds no privileged position over any other
+ * slot (ADR-022).
  *
  * Placed from the cursor in JS, not with CSS anchor positioning: anchoring to the
  * bar puts the tooltip at the midpoint of a bar that can be wider than the
