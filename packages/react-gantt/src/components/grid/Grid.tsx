@@ -6,7 +6,7 @@ import type { GanttTask, Id, Overrides, TaskState } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
 import { Calendar } from "../calendar/Calendar";
-import { Bar } from "../bars/common/Bar";
+import { Row } from "../bars/common/Row";
 import { DependencyLinksProvider } from "../dependency-links/DependencyLinksContext";
 import { DependencyLinks } from "../dependency-links/DependencyLinks";
 import { DependencyPreview } from "../dependency-links/DependencyPreview";
@@ -240,7 +240,7 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
             {visibleTasks.slice(rowRange.start, rowRange.end).map((task, i) => {
               const index = rowRange.start + i;
               return (
-                <Bar
+                <Row
                   key={task.id}
                   task={task}
                   index={index}

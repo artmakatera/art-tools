@@ -42,7 +42,7 @@ export const EMPTY_DEPENDENCIES: TaskDependency[] = [];
  * IMPORTANT for callers that pair a mutation with clearing a drag preview: both
  * updates must be made inside ONE `startTransition` so they land in the same
  * commit. Clearing the preview urgently while the dates arrive later paints one
- * frame of the bar back at its old position — see `Bar`'s commit handlers.
+ * frame of the bar back at its old position — see `Row`'s commit handlers.
  */
 function scheduleLogUpdate(update: () => void): void {
   startTransition(update);

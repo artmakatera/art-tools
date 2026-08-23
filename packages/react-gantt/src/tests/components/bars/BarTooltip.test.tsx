@@ -24,7 +24,8 @@ function makeTasks(): GanttTask[] {
 /**
  * Scoped by the bar's public hook class, not by `[role="gridcell"]` — the task
  * list is a treegrid whose cells match that role and come first in document
- * order. The bar's parent is the `row` carrying the hover handlers.
+ * order. The tooltip triggers on the `bar`; the `row` still drives the connector
+ * handles.
  */
 function barAndRow(container: HTMLElement) {
   const bar = container.querySelector(".am-gantt-bar-task") as HTMLElement;
@@ -111,7 +112,7 @@ describe("bar tooltip slot", () => {
         bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
       />,
     );
-    fireEvent.mouseEnter(barAndRow(container).row);
+    fireEvent.mouseEnter(barAndRow(container).bar);
 
     act(() => {
       vi.advanceTimersByTime(DELAY - 1);
@@ -132,16 +133,34 @@ describe("bar tooltip slot", () => {
         bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
       />,
     );
-    const { row } = barAndRow(container);
+    const { bar } = barAndRow(container);
 
-    fireEvent.mouseEnter(row);
+    fireEvent.mouseEnter(bar);
     act(() => {
       vi.advanceTimersByTime(DELAY - 50);
     });
-    fireEvent.mouseLeave(row);
+    fireEvent.mouseLeave(bar);
     waitOutDelay();
 
     expect(tooltipOf(container)).toBeNull();
+  });
+
+  it("does not trigger from the row, only from the bar", () => {
+    const { Probe } = makeProbe();
+    const { container, queryByTestId } = render(
+      <Gantt tasks={makeTasks()} height={400} bars={{ tooltip: { slots: { tooltip: Probe } } }} />,
+    );
+    const { bar, row } = barAndRow(container);
+
+    // The row spans the whole timeline width, so hovering it means hovering
+    // empty space that may be months away from the task.
+    fireEvent.mouseEnter(row);
+    waitOutDelay();
+    expect(queryByTestId("probe")).toBeNull();
+
+    fireEvent.mouseEnter(bar);
+    waitOutDelay();
+    expect(queryByTestId("probe")).not.toBeNull();
   });
 
   it("unmounts the slot on mouse leave", () => {
@@ -149,13 +168,13 @@ describe("bar tooltip slot", () => {
     const { container, queryByTestId } = render(
       <Gantt tasks={makeTasks()} height={400} bars={{ tooltip: { slots: { tooltip: Probe } } }} />,
     );
-    const { row } = barAndRow(container);
+    const { bar } = barAndRow(container);
 
-    fireEvent.mouseEnter(row);
+    fireEvent.mouseEnter(bar);
     waitOutDelay();
     expect(queryByTestId("probe")).not.toBeNull();
 
-    fireEvent.mouseLeave(row);
+    fireEvent.mouseLeave(bar);
     expect(queryByTestId("probe")).toBeNull();
   });
 
@@ -176,7 +195,7 @@ describe("bar tooltip slot", () => {
       <Gantt tasks={makeTasks()} height={400} bars={{ tooltip: { slots: { tooltip: Probe } } }} />,
     );
     const { bar, row } = barAndRow(container);
-    fireEvent.mouseEnter(row);
+    fireEvent.mouseEnter(bar);
     waitOutDelay();
 
     const props = seen.at(-1)!;
@@ -199,7 +218,7 @@ describe("bar tooltip slot", () => {
         bars={{ tooltip: { slots: { tooltip: Probe } } }}
       />,
     );
-    fireEvent.mouseEnter(barAndRow(container).row);
+    fireEvent.mouseEnter(barAndRow(container).bar);
     waitOutDelay();
     expect(queryByTestId("probe")).not.toBeNull();
   });
@@ -217,7 +236,7 @@ describe("bar tooltip slot", () => {
         }}
       />,
     );
-    fireEvent.mouseEnter(barAndRow(container).row);
+    fireEvent.mouseEnter(barAndRow(container).bar);
     waitOutDelay();
 
     const tip = tooltipOf(container)!;
@@ -233,7 +252,7 @@ describe("bar tooltip slot", () => {
         bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }}
       />,
     );
-    fireEvent.mouseEnter(barAndRow(container).row);
+    fireEvent.mouseEnter(barAndRow(container).bar);
     waitOutDelay();
 
     // Scoped to the tooltip: the name and the dates also appear in the task list.
@@ -274,7 +293,7 @@ describe("bar tooltip placement", () => {
     // Enter first: the module-level pointer listener starts on the first tooltip
     // mount, so a move dispatched before that is never seen. Mirrors the real
     // constraint rather than working around it.
-    fireEvent.mouseEnter(barAndRow(view.container).row);
+    fireEvent.mouseEnter(barAndRow(view.container).bar);
     pointTo(x, y);
     waitOutDelay();
     const tip = tooltipOf(view.container)!;
@@ -318,7 +337,7 @@ describe("bar tooltip placement", () => {
     );
     // Enter, drift to 200, then to 600 before the delay fires: the tooltip should
     // appear next to 600, the last position seen.
-    fireEvent.mouseEnter(barAndRow(view.container).row);
+    fireEvent.mouseEnter(barAndRow(view.container).bar);
     pointTo(200, 300);
     act(() => {
       vi.advanceTimersByTime(200);

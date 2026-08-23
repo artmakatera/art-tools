@@ -14,6 +14,6 @@ right edge still lands somewhere other than the drop point).
 **Cost accepted.** The bar jumps on release. Mitigating factor: drag already snaps to a `colWidth`
 multiple on release (`components/bars/common/DraggableBar.tsx:52`), so a small jump exists today.
 
-**Structural consequence.** `moveAt` and `resizeAt` (`Bar.tsx:66-74`) currently serve both preview
+**Structural consequence.** `moveAt` and `resizeAt` (`Row.tsx:66-74`) currently serve both preview
 and commit. They must split, so that "no calendar in the hot path" is enforced by the shape of the
 code rather than by discipline.

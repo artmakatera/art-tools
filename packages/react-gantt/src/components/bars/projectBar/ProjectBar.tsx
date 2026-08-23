@@ -47,6 +47,12 @@ interface ProjectBarProps {
   onMoveEnd?: (newLeft: number) => void;
   /** Forwarded to the root element, for a tooltip slot to anchor against. */
   barRef?: Ref<HTMLDivElement>;
+  /**
+   * Hover handlers for the root element. The tooltip triggers on the bar rather
+   * than on its row, which spans the whole timeline width — a row-level trigger
+   * fires over empty space far from the task (ADR-022).
+   */
+  hoverProps?: Pick<ComponentProps<"div">, "onMouseEnter" | "onMouseLeave">;
   slots?: ProjectBarSlots;
   slotProps?: ProjectBarSlotProps;
 }
@@ -65,6 +71,7 @@ export function ProjectBar({
   onMove,
   onMoveEnd,
   barRef,
+  hoverProps,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: ProjectBarProps) {
@@ -83,6 +90,7 @@ export function ProjectBar({
       className: styles.project,
       style: { lineHeight: `${height}px` },
       ...a11y,
+      ...hoverProps,
     },
     slotProps?.root,
     ownerState,

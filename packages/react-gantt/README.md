@@ -303,7 +303,7 @@ The reasoning behind each of these — including what was rejected — is record
 
 ## Task bars
 
-`Bar` ([`src/components/bars/common/Bar.tsx`](./src/components/bars/common/Bar.tsx))
+`Row` ([`src/components/bars/common/Row.tsx`](./src/components/bars/common/Row.tsx))
 computes each row's pixel geometry and dispatches on `type`:
 
 - **`task`** → `TaskBar` — draggable, resizable, with a progress fill and label.
@@ -509,6 +509,10 @@ import { Gantt, GanttBarTooltip } from "@art-tools/react-gantt";
 // The built-in tooltip: name, dates, progress.
 <Gantt tasks={tasks} height={500} bars={{ tooltip: { slots: { tooltip: GanttBarTooltip } } }} />;
 ```
+
+It triggers on the **bar**, not the row — a row spans the whole timeline width, so
+a row-scoped trigger would fire over empty space far from the task. (The connector
+handles still use row hover, so they appear as you approach a bar.)
 
 `GanttBarTooltip` appears after a 500ms hover dwell, positions itself
 bottom-right of the cursor, and flips left or up rather than running off the

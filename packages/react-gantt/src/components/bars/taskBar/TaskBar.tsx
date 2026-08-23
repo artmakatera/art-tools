@@ -57,6 +57,12 @@ interface TaskBarProps {
    * `forwardRef` — React would intercept the prop.
    */
   barRef?: Ref<HTMLDivElement>;
+  /**
+   * Hover handlers for the root element. The tooltip triggers on the bar rather
+   * than on its row, which spans the whole timeline width — a row-level trigger
+   * fires over empty space far from the task (ADR-022).
+   */
+  hoverProps?: Pick<ComponentProps<"div">, "onMouseEnter" | "onMouseLeave">;
   slots?: TaskBarSlots;
   slotProps?: TaskBarSlotProps;
 }
@@ -77,6 +83,7 @@ export function TaskBar({
   onMove,
   onMoveEnd,
   barRef,
+  hoverProps,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: TaskBarProps) {
@@ -95,6 +102,7 @@ export function TaskBar({
       className: `${styles.task} am-gantt-bar-task`,
       style: { lineHeight: `${height}px` },
       ...a11y,
+      ...hoverProps,
     },
     slotProps?.root,
     ownerState,

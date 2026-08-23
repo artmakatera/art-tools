@@ -35,6 +35,12 @@ interface MilestoneBarProps {
   onMoveEnd?: (newCenterLeft: number) => void;
   /** Forwarded to the root element, for a tooltip slot to anchor against. */
   barRef?: Ref<HTMLDivElement>;
+  /**
+   * Hover handlers for the root element. The tooltip triggers on the bar rather
+   * than on its row, which spans the whole timeline width — a row-level trigger
+   * fires over empty space far from the task (ADR-022).
+   */
+  hoverProps?: Pick<ComponentProps<"div">, "onMouseEnter" | "onMouseLeave">;
   slots?: MilestoneBarSlots;
   slotProps?: MilestoneBarSlotProps;
 }
@@ -49,6 +55,7 @@ export function MilestoneBar({
   onMove,
   onMoveEnd,
   barRef,
+  hoverProps,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: MilestoneBarProps) {
@@ -65,7 +72,7 @@ export function MilestoneBar({
   // omitting it under a tooltip slot. The `title` prop is only the fallback for
   // standalone use of this component outside a chart.
   const rootProps = mergeSlotProps(
-    { className: styles.milestone, ...a11y, title: a11y ? a11y.title : title },
+    { className: styles.milestone, ...a11y, ...hoverProps, title: a11y ? a11y.title : title },
     slotProps?.root,
     ownerState,
   );

@@ -3,15 +3,28 @@
 - **Status:** Accepted
 - **Context:** Slots & theming — see the [glossary](../glossary.md) and the [ADR index](./README.md).
 
-**Decision.** `GanttBarsSlots` gains `tooltip?: BarTooltipSlotConfig`, rendered by `Bar` rather than
+**Decision.** `GanttBarsSlots` gains `tooltip?: BarTooltipSlotConfig`, rendered by `Row` rather than
 by the three bar components, and empty by default. `GanttBarTooltip` is exported as an opt-in
 implementation. The slot component receives the task, the resolved progress, an already-inclusive
 `displayEnd`, an `anchorRef` (the bar's DOM node), and an optional `delayMs`. An `anchorName` ident
 was part of this shape while placement was CSS-anchored; it is gone, along with `anchor-name` on the
 three bar classes and the row's `--am-gantt-bar-anchor`.
 
-`Bar` is the render site because it already tracks `hovered` for `ConnectorHandles`, so no new
-hover re-render is introduced, and because one slot there replaces three duplicated ones.
+`Row` is the render site because it holds the task and the resolved progress, and because one slot
+there replaces three duplicated ones.
+
+**The trigger is the bar; the row keeps its own hover for the connector handles.** `Row` carries two
+hover states rather than one. A row spans the entire timeline width, so a row-scoped trigger fires
+over empty space months away from the task — but the connector handles genuinely want row scope, so
+they appear as the pointer approaches the bar. Handlers reach the bar through a `hoverProps` prop on
+each of the three bar components.
+
+Rejected for this: rendering the tooltip inside `DraggableBar`. It is only the _default_ root
+(`Root = slots?.root ?? DraggableBar` in all three bars, and three tests replace it), so the tooltip
+would vanish for anyone customizing `slots.root` — a silent coupling between unrelated features. It
+would also mean threading `task`, `progress` and `displayEnd` through three components that have no
+interest in tooltips. Rendering it in each bar instead survives root replacement but duplicates the
+render three times, which is what choosing `Row` avoided in the first place.
 
 **Placement is computed in JS from the cursor, with `position: fixed` and inline `left`/`top`.**
 Bottom-right of the pointer by default, flipped left or up rather than allowed off-screen, and never
@@ -31,7 +44,7 @@ confirmed parsed (`"flip-block, start span-end, …"`), and the tooltip moved ze
 every fallback is equally anchor-relative.
 
 _Anchored to a pointer-tracking probe._ This did fix the long-bar case and was verified in Chrome,
-but it put the pointer plumbing in `Bar` and still could not express the header constraint.
+but it put the pointer plumbing in `Row` and still could not express the header constraint.
 
 _`popover` for the top layer._ Genuinely immune to both the stacking context and ancestor containing
 blocks — measured painting 181px past the scroll container's edge — but it requires a
@@ -66,8 +79,8 @@ suggests a listener registered during the mount would catch the move that caused
 single physical move dispatches all three **synchronously inside one input event**, and React flushes
 the resulting effects only afterwards, so the listener is late by exactly one event. Verified in
 Chrome — a mount-time listener saw nothing at all when the pointer moved onto a bar and stopped,
-which is the canonical tooltip gesture. Passing the entry point down from `Bar`'s `mouseenter` also
-works and was tried, but it puts pointer state in `Bar` for a value only the tooltip wants.
+which is the canonical tooltip gesture. Passing the entry point down from `Row`'s `mouseenter` also
+works and was tried, but it puts pointer state in `Row` for a value only the tooltip wants.
 
 Lazy rather than at import time: `dist` is a single bundled module, so an import-time
 `addEventListener` would attach for every consumer of the library, including those that never render
@@ -88,7 +101,7 @@ there is no focus event to trigger on. Adding one means changing the grid's focu
 the `keyboard-navigation` backlog item and needs its own ADR. Until then the accessible name on the
 bar (`aria-label`) is unchanged and remains the AT path.
 
-**Consequence for the native title.** With a tooltip slot configured, `Bar` omits `title` from the
+**Consequence for the native title.** With a tooltip slot configured, `Row` omits `title` from the
 bar's a11y props — two tooltips would otherwise stack on hover. `aria-label` is untouched. This
 makes `BarA11yProps.title` optional and moves `TaskBar`'s label tooltip and `MilestoneBar`'s root
 tooltip to follow `a11y.title` rather than the `title` prop, which stays the visible text.

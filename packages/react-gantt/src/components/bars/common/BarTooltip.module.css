@@ -6,7 +6,7 @@
  *
  * `position: fixed` is what escapes the grid's `overflow: auto`; the library has
  * no portal. It works only while no ancestor of the bar establishes a containing
- * block — see the invariant comment in Bar.module.css.
+ * block — see the invariant comment in Row.module.css.
  */
 .tooltip {
   position: fixed;

@@ -23,9 +23,9 @@ import { TaskBar } from "../taskBar/TaskBar";
 import type { BarTooltipOwnerState } from "./BarTooltip";
 import { ConnectorHandles } from "./ConnectorHandles";
 import type { BarA11yProps } from "./DraggableBar";
-import styles from "./Bar.module.css";
+import styles from "./Row.module.css";
 
-interface BarProps {
+interface RowProps {
   task: GanttTask;
   index: number;
   origin: Date;
@@ -40,7 +40,7 @@ interface BarProps {
   rowIndexOffset: number;
 }
 
-export const Bar = memo(function Bar({
+export const Row = memo(function Row({
   task,
   index,
   origin,
@@ -53,7 +53,7 @@ export const Bar = memo(function Bar({
   onCommit,
   onTaskClick,
   rowIndexOffset,
-}: BarProps) {
+}: RowProps) {
   const labels = useGanttLabels();
   const readOnly = useGanttReadOnly();
   const selectedId = useGanttSelectedId();
@@ -70,7 +70,20 @@ export const Bar = memo(function Bar({
   const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
   const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
 
+  // Two hover scopes, deliberately. `hovered` is the row, which is what the
+  // connector handles want — they should appear as the pointer approaches the
+  // bar. `barHovered` is the bar itself, which is what the tooltip wants: the row
+  // spans the entire timeline width, so a row-level trigger would fire over empty
+  // space months away from the task (ADR-022).
   const [hovered, setHovered] = useState(false);
+  const [barHovered, setBarHovered] = useState(false);
+
+  const hoverProps = Tooltip
+    ? {
+        onMouseEnter: () => setBarHovered(true),
+        onMouseLeave: () => setBarHovered(false),
+      }
+    : undefined;
 
   // `endDate` is exclusive (ADR-014), so the bar's right edge maps straight to it —
   // no day subtracted back off.
@@ -157,22 +170,25 @@ export const Bar = memo(function Bar({
     title: Tooltip ? undefined : task.name,
   };
 
-  // `open` is hover, not visibility: the built-in tooltip waits out its own
+  // `open` is bar-hover, not visibility: the built-in tooltip waits out its own
   // dwell delay before appearing, and a consumer's may do something else again.
   const tooltipOwnerState: BarTooltipOwnerState = {
     task,
     progress,
     displayEnd: displayEndOf(task, schedulingContext),
-    open: hovered,
+    open: barHovered,
   };
 
   return (
     <div
-      className={clsx(styles.row, hovered && Tooltip && styles.rowTooltipOpen)}
+      className={clsx(styles.row, barHovered && Tooltip && styles.rowTooltipOpen)}
       style={{ top, height: rowHeight }}
       onClick={onTaskClick ? () => onTaskClick(task) : undefined}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={() => {
+        setHovered(false);
+        setBarHovered(false);
+      }}
       role="row"
       aria-rowindex={rowIndexOffset + index + 1}
     >
@@ -189,6 +205,7 @@ export const Bar = memo(function Bar({
       {task.type === "milestone" && (
         <MilestoneBar
           barRef={barRef}
+          hoverProps={hoverProps}
           size={barHeight}
           centerLeft={visualLeft}
           top={TASK_VERTICAL_PADDING}
@@ -201,6 +218,7 @@ export const Bar = memo(function Bar({
       {task.type === "summary" && (
         <ProjectBar
           barRef={barRef}
+          hoverProps={hoverProps}
           left={visualLeft}
           top={TASK_VERTICAL_PADDING}
           width={width}
@@ -216,6 +234,7 @@ export const Bar = memo(function Bar({
       {task.type === "task" || !task.type ? (
         <TaskBar
           barRef={barRef}
+          hoverProps={hoverProps}
           left={visualLeft}
           top={TASK_VERTICAL_PADDING}
           width={width}
@@ -233,7 +252,7 @@ export const Bar = memo(function Bar({
       {/* Rendered regardless of `readOnly`: a tooltip is information, not an
           affordance, so ADR-021 does not apply to it. Mounted only while open,
           so nothing hangs in the tree for the other virtualized rows. */}
-      {hovered && Tooltip && (
+      {barHovered && Tooltip && (
         <Tooltip
           {...mergeSlotProps({}, tooltipConfig?.slotProps?.tooltip, tooltipOwnerState)}
           anchorRef={barRef}
@@ -244,4 +263,4 @@ export const Bar = memo(function Bar({
   );
 });
 
-Bar.displayName = "Bar";
+Row.displayName = "Row";
