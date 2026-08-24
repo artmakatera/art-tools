@@ -1,17 +1,18 @@
-import {
-  useContext,
-  useState,
-  type CSSProperties,
-  type RefObject,
-  useDeferredValue,
-  useEffect,
-} from "react";
+import { useContext, useState, type CSSProperties, type RefObject, useDeferredValue } from "react";
 import { GanttScrollContext } from "../../../context/contexts";
+import { useIsomorphicLayoutEffect } from "../../../hooks/useIsomorphicLayoutEffect";
 
 /** Gap between the cursor and the tooltip's nearest corner, px. */
 const CURSOR_OFFSET = 12;
 /** Distance kept clear of the bounding edges, px. */
 const EDGE_MARGIN = 8;
+
+
+let openedAt: { x: number; y: number } | null = null;
+
+export function rememberOpenPointer(x: number, y: number) {
+  openedAt = { x, y };
+}
 
 interface Bounds {
   left: number;
@@ -52,7 +53,7 @@ export const useTooltipPosition = (
 
   const deferredPosition = useDeferredValue(positioningStyle);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     // Gated on `open`, and that is not a micro-optimisation. The slot wraps the
     // bar, so one instance is mounted per visible row — roughly thirty. Without
     // this, every one of them would listen for mousemove and call `setState` on
@@ -61,9 +62,7 @@ export const useTooltipPosition = (
       return;
     }
 
-    const handleMouseMove = (event: MouseEvent) => {
-      const { clientX, clientY } = event;
-
+    const place = (clientX: number, clientY: number) => {
       const grid = gridRef?.current?.getBoundingClientRect();
       const bounds: Bounds =
         grid && grid.width > 0 && grid.height > 0
@@ -98,6 +97,21 @@ export const useTooltipPosition = (
         previous.left === left && previous.top === top ? previous : { left, top },
       );
     };
+
+    // Place from the pointer that opened it, rather than waiting for a mousemove
+    // that may never come. `mouseenter` is synthesized from `mouseover`, so it
+    // fires however sparsely the pointer is sampled — but if the cursor comes to
+    // rest the instant it is inside the bar, no later move arrives and the popup
+    // used to sit at its off-screen starting point, open and invisible. That is
+    // the "fast entry shows nothing" case, and it is why closing is not involved.
+    //
+    // Runs before the mousemove listener is attached, so the position is already
+    // right when the first move lands.
+    if (openedAt) {
+      place(openedAt.x, openedAt.y);
+    }
+
+    const handleMouseMove = (event: MouseEvent) => place(event.clientX, event.clientY);
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => {
