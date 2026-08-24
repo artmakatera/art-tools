@@ -76,8 +76,16 @@ function tooltipEl() {
   return document.body.querySelector('[role="tooltip"]') as HTMLElement | null;
 }
 
-function pointTo(x: number, y: number) {
-  fireEvent.mouseMove(document, { clientX: x, clientY: y });
+/**
+ * A pointer move at (x, y) over `target`.
+ *
+ * The target is the point, not the coordinates: the trigger decides whether to
+ * close by asking whether the event's target is inside the bar, because rect
+ * edges are fractional while `clientY` is not. Default `document` stands for
+ * "somewhere off the bar".
+ */
+function pointTo(x: number, y: number, target: Element | Document = document) {
+  fireEvent.mouseMove(target, { clientX: x, clientY: y });
 }
 
 /**
@@ -327,32 +335,53 @@ describe("bar tooltip closing guards", () => {
   });
 
   it("closes when a pointer move lands outside the bar", () => {
-    restore = stubRects(isBar, {
-      left: 100,
-      top: 100,
-      right: 300,
-      bottom: 140,
-      width: 200,
-      height: 40,
-    });
     const { container } = renderChart();
-    fireEvent.mouseEnter(barAndRow(container).bar);
+    const { bar, row } = barAndRow(container);
+    fireEvent.mouseEnter(bar);
     expect(tooltipEl()).not.toBeNull();
 
-    pointTo(200, 120); // inside
+    pointTo(200, 120, bar);
     expect(tooltipEl()).not.toBeNull();
 
-    pointTo(600, 500); // outside
+    // The row is the bar's parent, so it is emphatically not "inside the bar".
+    pointTo(600, 500, row);
     expect(tooltipEl()).toBeNull();
   });
 
-  it("ignores an unmeasured bar rather than closing immediately", () => {
-    // Every rect is zero in jsdom, and on a real first paint too. Trusting a
-    // zero-size rect would read every pointer position as outside.
+  it("stays open for a move over a child of the bar", () => {
+    // The label, the progress fill and the resizers are all children. Closing on
+    // them would make the tooltip flicker across the bar's own internals.
     const { container } = renderChart();
-    fireEvent.mouseEnter(barAndRow(container).bar);
+    const { bar } = barAndRow(container);
+    fireEvent.mouseEnter(bar);
 
-    pointTo(600, 500);
+    const child = bar.firstElementChild;
+    expect(child).not.toBeNull();
+
+    pointTo(200, 120, child!);
+    expect(tooltipEl()).not.toBeNull();
+  });
+
+  it("stays open when the pointer sits on a fractional bar edge", () => {
+    // The regression. Rect edges land on fractions (a row at 379.25) while
+    // `clientY` is an integer, so comparing the two read a pointer the browser
+    // had just hit-tested onto the bar as being outside it — closing the tooltip
+    // under a stationary cursor, with no `mouseenter` left to reopen it.
+    const { container } = renderChart();
+    const { bar } = barAndRow(container);
+    restore = stubRects(isBar, {
+      left: 967,
+      top: 379.25,
+      right: 1167,
+      bottom: 403.25,
+      width: 200,
+      height: 24,
+    });
+
+    fireEvent.mouseEnter(bar, { clientX: 1067, clientY: 379 });
+    expect(tooltipEl()).not.toBeNull();
+
+    pointTo(1070, 379, bar);
     expect(tooltipEl()).not.toBeNull();
   });
 });
@@ -365,8 +394,9 @@ describe("bar tooltip placement", () => {
   beforeEach(() => {
     window.innerWidth = 1024;
     window.innerHeight = 768;
-    // Only the tooltip is measured, so the bar stays "unmeasured" and the
-    // pointer-outside guard stays out of the way while the cursor moves.
+    // Only the tooltip is measured — placement needs its size. Every move below
+    // targets the bar, which is what keeps the trigger from closing it and leaves
+    // these tests about placement alone.
     restore = stubRects(isTooltip, { width: W, height: H, right: W, bottom: H });
   });
 
@@ -377,8 +407,9 @@ describe("bar tooltip placement", () => {
 
   function openAt(x: number, y: number) {
     const { container } = renderChart();
-    fireEvent.mouseEnter(barAndRow(container).bar);
-    pointTo(x, y);
+    const { bar } = barAndRow(container);
+    fireEvent.mouseEnter(bar);
+    pointTo(x, y, bar);
     const tip = tooltipEl()!;
     return { left: parseFloat(tip.style.left), top: parseFloat(tip.style.top) };
   }
@@ -387,6 +418,37 @@ describe("bar tooltip placement", () => {
     const { left, top } = openAt(400, 400);
     expect(left).toBeGreaterThan(400);
     expect(top).toBeGreaterThan(400);
+  });
+
+  it("is placed from the opening pointer, with no mousemove after it", () => {
+    // The fast-entry case: `mouseenter` is synthesized from `mouseover`, so it
+    // fires however sparsely the pointer is sampled, but a cursor that stops the
+    // instant it is inside the bar produces no later move. The popup used to stay
+    // at its off-screen starting point — open, correct, and invisible.
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar, { clientX: 400, clientY: 400 });
+
+    const tip = tooltipEl()!;
+    expect(Number.parseFloat(tip.style.left)).toBeGreaterThan(400);
+    expect(Number.parseFloat(tip.style.top)).toBeGreaterThan(400);
+  });
+
+  it("flips at the edge on that first placement too, having measured itself", () => {
+    // Placing on open happens after the popup is laid out, so its own size is
+    // known and the same flip logic applies — no first frame hanging off the edge.
+    const { container } = renderChart();
+    fireEvent.mouseEnter(barAndRow(container).bar, { clientX: 1000, clientY: 740 });
+
+    const tip = tooltipEl()!;
+    const left = Number.parseFloat(tip.style.left);
+    const top = Number.parseFloat(tip.style.top);
+
+    // On screen first: the off-screen starting point satisfies a bare "flipped"
+    // assertion vacuously, so without this the test passes unplaced.
+    expect(left).toBeGreaterThanOrEqual(0);
+    expect(top).toBeGreaterThanOrEqual(0);
+    expect(left + W).toBeLessThanOrEqual(1000);
+    expect(top + H).toBeLessThanOrEqual(740);
   });
 
   it("flips to the left of the cursor rather than clamping through it", () => {
@@ -410,14 +472,15 @@ describe("bar tooltip placement", () => {
 
   it("stops tracking once the pointer is outside the bounds", () => {
     const { container } = renderChart();
-    fireEvent.mouseEnter(barAndRow(container).bar);
+    const { bar } = barAndRow(container);
+    fireEvent.mouseEnter(bar);
 
-    pointTo(400, 400);
+    pointTo(400, 400, bar);
     const settled = tooltipEl()!.style.left;
 
     // Past the viewport edge there is nothing to place against, so the position
     // is left alone rather than recomputed for a pointer off the chart.
-    pointTo(5000, 400);
+    pointTo(5000, 400, bar);
     expect(tooltipEl()!.style.left).toBe(settled);
   });
 });
@@ -480,7 +543,7 @@ describe("bar tooltip without a GanttProvider", () => {
 
       const bar = document.body.querySelector(".am-gantt-bar-task") as HTMLElement;
       fireEvent.mouseEnter(bar);
-      pointTo(1000, 400);
+      pointTo(1000, 400, bar);
 
       // Clamped to jsdom's 1024x768 window, not to a grid rect there is none of.
       expect(Number.parseInt(tooltipEl()!.style.left, 10) + 120).toBeLessThanOrEqual(1024);

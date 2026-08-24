@@ -75,6 +75,27 @@ providing, and the asserting hook turned that into a crash on every HMR update w
 Degrading costs one clamp: with no grid the bounds fall back to the viewport, which is already the
 path a zero-size grid rect takes.
 
+**The pointer check asks the DOM, not the geometry.** `closeIfOutside` tests
+`bar.contains(event.target)`, and comparing `clientX/Y` against
+`getBoundingClientRect()` instead is the bug it replaced, not a refactor of it. Rect
+edges are fractional — a row lands on 379.25 — while `clientY` is an integer, so a
+pointer the browser had just hit-tested onto the bar (`mouseenter` fired, no
+`mouseout` followed) failed `379 >= 379.25` and read as outside. The tooltip closed
+under a cursor sitting on the bar, and nothing reopened it, because reopening needs
+another `mouseenter` and the pointer had never left. It presented as "a quick move
+onto a bar sometimes shows no tooltip", since a quick entry comes to rest in the
+sub-pixel band it crossed while a slow one drifts deeper in. Opening by hit-test and
+closing by arithmetic is the asymmetry; `contains` removes it, and children — label,
+progress fill, resizers — count as the bar for free. The old zero-size-rect guard
+goes with it, having only ever papered over unmeasured rects.
+
+**The popup is placed from the pointer that opened it**, not from the first mousemove
+after. `BarTooltipTrigger` records the `mouseenter` coordinates and
+`useTooltipPosition` places from them in a layout effect. The listener is attached
+during that same commit, so the mousemove belonging to the entering gesture has
+already been dispatched and is never seen — without the seed the popup's first frame
+was its off-screen starting point.
+
 **Consequence for the public API**, decided rather than incurred: `BarTooltipRoot`,
 `BarTooltipTrigger` and `useBarTooltip` are exported from the package entry, and
 `BarTooltipOwnerState` loses `open`. Without the primitives, a custom tooltip that wants the
