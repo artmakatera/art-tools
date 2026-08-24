@@ -1,5 +1,30 @@
 # @art-tools/react-gantt
 
+## 0.2.1
+
+### Patch Changes
+
+- The bar tooltip no longer closes under a cursor that is sitting on the bar. It
+  decided whether the pointer had left by comparing `clientX/clientY` against the
+  bar's `getBoundingClientRect()`, and those two do not agree: rect edges are
+  fractional (a row lands on 379.25) while `clientY` is an integer, so a pointer the
+  browser had just hit-tested onto the bar failed `379 >= 379.25` and read as
+  outside. Nothing reopened it either, because reopening needs another `mouseenter`
+  and the pointer had never left — so the tooltip stayed gone while the cursor sat
+  on the bar.
+
+  It presented as "moving quickly onto a bar sometimes shows no tooltip": a quick
+  entry comes to rest in the sub-pixel band at the edge it crossed, where the
+  comparison fails, while a slower one drifts a few pixels further in. The check now
+  asks `bar.contains(event.target)` — the same hit-test that opened it, so opening
+  and closing can no longer disagree, and the bar's children (label, progress fill,
+  resizers) count as the bar.
+
+- The tooltip is placed from the pointer that opened it rather than from the first
+  `mousemove` after. The mousemove belonging to the entering gesture is dispatched
+  before the listener is attached, so it was never seen and the popup's first frame
+  used its off-screen starting position.
+
 ## 0.2.0
 
 ### Minor Changes
@@ -47,6 +72,14 @@
   on the diamond's centre and the start handle over its left half.
 
 - The actions column defaults to 100px wide, down from 120px.
+
+- `GanttBarTooltip` no longer throws a "useGanttScroll must be used within a
+  GanttProvider" error. It asserted the chart's scroll context to find a rect to
+  clamp against, which crashed in two supported cases: a bar rendered standalone — the bar
+  components and `GanttSlotsProvider` are both public exports — and any hot reload,
+  where re-evaluating the context module leaves the mounted provider offering a
+  different context object. It reads the context without asserting it now and falls
+  back to the viewport, which is already what an unmeasured grid does.
 
 ## 0.1.0
 

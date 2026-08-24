@@ -45,21 +45,6 @@ export function BarTooltipTrigger({ children }: { children: ReactNode }) {
     // bubble, on `document` so any scrolling ancestor counts.
     const closeOnScroll = () => setOpen(false);
 
-    // A missed `mouseout` still leaves the pointer off the bar, so check where the
-    // pointer actually is rather than trusting the event to have told us.
-    //
-    // Ask the DOM, do NOT re-derive it from coordinates. Comparing `clientX/Y`
-    // against `getBoundingClientRect()` looks equivalent and is not: rect edges are
-    // fractional (a row lands on 379.25) while `clientY` is an integer, so a
-    // pointer the browser hit-tests as *on* the bar — `mouseenter` fired, no
-    // `mouseout` followed — fails `379 >= 379.25` and reads as outside. That closed
-    // the tooltip under a cursor sitting on the bar, and nothing reopened it,
-    // because reopening needs another `mouseenter` and the pointer never left.
-    // Presented as "a quick move onto a bar sometimes shows no tooltip": quick
-    // entries come to rest in the sub-pixel edge band they crossed.
-    //
-    // `contains` is the same hit-test that opened it, so open and close can no
-    // longer disagree, and children (label, progress, resizers) count as the bar.
     const closeIfOutside = (event: MouseEvent) => {
       const bar = anchorRef?.current;
       const target = event.target;
@@ -94,10 +79,6 @@ export function BarTooltipTrigger({ children }: { children: ReactNode }) {
   return cloneElement(children, {
     onMouseEnter: (event: ReactMouseEvent<HTMLDivElement>) => {
       onMouseEnter?.(event);
-      // Hand the popup the cursor it was opened at, before opening: a fast entry
-      // that stops inside the bar produces no further mousemove for it to place
-      // from. Harmless for a slot that positions some other way — nothing reads
-      // this unless `useTooltipPosition` does.
       rememberOpenPointer(event.clientX, event.clientY);
       setOpen(true);
     },
