@@ -7,7 +7,6 @@ const CURSOR_OFFSET = 12;
 /** Distance kept clear of the bounding edges, px. */
 const EDGE_MARGIN = 8;
 
-
 let openedAt: { x: number; y: number } | null = null;
 
 export function rememberOpenPointer(x: number, y: number) {
