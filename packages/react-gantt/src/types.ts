@@ -254,6 +254,13 @@ export interface GanttEngineProps {
    * ADR-021). Custom `columns` are yours to gate; read `api.readOnly` in `render`.
    */
   readOnly?: boolean;
+  /**
+   * Highlight the critical path — the chain of tasks and dependency links that
+   * currently have zero working-time float before the chart's actual end date
+   * would move. Off by default; charts that do not set it render byte-identically
+   * to today (ADR-023).
+   */
+  highlightCriticalPath?: boolean;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
   /**

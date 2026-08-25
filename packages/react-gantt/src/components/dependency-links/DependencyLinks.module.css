@@ -22,6 +22,10 @@
   background: #ef4444;
 }
 
+.segmentCritical {
+  background: var(--am-gantt-critical-dependency-color, #dc2626);
+}
+
 .arrowRight,
 .arrowLeft {
   position: absolute;
@@ -46,6 +50,14 @@
 
 .arrowSelected.arrowLeft {
   border-right-color: #ef4444;
+}
+
+.arrowCritical.arrowRight {
+  border-left-color: var(--am-gantt-critical-dependency-color, #dc2626);
+}
+
+.arrowCritical.arrowLeft {
+  border-right-color: var(--am-gantt-critical-dependency-color, #dc2626);
 }
 
 .lagLabel {

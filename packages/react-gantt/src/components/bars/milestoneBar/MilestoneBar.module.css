@@ -8,3 +8,7 @@
   background-color: var(--am-gantt-milestone-bg);
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
+
+.critical {
+  background-color: var(--am-gantt-critical-bg);
+}

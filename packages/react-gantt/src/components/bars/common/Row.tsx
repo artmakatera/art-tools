@@ -7,6 +7,7 @@ import {
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
 import {
+  useGanttCriticalPath,
   useGanttLabels,
   useGanttReadOnly,
   useGanttSelectedId,
@@ -56,6 +57,8 @@ export const Row = memo(function Row({
   const readOnly = useGanttReadOnly();
   const selectedId = useGanttSelectedId();
   const isSelected = selectedId === task.id;
+  const criticalPath = useGanttCriticalPath();
+  const isCritical = criticalPath?.criticalTaskIds.has(task.id) ?? false;
 
   const schedulingContext = useGanttWorkCalendar();
   // Read only to decide whether to suppress the native `title` — that has to
@@ -208,6 +211,7 @@ export const Row = memo(function Row({
           colWidth={colWidth}
           title={task.name}
           a11y={a11y}
+          isCritical={isCritical}
           {...moveHandlers}
         />
       )}
@@ -222,6 +226,7 @@ export const Row = memo(function Row({
           title={task.name}
           a11y={a11y}
           progress={progress}
+          isCritical={isCritical}
           {...progressHandlers}
           {...moveHandlers}
         />
@@ -237,6 +242,7 @@ export const Row = memo(function Row({
           title={task.name}
           a11y={a11y}
           progress={progress}
+          isCritical={isCritical}
           {...progressHandlers}
           {...moveHandlers}
           {...resizeHandlers}

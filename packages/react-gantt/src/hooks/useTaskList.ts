@@ -13,8 +13,14 @@ import {
   resolveCommit,
   scheduleDependents,
 } from "../core/scheduling";
+import { computeCriticalPath, type CriticalPathResult } from "../core/criticalPath";
 import type { BarCommit } from "../core/barUtils";
 import { LINEAR_CONTEXT, type SchedulingContext } from "../core/taskDates";
+
+const EMPTY_CRITICAL_PATH: CriticalPathResult = {
+  criticalTaskIds: new Set(),
+  criticalDependencyKeys: new Set(),
+};
 
 const EMPTY_LOG: ChangeLog = { transactions: [], cursor: 0 };
 
@@ -77,6 +83,8 @@ export interface UseTaskListOptions {
   onTaskCreate?: (task: GanttTask, afterId?: Id | null) => void;
   onTaskDelete?: (id: Id) => void;
   onTasksChange?: (tasks: GanttTask[]) => void;
+  /** Gates the critical-path computation below — off by default, zero cost. */
+  highlightCriticalPath?: boolean;
 }
 
 export const useTaskList = (
@@ -122,6 +130,18 @@ export const useTaskList = (
   // Depends on the calendar: the roll-up resolves duration-only children through
   // it, so a calendar change must recompute or every summary bar goes stale.
   const tasksList = useMemo(() => getTaskList(resolvedById, ctx), [resolvedById, ctx]);
+
+  // Off by default: a chart that never enables highlighting never pays for the
+  // dependency-graph walk (ADR-023). Computed from the same resolved state
+  // tasksList is, so it matches what is actually on screen.
+  const highlightCriticalPath = options.highlightCriticalPath ?? false;
+  const criticalPath = useMemo(
+    () =>
+      highlightCriticalPath
+        ? computeCriticalPath(resolvedById, dependencyGraph, ctx)
+        : EMPTY_CRITICAL_PATH,
+    [highlightCriticalPath, resolvedById, dependencyGraph, ctx],
+  );
 
   /**
    * Commit a finished drag. Unlike `updateTask` — which writes consumer-supplied
@@ -256,6 +276,7 @@ export const useTaskList = (
 
   return {
     tasksList,
+    criticalPath,
     updateTask,
     commitTask,
     createTask,

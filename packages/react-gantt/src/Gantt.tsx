@@ -35,6 +35,7 @@ export function Gantt({
   snapToWorking,
   durationUnit,
   readOnly = false,
+  highlightCriticalPath,
   apiRef,
   hideTaskList,
   taskList,
@@ -85,6 +86,7 @@ export function Gantt({
       snapToWorking={snapToWorking}
       durationUnit={durationUnit}
       readOnly={readOnly}
+      highlightCriticalPath={highlightCriticalPath}
     >
       <GanttSlotsProvider value={slotsValue}>
         {showTaskList ? (

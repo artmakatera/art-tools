@@ -8,6 +8,8 @@ import styles from "./MilestoneBar.module.css";
 export interface MilestoneBarOwnerState {
   size: number;
   title: string;
+  /** Whether this bar is on the critical path (ADR-023). */
+  isCritical: boolean;
 }
 
 export interface MilestoneBarSlots {
@@ -39,6 +41,8 @@ interface MilestoneBarProps {
    * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
    */
   tooltip?: BarTooltipOwnerState;
+  /** Whether this bar is on the critical path (ADR-023). Defaults to `false`. */
+  isCritical?: boolean;
   slots?: MilestoneBarSlots;
   slotProps?: MilestoneBarSlotProps;
 }
@@ -53,6 +57,7 @@ export function MilestoneBar({
   onMove,
   onMoveEnd,
   tooltip,
+  isCritical = false,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: MilestoneBarProps) {
@@ -60,7 +65,7 @@ export function MilestoneBar({
   const slots = slotsProp ?? ganttSlots.bars?.milestoneBar?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.bars?.milestoneBar?.slotProps;
 
-  const ownerState: MilestoneBarOwnerState = { size, title };
+  const ownerState: MilestoneBarOwnerState = { size, title, isCritical };
 
   const Root = slots?.root ?? DraggableBar;
   const Shape = slots?.shape ?? "div";
@@ -75,7 +80,10 @@ export function MilestoneBar({
   );
 
   const shapeProps = mergeSlotProps(
-    { className: styles.milestoneShape, "aria-hidden": true },
+    {
+      className: isCritical ? `${styles.milestoneShape} ${styles.critical}` : styles.milestoneShape,
+      "aria-hidden": true,
+    },
     slotProps?.shape,
     ownerState,
   );

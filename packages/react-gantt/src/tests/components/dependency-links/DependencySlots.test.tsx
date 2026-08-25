@@ -2,6 +2,8 @@ import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DependencyLinks } from "../../../components/dependency-links/DependencyLinks";
 import { DependencyLinksProvider } from "../../../components/dependency-links/DependencyLinksContext";
+import { GanttCriticalPathContext } from "../../../context/contexts";
+import styles from "../../../components/dependency-links/DependencyLinks.module.css";
 import type { GanttTask, TaskDependency } from "../../../types";
 
 const TASKS: GanttTask[] = [
@@ -136,5 +138,68 @@ describe("<DependencyLinks /> slots", () => {
     expect(button.getAttribute("aria-label")).toBe("Delete dependency");
     fireEvent.click(button);
     expect(onDependencyDelete).toHaveBeenCalledWith(FS[0]);
+  });
+});
+
+describe("<DependencyLinks /> critical path", () => {
+  function renderWithCriticalPath(deps: TaskDependency[], criticalDependencyKeys: Set<string>) {
+    return render(
+      <GanttCriticalPathContext.Provider
+        value={{ criticalTaskIds: new Set(), criticalDependencyKeys }}
+      >
+        <DependencyLinksProvider
+          tasks={TASKS}
+          dependencies={deps}
+          origin={new Date(2026, 0, 1)}
+          colWidth={30}
+          rowHeight={40}
+          unit="day"
+          overrides={{}}
+        >
+          <DependencyLinks width={800} height={200} />
+        </DependencyLinksProvider>
+      </GanttCriticalPathContext.Provider>,
+    );
+  }
+
+  it("carries no critical class when the context is absent (off by default)", () => {
+    const { container } = renderLinks(FS);
+    expect(container.querySelector(`.${styles.segmentCritical}`)).toBeNull();
+  });
+
+  it("carries no critical class when the link's key is not in the critical set", () => {
+    const { container } = renderWithCriticalPath(FS, new Set());
+    expect(container.querySelector(`.${styles.segmentCritical}`)).toBeNull();
+  });
+
+  it("adds the critical class when the link's key is in the critical set", () => {
+    const { container } = renderWithCriticalPath(FS, new Set(["a->b"]));
+    expect(container.querySelector(`.${styles.segmentCritical}`)).not.toBeNull();
+    const arrow = (container.querySelector(".arrowRight") ??
+      container.querySelector(".arrowLeft")) as HTMLElement;
+    expect(arrow.className).toContain(styles.arrowCritical);
+  });
+
+  it("passes isCritical to the ownerState", () => {
+    const spy = vi.fn((_: unknown) => ({}));
+    render(
+      <GanttCriticalPathContext.Provider
+        value={{ criticalTaskIds: new Set(), criticalDependencyKeys: new Set(["a->b"]) }}
+      >
+        <DependencyLinksProvider
+          tasks={TASKS}
+          dependencies={FS}
+          origin={new Date(2026, 0, 1)}
+          colWidth={30}
+          rowHeight={40}
+          unit="day"
+          overrides={{}}
+        >
+          <DependencyLinks width={800} height={200} slotProps={{ segment: spy }} />
+        </DependencyLinksProvider>
+      </GanttCriticalPathContext.Provider>,
+    );
+    const arg = spy.mock.calls[0]![0] as { isCritical: boolean };
+    expect(arg.isCritical).toBe(true);
   });
 });

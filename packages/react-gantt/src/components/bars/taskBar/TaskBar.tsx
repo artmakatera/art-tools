@@ -13,6 +13,8 @@ export interface TaskBarOwnerState {
   height: number;
   progress: number;
   title: string;
+  /** Whether this bar is on the critical path (ADR-023). */
+  isCritical: boolean;
 }
 
 export interface TaskBarSlots {
@@ -57,6 +59,8 @@ interface TaskBarProps {
    * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
    */
   tooltip?: BarTooltipOwnerState;
+  /** Whether this bar is on the critical path (ADR-023). Defaults to `false`. */
+  isCritical?: boolean;
   slots?: TaskBarSlots;
   slotProps?: TaskBarSlotProps;
 }
@@ -77,6 +81,7 @@ export function TaskBar({
   onMove,
   onMoveEnd,
   tooltip,
+  isCritical = false,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: TaskBarProps) {
@@ -84,7 +89,7 @@ export function TaskBar({
   const slots = slotsProp ?? ganttSlots.bars?.taskBar?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.bars?.taskBar?.slotProps;
 
-  const ownerState: TaskBarOwnerState = { width, height, progress, title };
+  const ownerState: TaskBarOwnerState = { width, height, progress, title, isCritical };
 
   const Root = slots?.root ?? DraggableBar;
   const Inner = slots?.inner ?? "div";
@@ -92,7 +97,7 @@ export function TaskBar({
 
   const rootProps = mergeSlotProps(
     {
-      className: `${styles.task} am-gantt-bar-task`,
+      className: `${styles.task} am-gantt-bar-task${isCritical ? ` ${styles.critical} am-gantt-bar-task--critical` : ""}`,
       style: { lineHeight: `${height}px` },
       ...a11y,
     },
