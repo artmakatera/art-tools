@@ -30,6 +30,7 @@ in particular documents an _intentional_ asymmetry that reads like a bug.
 | [ADR-020](./020-starts-always-snap-forward.md)                                               | Starts always snap forward                                                 | Accepted              |
 | [ADR-021](./021-readonly-removes-affordances-not-the-api.md)                                 | `readOnly` removes affordances, not the API                                | Accepted              |
 | [ADR-022](./022-bar-tooltip-is-a-null-default-slot.md)                                       | The bar tooltip is a slot with no default                                  | Accepted              |
+| [ADR-023](./023-critical-path-is-computed-from-the-actual-schedule.md)                       | Critical path is computed from the actual schedule, not an idealized one   | Accepted              |
 
 ## Settled without a full ADR
 

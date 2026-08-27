@@ -13,7 +13,7 @@ Two rules that override the rest:
 
 ## Read the reasoning before changing behaviour
 
-This repo keeps its _why_ in [`docs/adr/`](docs/adr/README.md) (21 records) and
+This repo keeps its _why_ in [`docs/adr/`](docs/adr/README.md) (23 records) and
 its vocabulary in [`docs/glossary.md`](docs/glossary.md). Both are short. An ADR
 that reads like a bug — ADR-007's asymmetric anchor projection, ADR-017's
 accepted behaviour change at coarse zoom — is a deliberate trade-off, and
@@ -61,6 +61,18 @@ accepted behaviour change at coarse zoom — is a deliberate trade-off, and
     const origin = addDays(range.min, -padDays);
     // ...rest of the logic at the top level
   }
+  ```
+
+- Build conditional `className`s with `clsx`, not template-literal or ternary
+  concatenation. `clsx` drops falsy segments for you, so it does not produce the
+  stray leading/trailing spaces that `` `${a} ${cond ? b : ""}` `` does.
+
+  ```ts
+  // Bad
+  className: isCritical ? `${styles.task} ${styles.critical}` : styles.task;
+
+  // Good
+  className: clsx(styles.task, isCritical && styles.critical);
   ```
 
 ## Comments

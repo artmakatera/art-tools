@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import { LINEAR_CONTEXT, type SchedulingContext } from "../core/taskDates";
 import { DEFAULT_LABELS } from "../core/labels";
+import type { CriticalPathResult } from "../core/criticalPath";
 import type { ViewportMetrics } from "../hooks/useScrollSync";
 import type { ConnectorHandle, DependencyDragState } from "../hooks/useDependencyDrag";
 import type { BarCommit, DatePatch } from "../core/barUtils";
@@ -20,7 +21,7 @@ export type { ConnectorHandle, DependencyDragState } from "../hooks/useDependenc
  * Every Gantt context object and its consumer hook.
  *
  * Kept in one file on purpose: the value of the split is being able to see all
- * twelve boundaries and the cadence table below at a glance. Splitting further,
+ * fourteen boundaries and the cadence table below at a glance. Splitting further,
  * one file per context, would hide exactly the thing this design needs reviewed
  * together.
  *
@@ -100,6 +101,19 @@ export const GanttReadOnlyContext = createContext<boolean>(false);
 
 export function useGanttReadOnly(): boolean {
   return useContext(GanttReadOnlyContext);
+}
+
+// --- Critical path ----------------------------------------------------------
+
+// Primitive context, its own provider for the same reason as read-only: read by
+// memoized leaves (bars, dependency links) and must not ride along with task
+// state that churns for unrelated reasons. `null` is the off state — set by
+// `highlightCriticalPath={false}` (the default) — so consumers skip the lookup
+// entirely rather than checking an empty set (ADR-023).
+export const GanttCriticalPathContext = createContext<CriticalPathResult | null>(null);
+
+export function useGanttCriticalPath(): CriticalPathResult | null {
+  return useContext(GanttCriticalPathContext);
 }
 
 // --- Task state -----------------------------------------------------------

@@ -7,6 +7,10 @@
   --am-gantt-bar-progress-bg: var(--am-gantt-project-bg-progress);
 }
 
+.critical {
+  background-color: var(--am-gantt-critical-bg);
+}
+
 .projectInner {
   position: relative;
   width: 100%;

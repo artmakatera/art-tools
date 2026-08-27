@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
@@ -12,6 +13,8 @@ export interface ProjectBarOwnerState {
   height: number;
   progress: number;
   title: string;
+  /** Whether this bar is on the critical path (ADR-023). */
+  isCritical: boolean;
 }
 
 export interface ProjectBarSlots {
@@ -51,6 +54,8 @@ interface ProjectBarProps {
    * verbatim; a replaced `slots.root` that ignores it simply shows no tooltip.
    */
   tooltip?: BarTooltipOwnerState;
+  /** Whether this bar is on the critical path (ADR-023). Defaults to `false`. */
+  isCritical?: boolean;
   slots?: ProjectBarSlots;
   slotProps?: ProjectBarSlotProps;
 }
@@ -69,6 +74,7 @@ export function ProjectBar({
   onMove,
   onMoveEnd,
   tooltip,
+  isCritical = false,
   slots: slotsProp,
   slotProps: slotPropsProp,
 }: ProjectBarProps) {
@@ -76,7 +82,7 @@ export function ProjectBar({
   const slots = slotsProp ?? ganttSlots.bars?.projectBar?.slots;
   const slotProps = slotPropsProp ?? ganttSlots.bars?.projectBar?.slotProps;
 
-  const ownerState: ProjectBarOwnerState = { width, height, progress, title };
+  const ownerState: ProjectBarOwnerState = { width, height, progress, title, isCritical };
 
   const Root = slots?.root ?? DraggableBar;
   const Inner = slots?.inner ?? "div";
@@ -84,7 +90,7 @@ export function ProjectBar({
 
   const rootProps = mergeSlotProps(
     {
-      className: styles.project,
+      className: clsx(styles.project, isCritical && styles.critical),
       style: { lineHeight: `${height}px` },
       ...a11y,
     },
