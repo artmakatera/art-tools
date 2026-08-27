@@ -271,7 +271,7 @@ function GanttWithTaskList() {
           onZoomChange={handleZoomChange}
           zoomWheel
           zoomKeyboard
-          highlightCriticalPath={criticalPath}
+          criticalPath={criticalPath}
         />
       </Suspense>
       {editing && <TaskEditModal task={editing} onClose={closeEdit} onSave={saveEdit} />}

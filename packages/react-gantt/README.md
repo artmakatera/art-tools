@@ -148,16 +148,16 @@ Defined in [`src/types.ts`](./src/types.ts).
 
 ### Data
 
-| Prop                    | Type                          | Description                                                                                                            |
-| ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `tasks`                 | `GanttTask[]`                 | **Required.** Stable seed list (see the note in Quick start).                                                          |
-| `dependencies`          | `TaskDependency[]`            | Links between tasks (FS/FF/SS/SF, optional lag).                                                                       |
-| `highlightCriticalPath` | `boolean`                     | Highlight the critical path — see [Dependencies & scheduling](#dependencies--scheduling). Default `false`.             |
-| `columns`               | `ColumnDef[]`                 | Task-list columns. Falls back to built-in default columns.                                                             |
-| `readOnly`              | `boolean`                     | Remove every editing affordance — see [Read-only](#read-only).                                                         |
-| `calendar`              | `GanttCalendar`               | Working-time definition. Supplying it opts into working-time scheduling — see [Working time](#working-time-calendars). |
-| `snapToWorking`         | `boolean`                     | Default `true`. `false` keeps non-working shading but leaves dates untouched.                                          |
-| `durationUnit`          | `"day" \| "hour" \| "minute"` | How an input `duration` is interpreted and displayed. Default `"day"`.                                                 |
+| Prop            | Type                          | Description                                                                                                            |
+| --------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `tasks`         | `GanttTask[]`                 | **Required.** Stable seed list (see the note in Quick start).                                                          |
+| `dependencies`  | `TaskDependency[]`            | Links between tasks (FS/FF/SS/SF, optional lag).                                                                       |
+| `criticalPath`  | `boolean`                     | Highlight the critical path — see [Dependencies & scheduling](#dependencies--scheduling). Default `false`.             |
+| `columns`       | `ColumnDef[]`                 | Task-list columns. Falls back to built-in default columns.                                                             |
+| `readOnly`      | `boolean`                     | Remove every editing affordance — see [Read-only](#read-only).                                                         |
+| `calendar`      | `GanttCalendar`               | Working-time definition. Supplying it opts into working-time scheduling — see [Working time](#working-time-calendars). |
+| `snapToWorking` | `boolean`                     | Default `true`. `false` keeps non-working shading but leaves dates untouched.                                          |
+| `durationUnit`  | `"day" \| "hour" \| "minute"` | How an input `duration` is interpreted and displayed. Default `"day"`.                                                 |
 
 ### Layout
 
@@ -344,7 +344,7 @@ realigns successors according to each relationship type and its `lag`. The move 
 all cascaded updates are committed as **one transaction**, so a drag-plus-cascade
 undoes in a single step.
 
-**Critical path:** set `highlightCriticalPath` to compute and highlight the chain of
+**Critical path:** set `criticalPath` to compute and highlight the chain of
 tasks and dependency links currently driving the chart's end date. Float is measured
 in working time from each task's _actual_ committed position — not a hypothetical
 earliest-possible schedule — so a task the chart visibly shows sitting with slack is
@@ -473,7 +473,7 @@ The default look is driven by `--am-gantt-*` variables in
   --am-gantt-task-bg: #0ba5ff; /* task bar fill */
   --am-gantt-project-bg: #16a34a; /* summary bar fill */
   --am-gantt-milestone-bg: #f59e0b; /* milestone diamond */
-  --am-gantt-critical-bg: #dc2626; /* critical-path bars, when highlightCriticalPath is set */
+  --am-gantt-critical-bg: #dc2626; /* critical-path bars, when criticalPath is set */
   --am-gantt-critical-dependency-color: #dc2626; /* critical-path dependency links */
   --am-gantt-calendar-header-bg: #f8fafc;
   --am-gantt-calendar-weekend-bg: #f1f5f9;

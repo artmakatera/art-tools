@@ -108,7 +108,7 @@ export function useGanttReadOnly(): boolean {
 // Primitive context, its own provider for the same reason as read-only: read by
 // memoized leaves (bars, dependency links) and must not ride along with task
 // state that churns for unrelated reasons. `null` is the off state — set by
-// `highlightCriticalPath={false}` (the default) — so consumers skip the lookup
+// `criticalPath={false}` (the default) — so consumers skip the lookup
 // entirely rather than checking an empty set (ADR-023).
 export const GanttCriticalPathContext = createContext<CriticalPathResult | null>(null);
 

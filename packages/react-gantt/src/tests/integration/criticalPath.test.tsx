@@ -9,7 +9,7 @@ const tasks: GanttTask[] = [
 
 const dependencies: TaskDependency[] = [{ from: "a", to: "b", type: "FS" }];
 
-describe("<Gantt highlightCriticalPath />", () => {
+describe("<Gantt criticalPath />", () => {
   it("renders no critical styling by default", () => {
     const { container } = render(<Gantt tasks={tasks} dependencies={dependencies} height={400} />);
     expect(container.querySelector(".am-gantt-bar-task--critical")).toBeNull();
@@ -18,7 +18,7 @@ describe("<Gantt highlightCriticalPath />", () => {
 
   it("highlights the critical chain when enabled", () => {
     const { container } = render(
-      <Gantt tasks={tasks} dependencies={dependencies} height={400} highlightCriticalPath />,
+      <Gantt tasks={tasks} dependencies={dependencies} height={400} criticalPath />,
     );
     expect(container.querySelectorAll(".am-gantt-bar-task--critical").length).toBe(2);
     expect(container.querySelector(".segmentCritical")).not.toBeNull();
@@ -31,7 +31,7 @@ describe("<Gantt highlightCriticalPath />", () => {
       { id: "b", name: "B", startDate: new Date(2026, 0, 10), endDate: new Date(2026, 0, 14) },
     ];
     const { container } = render(
-      <Gantt tasks={slackTasks} dependencies={dependencies} height={400} highlightCriticalPath />,
+      <Gantt tasks={slackTasks} dependencies={dependencies} height={400} criticalPath />,
     );
     // b is the sink and always critical by construction; a has slack.
     expect(container.querySelectorAll(".am-gantt-bar-task--critical").length).toBe(1);

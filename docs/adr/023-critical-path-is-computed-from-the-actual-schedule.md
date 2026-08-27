@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Context:** Dependency scheduling — see the [glossary](../glossary.md) and the [ADR index](./README.md).
 
-**Decision.** `highlightCriticalPath` computes float (slack) from each task's _actual, currently
+**Decision.** `criticalPath` computes float (slack) from each task's _actual, currently
 committed_ `startDate`/`endDate` — never from a hypothetical earliest-possible schedule. A task is
 critical when it has zero working-time float before the chart's actual current end date would move.
 A dependency link is critical only when it is the specific predecessor whose constraint exactly pins
@@ -52,7 +52,7 @@ by the round-trip-shaped tests in `tests/core/criticalPath.test.ts` (one per dep
 working-time-crossing case) rather than by inspection, since hand-verifying working-time arithmetic by
 eye is exactly the kind of mistake ADR-007 already warns about.
 
-**Why `highlightCriticalPath` is opt-in, off by default.** The computation walks the whole dependency
+**Why `criticalPath` is opt-in, off by default.** The computation walks the whole dependency
 graph (a Kahn's-algorithm-style reverse-topological pass, bounded against cycles the same way
 `scheduleDependents` is). A chart with no interest in critical path — most consumers, at least
 initially — pays nothing: `useTaskList` skips the memo entirely when the flag is unset, and

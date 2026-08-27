@@ -260,7 +260,7 @@ export interface GanttEngineProps {
    * would move. Off by default; charts that do not set it render byte-identically
    * to today (ADR-023).
    */
-  highlightCriticalPath?: boolean;
+  criticalPath?: boolean;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
   /**

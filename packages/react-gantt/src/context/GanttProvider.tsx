@@ -76,7 +76,9 @@ export function GanttProvider({
   snapToWorking = true,
   durationUnit = "day",
   readOnly = false,
-  highlightCriticalPath = false,
+  // The computed critical-path result below is also named `criticalPath`, so the
+  // prop is aliased on the way in to keep the two apart.
+  criticalPath: highlightCriticalPath = false,
   children,
 }: GanttProviderProps) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);

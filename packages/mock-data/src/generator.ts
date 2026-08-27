@@ -40,7 +40,7 @@ export interface GenerateOptions {
    * dated after every other generated task so its own end becomes the
    * dataset's actual end — otherwise whether the critical path lands
    * somewhere interesting is up to luck, which makes it a poor demo of
-   * `highlightCriticalPath`. Additive: does not count against `count`, and
+   * `criticalPath`. Additive: does not count against `count`, and
    * unaffected by `count: 0`. Defaults to `false`.
    */
   addCriticalPathTask?: boolean;
