@@ -41,6 +41,7 @@
   --am-gantt-resizer-handle-inset: 4px;
 
   --am-gantt-links-z-index: 2;
+  --am-gantt-critical-links-z-index: 3;
   --am-gantt-task-bar-z-index: 3;
   --am-gantt-calendar-z-index: 30;
 }
