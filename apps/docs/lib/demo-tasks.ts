@@ -140,3 +140,61 @@ export const linkedDependencies: TaskDependency[] = [
   { from: "b", to: "c", type: "SS" },
   { from: "b", to: "d", type: "FF" },
 ];
+
+/**
+ * Two branches off a shared kickoff: Design → Build → Launch is the only chain
+ * with zero float — it alone pins the chart's end date. Research → Prototype
+ * runs in parallel but finishes nine days early, so it has slack and stays
+ * unhighlighted even though it shares Kickoff with the critical chain.
+ */
+export const criticalPathTasks: GanttTask[] = [
+  {
+    id: "kickoff",
+    name: "Kickoff",
+    startDate: new Date(2026, 0, 5),
+    endDate: new Date(2026, 0, 9),
+    progress: 100,
+  },
+  {
+    id: "design",
+    name: "Design",
+    startDate: new Date(2026, 0, 9),
+    endDate: new Date(2026, 0, 16),
+    progress: 100,
+  },
+  {
+    id: "build",
+    name: "Build",
+    startDate: new Date(2026, 0, 16),
+    endDate: new Date(2026, 0, 30),
+    progress: 20,
+  },
+  {
+    id: "launch",
+    name: "Launch",
+    type: "milestone",
+    startDate: new Date(2026, 0, 30),
+  },
+  {
+    id: "research",
+    name: "Research (parallel, has slack)",
+    startDate: new Date(2026, 0, 9),
+    endDate: new Date(2026, 0, 13),
+    progress: 100,
+  },
+  {
+    id: "prototype",
+    name: "Prototype (parallel, has slack)",
+    startDate: new Date(2026, 0, 13),
+    endDate: new Date(2026, 0, 20),
+    progress: 60,
+  },
+];
+
+export const criticalPathDependencies: TaskDependency[] = [
+  { from: "kickoff", to: "design", type: "FS" },
+  { from: "design", to: "build", type: "FS" },
+  { from: "build", to: "launch", type: "FS" },
+  { from: "kickoff", to: "research", type: "FS" },
+  { from: "research", to: "prototype", type: "FS" },
+];
