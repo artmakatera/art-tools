@@ -44,7 +44,7 @@ example is interactive, with the source that rendered it shown underneath.
 pnpm add @art-tools/react-gantt
 ```
 
-Peer dependencies: `react` and `react-dom` (`^18 || ^19`). The only runtime
+Peer dependencies: `react` and `react-dom` (`^19`). The only runtime
 dependency is [`clsx`](https://github.com/lukeed/clsx).
 
 Import the stylesheet once, near your app root:
