@@ -19,7 +19,12 @@
 }
 
 .segmentSelected {
-  background: #ef4444;
+  background: var(--am-gantt-dependency-selected-color, #ef4444);
+}
+
+.segmentCritical {
+  background: var(--am-gantt-critical-dependency-color, #dc2626);
+  z-index: var(--am-gantt-critical-links-z-index, 3);
 }
 
 .arrowRight,
@@ -41,11 +46,24 @@
 }
 
 .arrowSelected.arrowRight {
-  border-left-color: #ef4444;
+  border-left-color: var(--am-gantt-dependency-selected-color, #ef4444);
 }
 
 .arrowSelected.arrowLeft {
-  border-right-color: #ef4444;
+  border-right-color: var(--am-gantt-dependency-selected-color, #ef4444);
+}
+
+.arrowCritical.arrowRight,
+.arrowCritical.arrowLeft {
+  z-index: var(--am-gantt-critical-links-z-index, 3);
+}
+
+.arrowCritical.arrowRight {
+  border-left-color: var(--am-gantt-critical-dependency-color, #dc2626);
+}
+
+.arrowCritical.arrowLeft {
+  border-right-color: var(--am-gantt-critical-dependency-color, #dc2626);
 }
 
 .lagLabel {
@@ -67,9 +85,9 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1px solid #ef4444;
-  background: #fff;
-  color: #ef4444;
+  border: 1px solid var(--am-gantt-dependency-selected-color, #ef4444);
+  background: var(--am-gantt-grid-bg, #ffffff);
+  color: var(--am-gantt-dependency-selected-color, #ef4444);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
@@ -83,6 +101,6 @@
 }
 
 .deleteBtn:hover {
-  background: #ef4444;
-  color: #fff;
+  background: var(--am-gantt-dependency-selected-color, #ef4444);
+  color: var(--am-gantt-grid-bg, #ffffff);
 }

@@ -1,10 +1,11 @@
+import { clsx } from "clsx";
 import { Fragment, useEffect, useState, type ComponentProps, type ElementType } from "react";
 import { useDependencyLinks } from "./DependencyLinksContext";
 import { midpoint, type Bounds, type DependencyLink, type Point } from "./geometry";
 import type { TaskDependency } from "../../types";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
-import { useGanttLabels, useGanttReadOnly } from "../../context/contexts";
+import { useGanttCriticalPath, useGanttLabels, useGanttReadOnly } from "../../context/contexts";
 import styles from "./DependencyLinks.module.css";
 
 /** Stroke thickness of the link, in pixels. */
@@ -28,6 +29,8 @@ export interface DependencyLinkOwnerState {
   link: DependencyLink;
   /** Whether this link is currently selected. */
   isSelected: boolean;
+  /** Whether this link is the binding edge of the critical path (ADR-023). */
+  isCritical: boolean;
 }
 
 /** State passed to the `segment` slotProps, per visible segment of a link. */
@@ -166,6 +169,7 @@ export function DependencyLinks({
   // A read-only chart drops the hit areas, so no link can become selected —
   // which is also what keeps the Delete/Backspace shortcut below unreachable.
   const readOnly = useGanttReadOnly();
+  const criticalPath = useGanttCriticalPath();
 
   const links = useDependencyLinks();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -246,11 +250,16 @@ export function DependencyLinks({
         const head = arrow(link.points);
         const segs = segments(link.points);
         const mid = link.dep.lag ? midpoint(link.points) : null;
-        const linkOwnerState: DependencyLinkOwnerState = { link, isSelected };
+        const isCritical = criticalPath?.criticalDependencyKeys.has(link.id) ?? false;
+        const linkOwnerState: DependencyLinkOwnerState = { link, isSelected, isCritical };
 
         const arrowProps = mergeSlotProps(
           {
-            className: `${head.className} ${isSelected ? styles.arrowSelected : ""}`,
+            className: clsx(
+              head.className,
+              isSelected && styles.arrowSelected,
+              isCritical && styles.arrowCritical,
+            ),
             style: head.style,
           },
           slotProps?.arrow,
@@ -273,11 +282,15 @@ export function DependencyLinks({
             {segs.map(([a, b], index) => {
               const segmentProps = mergeSlotProps(
                 {
-                  className: `${styles.segment} ${isSelected ? styles.segmentSelected : ""}`,
+                  className: clsx(
+                    styles.segment,
+                    isSelected && styles.segmentSelected,
+                    isCritical && styles.segmentCritical,
+                  ),
                   style: segmentStyle(a, b),
                 },
                 slotProps?.segment,
-                { link, isSelected, from: a, to: b, index },
+                { link, isSelected, isCritical, from: a, to: b, index },
               );
               return <Segment key={`seg-${a.x},${a.y}-${b.x},${b.y}`} {...segmentProps} />;
             })}
@@ -293,7 +306,7 @@ export function DependencyLinks({
                     children: link.dep.lag > 0 ? `+${link.dep.lag}d` : `${link.dep.lag}d`,
                   },
                   slotProps?.lagLabel,
-                  { link, isSelected, lag: link.dep.lag },
+                  { link, isSelected, isCritical, lag: link.dep.lag },
                 )}
               />
             )}

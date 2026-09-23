@@ -34,6 +34,16 @@ export interface GenerateOptions {
    * so a late-starting project may spill a little past the final year.
    */
   yearsRange?: [number, number];
+  /**
+   * Append one extra, deterministic chain of tasks guaranteed to sit on the
+   * critical path (a diamond: one tight branch, one branch with slack),
+   * dated after every other generated task so its own end becomes the
+   * dataset's actual end — otherwise whether the critical path lands
+   * somewhere interesting is up to luck, which makes it a poor demo of
+   * `criticalPath`. Additive: does not count against `count`, and
+   * unaffected by `count: 0`. Defaults to `false`.
+   */
+  addCriticalPathTask?: boolean;
 }
 
 export interface MockData {
@@ -166,7 +176,7 @@ export function generateMockData(count: number, options: GenerateOptions = {}): 
   const total = Math.max(0, Math.floor(count));
   const tasks: GanttTask[] = [];
   const dependencies: TaskDependency[] = [];
-  if (total === 0) {
+  if (total === 0 && !options.addCriticalPathTask) {
     return { tasks, dependencies };
   }
 
@@ -400,6 +410,93 @@ export function generateMockData(count: number, options: GenerateOptions = {}): 
     if (to.start.getTime() >= from.end.getTime()) {
       addDep(from.id, to.id, "FS");
     }
+  }
+
+  if (options.addCriticalPathTask) {
+    // Dated after everything else, so this chain's own end becomes the
+    // dataset's actual end (ADR-023 in @art-tools/react-gantt: critical path
+    // is computed against the chart's real current end, not a hypothetical
+    // one) — that's what guarantees the tight branch below is critical
+    // regardless of what the random generation above produced.
+    const latestEnd = leaves.reduce((max, l) => (l.end > max ? l.end : max), baseDate);
+
+    const summaryId = nextId++;
+    const summary: GanttTask = {
+      id: summaryId,
+      name: "Critical Path Demo",
+      startDate: latestEnd,
+      endDate: latestEnd,
+      progress: 0,
+      type: "summary",
+    };
+    tasks.push(summary);
+
+    const aStart = latestEnd;
+    const aEnd = addDays(aStart, 3);
+    const aId = nextId++;
+    const aProgress = randInt(0, 100);
+    tasks.push({
+      id: aId,
+      name: "Kick off critical path demo",
+      startDate: aStart,
+      endDate: aEnd,
+      progress: aProgress,
+      parentId: summaryId,
+    });
+
+    // Tight branch: starts exactly where A finishes, no slack. A, B and the
+    // A→B edge are all critical.
+    const bStart = aEnd;
+    const bEnd = addDays(bStart, 4);
+    const bId = nextId++;
+    const bProgress = randInt(0, 100);
+    tasks.push({
+      id: bId,
+      name: "Critical path — tight branch",
+      startDate: bStart,
+      endDate: bEnd,
+      progress: bProgress,
+      parentId: summaryId,
+    });
+    addDep(aId, bId, "FS");
+
+    // Slack branch: also starts where A finishes, but is short — it finishes
+    // long before C actually needs it, so it is NOT on the critical path even
+    // though it feeds C directly.
+    const dStart = aEnd;
+    const dEnd = addDays(dStart, 1);
+    const dId = nextId++;
+    const dProgress = randInt(0, 100);
+    tasks.push({
+      id: dId,
+      name: "Critical path — slack branch",
+      startDate: dStart,
+      endDate: dEnd,
+      progress: dProgress,
+      parentId: summaryId,
+    });
+    addDep(aId, dId, "FS");
+
+    // C waits on both B and D, but only B's finish actually pins its start —
+    // the A→B, B→C edges are critical; A→D and D→C are not.
+    const cStart = bEnd;
+    const cEnd = addDays(cStart, 3);
+    const cId = nextId++;
+    const cProgress = 0;
+    tasks.push({
+      id: cId,
+      name: "Ship critical path demo",
+      startDate: cStart,
+      endDate: cEnd,
+      progress: cProgress,
+      parentId: summaryId,
+    });
+    addDep(bId, cId, "FS");
+    addDep(dId, cId, "FS");
+
+    summary.startDate = aStart;
+    summary.endDate = cEnd;
+    summary.progress = Math.round((aProgress + bProgress + dProgress + cProgress) / 4);
   }
 
   return { tasks, dependencies };

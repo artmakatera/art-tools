@@ -19,6 +19,7 @@ import { useColumnApi } from "./useColumnApi";
 import {
   GanttCalendarContext,
   GanttConfigContext,
+  GanttCriticalPathContext,
   GanttDependencyContext,
   GanttDragActiveContext,
   GanttDragContext,
@@ -40,7 +41,7 @@ import {
 
 /**
  * The composition root: owns every piece of chart state and publishes it through
- * the twelve contexts defined in `contexts.ts`.
+ * the fourteen contexts defined in `contexts.ts`.
  *
  * The provider nesting at the bottom is ordered stable-outermost, hottest-inside,
  * mirroring the cadence table in `contexts.ts`. That order is not load-bearing
@@ -75,6 +76,9 @@ export function GanttProvider({
   snapToWorking = true,
   durationUnit = "day",
   readOnly = false,
+  // The computed critical-path result below is also named `criticalPath`, so the
+  // prop is aliased on the way in to keep the two apart.
+  criticalPath: highlightCriticalPath = false,
   children,
 }: GanttProviderProps) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);
@@ -100,6 +104,7 @@ export function GanttProvider({
 
   const {
     tasksList,
+    criticalPath,
     updateTask,
     commitTask,
     createTask: commitCreateTask,
@@ -115,6 +120,7 @@ export function GanttProvider({
       onTaskCreate: onTaskCreateProp,
       onTaskDelete,
       onTasksChange,
+      highlightCriticalPath,
     },
     schedulingContext,
   );
@@ -199,6 +205,10 @@ export function GanttProvider({
 
   const { drag, startDrag, endDrag } = useDependencyDrag({ gridBodyRef, onDependencyCreate });
 
+  // `null` (not an empty result) is the off state, so consumers skip the lookup
+  // entirely rather than checking an empty set on every bar/link (ADR-023).
+  const criticalPathValue = highlightCriticalPath ? criticalPath : null;
+
   // --- Context values ---
   const configValue = useMemo<GanttConfigValue>(
     () => ({
@@ -277,29 +287,31 @@ export function GanttProvider({
   return (
     <GanttConfigContext.Provider value={configValue}>
       <GanttReadOnlyContext.Provider value={readOnly}>
-        <GanttLabelsContext.Provider value={labelsValue}>
-          <GanttCalendarContext.Provider value={schedulingContext}>
-            <GanttZoomContext.Provider value={zoomValue}>
-              <GanttScrollContext.Provider value={scrollValue}>
-                <GanttTaskActionsContext.Provider value={taskActionsValue}>
-                  <GanttDependencyContext.Provider value={dependencyValue}>
-                    <GanttTaskStateContext.Provider value={taskStateValue}>
-                      <GanttSelectionContext.Provider value={selectedId}>
-                        <GanttDragActiveContext.Provider value={drag !== null}>
-                          <GanttViewportContext.Provider value={viewport}>
-                            <GanttDragContext.Provider value={drag}>
-                              {children}
-                            </GanttDragContext.Provider>
-                          </GanttViewportContext.Provider>
-                        </GanttDragActiveContext.Provider>
-                      </GanttSelectionContext.Provider>
-                    </GanttTaskStateContext.Provider>
-                  </GanttDependencyContext.Provider>
-                </GanttTaskActionsContext.Provider>
-              </GanttScrollContext.Provider>
-            </GanttZoomContext.Provider>
-          </GanttCalendarContext.Provider>
-        </GanttLabelsContext.Provider>
+        <GanttCriticalPathContext.Provider value={criticalPathValue}>
+          <GanttLabelsContext.Provider value={labelsValue}>
+            <GanttCalendarContext.Provider value={schedulingContext}>
+              <GanttZoomContext.Provider value={zoomValue}>
+                <GanttScrollContext.Provider value={scrollValue}>
+                  <GanttTaskActionsContext.Provider value={taskActionsValue}>
+                    <GanttDependencyContext.Provider value={dependencyValue}>
+                      <GanttTaskStateContext.Provider value={taskStateValue}>
+                        <GanttSelectionContext.Provider value={selectedId}>
+                          <GanttDragActiveContext.Provider value={drag !== null}>
+                            <GanttViewportContext.Provider value={viewport}>
+                              <GanttDragContext.Provider value={drag}>
+                                {children}
+                              </GanttDragContext.Provider>
+                            </GanttViewportContext.Provider>
+                          </GanttDragActiveContext.Provider>
+                        </GanttSelectionContext.Provider>
+                      </GanttTaskStateContext.Provider>
+                    </GanttDependencyContext.Provider>
+                  </GanttTaskActionsContext.Provider>
+                </GanttScrollContext.Provider>
+              </GanttZoomContext.Provider>
+            </GanttCalendarContext.Provider>
+          </GanttLabelsContext.Provider>
+        </GanttCriticalPathContext.Provider>
       </GanttReadOnlyContext.Provider>
     </GanttConfigContext.Provider>
   );

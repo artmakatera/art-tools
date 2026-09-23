@@ -10,13 +10,14 @@ import {
   workingMsPerUnit,
 } from "./workingTime";
 
-interface Span {
+export interface Span {
   start: Date;
   /** The instant work stops — EXCLUSIVE (ADR-014). Equals `start` for milestones. */
   end: Date;
 }
 
-function spanOf(task: GanttTask, ctx: SchedulingContext): Span {
+/** A task's actual span — its committed `startDate`/`endInstantOf`, not a derived schedule. */
+export function spanOf(task: GanttTask, ctx: SchedulingContext): Span {
   return {
     start: task.startDate,
     end: endInstantOf(task, ctx),
@@ -24,7 +25,7 @@ function spanOf(task: GanttTask, ctx: SchedulingContext): Span {
 }
 
 /** Working time a task occupies, in milliseconds. */
-function workingLengthOf(task: GanttTask, ctx: SchedulingContext): number {
+export function workingLengthOf(task: GanttTask, ctx: SchedulingContext): number {
   const { start, end } = spanOf(task, ctx);
   return countWorkingMs(ctx.calendar, start, end);
 }
@@ -48,7 +49,7 @@ function workingLengthOf(task: GanttTask, ctx: SchedulingContext): number {
  * *finish* and must project backward. Deriving the direction from the sign of a
  * zero would silently pick the wrong one.
  */
-function constrainedStart(
+export function constrainedStart(
   pred: Span,
   type: TaskDependencyType,
   lagMs: number,

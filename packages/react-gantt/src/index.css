@@ -23,6 +23,9 @@
 
   --am-gantt-milestone-bg: #f59e0b;
 
+  --am-gantt-critical-bg: #dc2626;
+  --am-gantt-critical-dependency-color: #dc2626;
+
   --am-gantt-calendar-bg: #ffffff;
   --am-gantt-calendar-border: #e2e8f0;
   --am-gantt-calendar-radius: 6px;
@@ -38,6 +41,7 @@
   --am-gantt-resizer-handle-inset: 4px;
 
   --am-gantt-links-z-index: 2;
+  --am-gantt-critical-links-z-index: 3;
   --am-gantt-task-bar-z-index: 3;
   --am-gantt-calendar-z-index: 30;
 }

@@ -52,6 +52,12 @@ export const EXAMPLES: ExampleMeta[] = [
     group: "Core",
   },
   {
+    slug: "critical-path",
+    title: "Critical path",
+    blurb: "Highlight the chain of tasks and links currently pinning the chart's end date.",
+    group: "Core",
+  },
+  {
     slug: "working-time",
     title: "Working time",
     blurb: "Weekends, holidays and business hours that the scheduler, drag and cascade all honour.",

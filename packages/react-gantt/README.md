@@ -44,7 +44,7 @@ example is interactive, with the source that rendered it shown underneath.
 pnpm add @art-tools/react-gantt
 ```
 
-Peer dependencies: `react` and `react-dom` (`^18 || ^19`). The only runtime
+Peer dependencies: `react` and `react-dom` (`^19`). The only runtime
 dependency is [`clsx`](https://github.com/lukeed/clsx).
 
 Import the stylesheet once, near your app root:
@@ -152,6 +152,7 @@ Defined in [`src/types.ts`](./src/types.ts).
 | --------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `tasks`         | `GanttTask[]`                 | **Required.** Stable seed list (see the note in Quick start).                                                          |
 | `dependencies`  | `TaskDependency[]`            | Links between tasks (FS/FF/SS/SF, optional lag).                                                                       |
+| `criticalPath`  | `boolean`                     | Highlight the critical path — see [Dependencies & scheduling](#dependencies--scheduling). Default `false`.             |
 | `columns`       | `ColumnDef[]`                 | Task-list columns. Falls back to built-in default columns.                                                             |
 | `readOnly`      | `boolean`                     | Remove every editing affordance — see [Read-only](#read-only).                                                         |
 | `calendar`      | `GanttCalendar`               | Working-time definition. Supplying it opts into working-time scheduling — see [Working time](#working-time-calendars). |
@@ -343,6 +344,20 @@ realigns successors according to each relationship type and its `lag`. The move 
 all cascaded updates are committed as **one transaction**, so a drag-plus-cascade
 undoes in a single step.
 
+**Critical path:** set `criticalPath` to compute and highlight the chain of
+tasks and dependency links currently driving the chart's end date. Float is measured
+in working time from each task's _actual_ committed position — not a hypothetical
+earliest-possible schedule — so a task the chart visibly shows sitting with slack is
+never flagged critical, and dragging a highlighted task or link is guaranteed to move
+the end date (see [ADR-023](../../docs/adr/023-critical-path-is-computed-from-the-actual-schedule.md)
+for the full reasoning). A dependency link is only highlighted when it is the specific
+predecessor actually pinning its successor's start, not merely a link between two
+critical tasks. Off by default and computed only on commit, never mid-drag. Styled via
+`--am-gantt-critical-bg` (task/project bars) and `--am-gantt-critical-dependency-color`
+(links) — see [CSS custom properties](#css-custom-properties) — or through
+`ownerState.isCritical` on the `TaskBar`/`ProjectBar`/`MilestoneBar`/`DependencyLinks`
+slots for anything beyond a color change.
+
 ---
 
 ## Columns
@@ -458,6 +473,8 @@ The default look is driven by `--am-gantt-*` variables in
   --am-gantt-task-bg: #0ba5ff; /* task bar fill */
   --am-gantt-project-bg: #16a34a; /* summary bar fill */
   --am-gantt-milestone-bg: #f59e0b; /* milestone diamond */
+  --am-gantt-critical-bg: #dc2626; /* critical-path bars, when criticalPath is set */
+  --am-gantt-critical-dependency-color: #dc2626; /* critical-path dependency links */
   --am-gantt-calendar-header-bg: #f8fafc;
   --am-gantt-calendar-weekend-bg: #f1f5f9;
   /* …plus task colors, border radii, resizer sizing, z-indices */
@@ -693,15 +710,20 @@ and `-offset`.
 Proposed future features. These are **not yet implemented** — they capture gaps in the
 current design and a sketch of how each would hook in.
 
-### 1. Critical path
+### 1. Baselines
 
-The scheduling engine already builds the dependency graph
-(`buildDependencyGraph` in [`src/core/scheduling.ts`](./src/core/scheduling.ts)).
-Propose layering CPM (critical path method) analysis on top — compute the longest
-zero-slack chain, expose a `highlightCriticalPath` option, and add slot hooks / an
-`ownerState` flag so critical bars and links can be styled distinctly.
+Propose accepting a baseline as data — the consumer supplies
+the originally-planned dates, not the chart — and rendering it alongside the live
+bar, so schedule drift is visible at a glance instead of reconstructed from memory or
+an external doc.
 
-### 2. Export / print
+### 2. Custom timeline elements
+
+The grid has no way to place anything on the calendar that isn't a task bar.
+Propose a way to render arbitrary elements into it, positioned by date rather than
+by row — a "today" line or a deadline marker being the obvious example.
+
+### 3. Export / print
 
 Propose export of the chart to PNG/SVG/PDF, plus a print-friendly render mode that
 temporarily disables virtualization and renders the full extent so browser print

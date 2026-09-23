@@ -23,10 +23,14 @@ const Gantt = lazy(() => import("@art-tools/react-gantt").then((m) => ({ default
 // `mockTasks` is the stable seed; all create/delete/edit/undo flow through the
 // internal change log, so we never feed the resolved list back into `tasks`.
 
-const count = 100000;
+const count = 100;
 const seed = 1;
 
-const mockData = generateMockData(count, { seed, yearsRange: [2023, 2025] });
+const mockData = generateMockData(count, {
+  seed,
+  yearsRange: [2023, 2025],
+  addCriticalPathTask: true,
+});
 
 // --- Slot examples --------------------------------------------------------
 // Module-level constants keep these config objects referentially stable, so the
@@ -153,6 +157,7 @@ function GanttWithTaskList() {
   const [editing, setEditing] = useState<GanttTask | null>(null);
   const [zoom, setZoom] = useState({ index: 0, count: 0 });
   const [tooltip, setTooltip] = useState(true);
+  const [criticalPath, setCriticalPath] = useState(false);
 
   const zoomIn = useCallback(() => ganttRef.current?.zoomIn(), []);
   const zoomOut = useCallback(() => ganttRef.current?.zoomOut(), []);
@@ -239,6 +244,14 @@ function GanttWithTaskList() {
           <input type="checkbox" checked={tooltip} onChange={(e) => setTooltip(e.target.checked)} />
           Tooltip
         </label>
+        <label style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <input
+            type="checkbox"
+            checked={criticalPath}
+            onChange={(e) => setCriticalPath(e.target.checked)}
+          />
+          Critical path
+        </label>
       </div>
       <Suspense fallback={<div style={{ padding: 16, color: "#666" }}>Loading Gantt…</div>}>
         <Gantt
@@ -258,6 +271,7 @@ function GanttWithTaskList() {
           onZoomChange={handleZoomChange}
           zoomWheel
           zoomKeyboard
+          criticalPath={criticalPath}
         />
       </Suspense>
       {editing && <TaskEditModal task={editing} onClose={closeEdit} onSave={saveEdit} />}

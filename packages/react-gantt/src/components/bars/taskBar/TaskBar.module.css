@@ -6,6 +6,10 @@
   --am-gantt-bar-progress-bg: var(--am-gantt-task-bg-progress);
 }
 
+.critical {
+  background-color: var(--am-gantt-critical-bg);
+}
+
 .taskInner {
   position: relative;
   width: 100%;
