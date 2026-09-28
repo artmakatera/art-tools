@@ -1,5 +1,6 @@
 .task {
   position: absolute;
+  z-index: var(--am-gantt-task-bar-z-index, 3);
   box-sizing: border-box;
   background-color: var(--am-gantt-task-bg);
   border-radius: var(--am-gantt-task-border-radius);

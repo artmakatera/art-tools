@@ -1,14 +1,7 @@
 /*
- * `position: absolute` + a non-auto `z-index` makes this a stacking context, so
- * a tooltip rendered inside it can never out-rank the sticky calendar (30) — the
- * row's own 3 is what competes. That is why the tooltip is placed to avoid the
- * header band rather than to paint over it (ADR-022).
- *
- * Do not add `transform`, `filter`, `contain`, `will-change` or `perspective`
- * here, to the grid, or to anything between them. Each establishes a containing
- * block for fixed-position descendants, and the tooltip is `position: fixed`
- * precisely so it escapes the grid's `overflow: auto` without a portal. Adding
- * one re-clips it silently, and no test can observe that.
+ * Keep the stacking context on each bar root: elevating the row paints its
+ * border over dependency links, while elevating every nested div traps the
+ * progress handle behind the label (docs/adr/024-bar-roots-own-stacking.md).
  */
 .row {
   position: absolute;
@@ -16,10 +9,6 @@
   right: 0;
   border-bottom: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
   box-sizing: border-box;
-}
-
-.row div {
-  z-index: var(--am-gantt-task-bar-z-index, 3);
 }
 
 .row:last-child {
