@@ -1,5 +1,6 @@
 .milestone {
   position: absolute;
+  z-index: var(--am-gantt-task-bar-z-index, 3);
 }
 
 .milestoneShape {

@@ -43,5 +43,6 @@
   --am-gantt-links-z-index: 2;
   --am-gantt-critical-links-z-index: 3;
   --am-gantt-task-bar-z-index: 3;
+  --am-gantt-bar-progress-resize-handle-z-index: 10;
   --am-gantt-calendar-z-index: 30;
 }
