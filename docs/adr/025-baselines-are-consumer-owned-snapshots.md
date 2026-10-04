@@ -19,6 +19,14 @@ the strip height. The date axis, zoom origin, and reveal geometry include only r
 baselines. The live bar, task scheduling, dependency constraints, and critical
 path continue to use only current task dates.
 
+`showBaselines` is a chart-level boolean on both `Gantt` and `GanttProvider`,
+defaulting to `true` to preserve existing charts. When false, baseline lines and
+accessible descriptions are omitted, the row strip is removed, and baseline
+spans are excluded from axis, zoom-origin, and reveal geometry. The flag controls
+presentation only; toggling it does not mutate tasks or add an undo step. Keeping
+hidden plans in the axis or reserving empty lanes would waste space and leave
+geometry inconsistent with the rendered schedule.
+
 Baselines are display-only. They do not drag, resize, select a task, or enter
 `TaskPatch`. The latest `tasks` prop owns their values even when the local change
 log contains a whole-task snapshot from an earlier edit. Updating baselines from

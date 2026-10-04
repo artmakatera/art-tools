@@ -9,6 +9,7 @@ import { useLatestRef } from "./useLatestRef";
 interface UseZoomParams {
   gridRef: React.RefObject<HTMLDivElement | null>;
   visibleTasks: GanttTask[];
+  showBaselines: boolean;
   padDays: number;
   levels: ZoomLevel[];
   initialIndex: number;
@@ -51,6 +52,7 @@ interface PendingAnchor {
 export function useZoom({
   gridRef,
   visibleTasks,
+  showBaselines,
   padDays,
   levels,
   initialIndex,
@@ -64,6 +66,7 @@ export function useZoom({
   const indexRef = useLatestRef(index);
   const visibleTasksRef = useLatestRef(visibleTasks);
   const padDaysRef = useLatestRef(padDays);
+  const showBaselinesRef = useLatestRef(showBaselines);
   const levelsRef = useLatestRef(levels);
   const pending = useRef<PendingAnchor | null>(null);
 
@@ -76,7 +79,12 @@ export function useZoom({
       }
       const grid = gridRef.current;
       const level = levelsRef.current[cur]!;
-      const origin = timelineOrigin(visibleTasksRef.current, level.scales, padDaysRef.current);
+      const origin = timelineOrigin(
+        visibleTasksRef.current,
+        level.scales,
+        padDaysRef.current,
+        showBaselinesRef.current,
+      );
       if (grid && origin) {
         const unit = resolveColumnUnit(level.scales);
         pending.current = {
@@ -88,7 +96,7 @@ export function useZoom({
       }
       setIndex(next);
     },
-    [clamp, gridRef, indexRef, visibleTasksRef, padDaysRef, levelsRef],
+    [clamp, gridRef, indexRef, visibleTasksRef, padDaysRef, showBaselinesRef, levelsRef],
   );
 
   const centerFocusPx = useCallback(() => {
@@ -113,7 +121,12 @@ export function useZoom({
     pending.current = null;
     const grid = gridRef.current;
     const level = levelsRef.current[index]!;
-    const origin = timelineOrigin(visibleTasksRef.current, level.scales, padDaysRef.current);
+    const origin = timelineOrigin(
+      visibleTasksRef.current,
+      level.scales,
+      padDaysRef.current,
+      showBaselinesRef.current,
+    );
     if (!grid || !origin) {
       return;
     }

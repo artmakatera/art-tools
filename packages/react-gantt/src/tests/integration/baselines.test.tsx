@@ -1,7 +1,14 @@
 import { act, fireEvent, render } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { Gantt, type BaselineTooltipProps, type GanttHandle, type GanttTask } from "../../index";
+import {
+  Gantt,
+  type BaselineTooltipProps,
+  type GanttHandle,
+  type GanttTask,
+  GanttProvider,
+  GanttGrid,
+} from "../../index";
 
 const date = (day: number) => new Date(2026, 0, day);
 
@@ -25,6 +32,66 @@ function Tooltip({ baseline, displayEnd, children }: BaselineTooltipProps) {
 }
 
 describe("baseline rendering", () => {
+  it("toggles plans, row strips, descriptions, and axis extent without losing edits", () => {
+    const apiRef = createRef<GanttHandle>();
+    const onTasksChange = vi.fn();
+    const props = { tasks: [task], height: 300, rowHeight: 44, padDays: 0, apiRef, onTasksChange };
+    const { container, rerender } = render(<Gantt {...props} />);
+    const row = () =>
+      container.querySelector<HTMLElement>('[role="grid"] [role="row"][aria-rowindex="3"]')!;
+    const grid = () => container.querySelector('[role="grid"]')!;
+    const columnsWithPlans = Number(grid().getAttribute("aria-colcount"));
+    expect(container.querySelectorAll(".am-gantt-baseline")).toHaveLength(2);
+    act(() => apiRef.current!.updateTask("a", { progress: 50 }));
+    onTasksChange.mockClear();
+
+    rerender(<Gantt {...props} showBaselines={false} />);
+    expect(container.querySelectorAll(".am-gantt-baseline")).toHaveLength(0);
+    expect(row().style.height).toBe("44px");
+    expect(row().querySelector(".am-gantt-bar-task")?.hasAttribute("aria-description")).toBe(false);
+    expect(Number(grid().getAttribute("aria-colcount"))).toBeLessThan(columnsWithPlans);
+    expect(onTasksChange).not.toHaveBeenCalled();
+    const scrollGrid = grid() as HTMLElement;
+    Object.defineProperty(scrollGrid, "clientWidth", { value: 100, configurable: true });
+    scrollGrid.scrollLeft = 999;
+    act(() => apiRef.current!.revealTask("a", { vertical: false, horizontal: true }));
+    expect(scrollGrid.scrollLeft).toBe(0);
+
+    rerender(<Gantt {...props} showBaselines />);
+    expect(container.querySelectorAll(".am-gantt-baseline")).toHaveLength(2);
+    expect(row().style.height).toBe("54px");
+    expect(row().querySelector(".am-gantt-bar-task")?.getAttribute("aria-description")).toContain(
+      "Original",
+    );
+    expect(Number(grid().getAttribute("aria-colcount"))).toBe(columnsWithPlans);
+    expect(onTasksChange).not.toHaveBeenCalled();
+    act(() => apiRef.current!.undo());
+    expect(onTasksChange.mock.lastCall?.[0][0].progress).toBeUndefined();
+    expect(container.querySelectorAll(".am-gantt-baseline")).toHaveLength(2);
+    expect(task.baselines).toHaveLength(2);
+  });
+
+  it("supports the composable provider and hides every task type's plans", () => {
+    const tasks: GanttTask[] = [
+      task,
+      { ...task, id: "summary", type: "summary" },
+      { ...task, id: "milestone", type: "milestone" },
+    ];
+    const { container, rerender } = render(
+      <GanttProvider tasks={tasks} height={300} showBaselines={false}>
+        <GanttGrid />
+      </GanttProvider>,
+    );
+    expect(container.querySelectorAll(".am-gantt-baseline")).toHaveLength(0);
+    expect(container.querySelectorAll("[aria-description]")).toHaveLength(0);
+    rerender(
+      <GanttProvider tasks={tasks} height={300} showBaselines>
+        <GanttGrid />
+      </GanttProvider>,
+    );
+    expect(container.querySelectorAll(".am-gantt-baseline")).toHaveLength(6);
+  });
+
   it("renders plans below the live bar, describes them, and does not select on click", () => {
     const onTaskClick = vi.fn();
     const { container } = render(

@@ -273,6 +273,12 @@ export interface GanttEngineProps {
    * to today (ADR-023).
    */
   criticalPath?: boolean;
+  /**
+   * Show baseline plans. Defaults to `true`. When false, baseline lines,
+   * accessible descriptions, row strips, and date-axis extent are omitted.
+   * Consumer baseline data and live edits are preserved (ADR-025).
+   */
+  showBaselines?: boolean;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
   /**

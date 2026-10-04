@@ -42,6 +42,7 @@ export type { ConnectorHandle, DependencyDragState } from "../hooks/useDependenc
 // --- Config ---------------------------------------------------------------
 
 export interface GanttConfigValue {
+  showBaselines: boolean;
   /** Physical row height, including the baseline strip when present. */
   rowHeight: number;
   /** Consumer-selected row height occupied by the live bar. */

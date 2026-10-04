@@ -40,6 +40,7 @@ function setup(grid: HTMLDivElement | null, initialIndex = 3) {
     useZoom({
       gridRef,
       visibleTasks: tasks,
+      showBaselines: true,
       padDays: 1,
       levels: DEFAULT_ZOOM_LEVELS,
       initialIndex,
@@ -48,6 +49,58 @@ function setup(grid: HTMLDivElement | null, initialIndex = 3) {
 }
 
 describe("useZoom", () => {
+  it("anchors zoom to live dates after baseline visibility changes", () => {
+    const grid = fakeGrid(400, 200);
+    const gridRef = { current: grid };
+    const plannedTasks: GanttTask[] = [
+      {
+        ...tasks[0]!,
+        baselines: [{ id: "plan", startDate: new Date(2025, 0, 1), endDate: new Date(2027, 0, 1) }],
+      },
+    ];
+    const { result, rerender } = renderHook(
+      ({ showBaselines }) =>
+        useZoom({
+          gridRef,
+          visibleTasks: plannedTasks,
+          showBaselines,
+          padDays: 1,
+          levels: DEFAULT_ZOOM_LEVELS,
+          initialIndex: 3,
+        }),
+      { initialProps: { showBaselines: true } },
+    );
+    rerender({ showBaselines: false });
+    const before = result.current.level;
+    const originBefore = resolveOriginAt(
+      tasks[0]!.startDate,
+      resolveColumnUnit(before.scales),
+      1,
+      resolveColumnStep(before.scales),
+    );
+    const focusPx = grid.scrollLeft + 200;
+    const anchor = dateAtOffset(
+      originBefore,
+      resolveColumnUnit(before.scales),
+      focusPx / before.colWidth,
+    );
+    act(() => result.current.zoomAt(focusPx, 1));
+    const after = result.current.level;
+    const originAfter = resolveOriginAt(
+      tasks[0]!.startDate,
+      resolveColumnUnit(after.scales),
+      1,
+      resolveColumnStep(after.scales),
+    );
+    expect(
+      dateAtOffset(
+        originAfter,
+        resolveColumnUnit(after.scales),
+        (grid.scrollLeft + 200) / after.colWidth,
+      ).getTime(),
+    ).toBeCloseTo(anchor.getTime(), -1);
+  });
+
   it("starts on the requested rung and reports the ladder size", () => {
     const { result } = setup(fakeGrid());
     expect(result.current.index).toBe(3);

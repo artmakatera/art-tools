@@ -17,10 +17,13 @@ export interface TaskDates {
   baselines?: GanttBaseline[];
 }
 
-function timelineRange(tasks: readonly TaskDates[]): { min: Date; max: Date } | null {
+function timelineRange(
+  tasks: readonly TaskDates[],
+  showBaselines: boolean,
+): { min: Date; max: Date } | null {
   const range = getMinMaxDates(tasks);
-  if (!range) {
-    return null;
+  if (!range || !showBaselines) {
+    return range;
   }
   let { min, max } = range;
   for (const task of tasks) {
@@ -53,8 +56,9 @@ export function timelineOrigin(
   tasks: readonly TaskDates[],
   scales: Scale[] | undefined,
   pad: number,
+  showBaselines: boolean,
 ): Date | null {
-  const range = timelineRange(tasks);
+  const range = timelineRange(tasks, showBaselines);
   if (!range) {
     return null;
   }
@@ -87,8 +91,13 @@ export function resolveOriginAt(min: Date, unit: CalendarUnit, pad: number, step
  * The full column axis: one date per column, from the padded origin through the
  * padded end of the last task.
  */
-export function buildTimelineDates(tasks: readonly TaskDates[], pad = 0, scales?: Scale[]): Date[] {
-  const range = timelineRange(tasks);
+export function buildTimelineDates(
+  tasks: readonly TaskDates[],
+  pad: number,
+  scales: Scale[] | undefined,
+  showBaselines: boolean,
+): Date[] {
+  const range = timelineRange(tasks, showBaselines);
   if (!range) {
     return [];
   }

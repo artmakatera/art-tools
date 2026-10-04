@@ -19,12 +19,12 @@ const scale = (unit: Scale["unit"], step = 1): Scale => ({
 
 describe("buildTimelineDates", () => {
   it("returns an empty array when given no tasks", () => {
-    expect(buildTimelineDates([])).toEqual([]);
+    expect(buildTimelineDates([], 0, undefined, true)).toEqual([]);
   });
 
   it("treats a task without endDate as a single-day span", () => {
     const tasks = [{ startDate: new Date(2026, 0, 5) }];
-    const result = buildTimelineDates(tasks);
+    const result = buildTimelineDates(tasks, 0, undefined, true);
     expect(result).toHaveLength(1);
     expect(diffDays(tasks[0]!.startDate, result[0]!)).toBe(0);
   });
@@ -35,7 +35,7 @@ describe("buildTimelineDates", () => {
       { startDate: new Date(2026, 0, 5), endDate: new Date(2026, 0, 8) },
       { startDate: new Date(2026, 0, 7), endDate: new Date(2026, 0, 15) },
     ];
-    const result = buildTimelineDates(tasks);
+    const result = buildTimelineDates(tasks, 0, undefined, true);
     expect(result).toHaveLength(11);
     expect(diffDays(new Date(2026, 0, 5), result[0]!)).toBe(0);
     expect(diffDays(new Date(2026, 0, 15), result[result.length - 1]!)).toBe(0);
@@ -46,7 +46,7 @@ describe("buildTimelineDates", () => {
       { startDate: new Date(2026, 0, 1), endDate: new Date(2026, 0, 3) },
       { startDate: new Date(2026, 0, 10) },
     ];
-    const result = buildTimelineDates(tasks);
+    const result = buildTimelineDates(tasks, 0, undefined, true);
     expect(result).toHaveLength(10);
     expect(diffDays(new Date(2026, 0, 1), result[0]!)).toBe(0);
     expect(diffDays(new Date(2026, 0, 10), result[result.length - 1]!)).toBe(0);
@@ -54,7 +54,7 @@ describe("buildTimelineDates", () => {
 
   it("pads on both sides when padDays is given", () => {
     const tasks = [{ startDate: new Date(2026, 0, 10), endDate: new Date(2026, 0, 12) }];
-    const result = buildTimelineDates(tasks, 2);
+    const result = buildTimelineDates(tasks, 2, undefined, true);
     // start shifts back by 2; span = (max-start) + 1 + padDays = 2 + 3 + 2 = 7
     // wait: span = diffDays(start, max) + 1 + padDays
     //   start = 2026-01-08, max = 2026-01-12 -> diffDays = 4 -> span = 4 + 1 + 2 = 7
@@ -65,7 +65,7 @@ describe("buildTimelineDates", () => {
 
   it("handles a single task with start and end dates", () => {
     const tasks = [{ startDate: new Date(2026, 0, 1), endDate: new Date(2026, 0, 5) }];
-    const result = buildTimelineDates(tasks);
+    const result = buildTimelineDates(tasks, 0, undefined, true);
     expect(result).toHaveLength(5);
     expect(diffDays(new Date(2026, 0, 1), result[0]!)).toBe(0);
     expect(diffDays(new Date(2026, 0, 5), result[result.length - 1]!)).toBe(0);
@@ -73,7 +73,7 @@ describe("buildTimelineDates", () => {
 
   it("steps by the finest scale unit (month), aligned to month starts", () => {
     const tasks = [{ startDate: new Date(2026, 0, 15), endDate: new Date(2026, 2, 20) }];
-    const result = buildTimelineDates(tasks, 0, [scale("year"), scale("month")]);
+    const result = buildTimelineDates(tasks, 0, [scale("year"), scale("month")], true);
     expect(result.map((d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`)).toEqual([
       "2026-0-1",
       "2026-1-1",
@@ -83,7 +83,7 @@ describe("buildTimelineDates", () => {
 
   it("pads by whole columns of the finest unit (month)", () => {
     const tasks = [{ startDate: new Date(2026, 5, 10), endDate: new Date(2026, 5, 20) }];
-    const result = buildTimelineDates(tasks, 1, [scale("year"), scale("month")]);
+    const result = buildTimelineDates(tasks, 1, [scale("year"), scale("month")], true);
     expect(result.map((d) => d.getMonth())).toEqual([4, 5, 6]); // May, June, July
   });
 
@@ -94,7 +94,7 @@ describe("buildTimelineDates", () => {
         endDate: new Date(2026, 0, 1, 11, 40),
       },
     ];
-    const result = buildTimelineDates(tasks, 0, [scale("day"), scale("hour")]);
+    const result = buildTimelineDates(tasks, 0, [scale("day"), scale("hour")], true);
     // Aligned to top-of-hour 9..11 inclusive.
     expect(result.map((d) => d.getHours())).toEqual([9, 10, 11]);
     expect(result.every((d) => d.getMinutes() === 0)).toBe(true);

@@ -7,6 +7,20 @@ import { computeLinkGeometry } from "../../components/dependency-links/geometry"
 const date = (day: number) => new Date(2026, 0, day);
 
 describe("baseline data", () => {
+  it("excludes hidden plans from both ends of the axis and its origin", () => {
+    const task: GanttTask = {
+      id: "a",
+      name: "A",
+      startDate: date(10),
+      endDate: date(12),
+      baselines: [{ id: "plan", startDate: date(1), endDate: date(20) }],
+    };
+    expect(timelineOrigin([task], undefined, 0, false)).toEqual(date(10));
+    expect(buildTimelineDates([task], 0, undefined, false)).toEqual([date(10), date(11), date(12)]);
+    expect(timelineOrigin([task], undefined, 0, true)).toEqual(date(1));
+    expect(buildTimelineDates([task], 0, undefined, true).at(-1)).toEqual(date(20));
+  });
+
   it("uses at most the first five plans for the axis and row height", () => {
     const task: GanttTask = {
       id: "a",
@@ -23,8 +37,8 @@ describe("baseline data", () => {
     expect(visibleBaselinesOf(task)).toHaveLength(5);
     expect(baselineLaneCount([task])).toBe(5);
     expect(baselineStripHeight(5)).toBe(25);
-    expect(timelineOrigin([task], undefined, 0)).toEqual(date(10));
-    expect(buildTimelineDates([task]).at(-1)).toEqual(date(16));
+    expect(timelineOrigin([task], undefined, 0, true)).toEqual(date(10));
+    expect(buildTimelineDates([task], 0, undefined, true).at(-1)).toEqual(date(16));
   });
 
   it("uses an explicit summary plan and a milestone instant", () => {
@@ -43,8 +57,8 @@ describe("baseline data", () => {
       startDate: date(10),
       baselines: [{ id: "old", startDate: date(20) }],
     };
-    expect(timelineOrigin([summary, milestone], undefined, 0)).toEqual(date(3));
-    expect(buildTimelineDates([summary, milestone]).at(-1)).toEqual(date(20));
+    expect(timelineOrigin([summary, milestone], undefined, 0, true)).toEqual(date(3));
+    expect(buildTimelineDates([summary, milestone], 0, undefined, true).at(-1)).toEqual(date(20));
     expect(baselineLaneCount([{ ...summary, baselines: undefined }])).toBe(0);
   });
 
@@ -66,7 +80,7 @@ describe("baseline data", () => {
         ],
       };
       expect(visibleBaselinesOf(task).map((baseline) => baseline.id)).toEqual(["valid", "valid2"]);
-      expect(timelineOrigin([task], undefined, 0)).toEqual(date(6));
+      expect(timelineOrigin([task], undefined, 0, true)).toEqual(date(6));
       expect(warning).toHaveBeenCalledTimes(3);
     } finally {
       warning.mockRestore();
@@ -105,7 +119,7 @@ describe("baseline data", () => {
         ],
       };
       expect(visibleBaselinesOf(task)).toEqual([]);
-      expect(timelineOrigin([task], undefined, 0)).toEqual(date(10));
+      expect(timelineOrigin([task], undefined, 0, true)).toEqual(date(10));
       expect(warning).toHaveBeenCalledTimes(2);
     } finally {
       warning.mockRestore();

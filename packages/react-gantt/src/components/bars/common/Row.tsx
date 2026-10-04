@@ -31,6 +31,7 @@ import type { BarA11yProps } from "./DraggableBar";
 import styles from "./Row.module.css";
 
 interface RowProps {
+  showBaselines: boolean;
   task: GanttTask;
   index: number;
   origin: Date;
@@ -48,6 +49,7 @@ interface RowProps {
 
 export const Row = memo(function Row({
   task,
+  showBaselines,
   index,
   origin,
   colWidth,
@@ -79,7 +81,7 @@ export const Row = memo(function Row({
   const visualLeft = left;
   const barHeight = barRowHeight - TASK_VERTICAL_PADDING * 2;
   const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
-  const baselines = visibleBaselinesOf(task);
+  const baselines = showBaselines ? visibleBaselinesOf(task) : [];
   const baselineDescriptions = baselines.map((baseline) => baselineDescription(task, baseline));
 
   // The handles bracket the bar's *painted* box, which for a milestone is not

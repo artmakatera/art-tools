@@ -153,6 +153,7 @@ Defined in [`src/types.ts`](./src/types.ts).
 | --------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `tasks`         | `GanttTask[]`                 | **Required.** Stable seed list (see the note in Quick start).                                                          |
 | `dependencies`  | `TaskDependency[]`            | Links between tasks (FS/FF/SS/SF, optional lag).                                                                       |
+| `showBaselines` | `boolean`                     | Show baseline plans. Default `true`; `false` removes their row strips and date-axis extent.                            |
 | `criticalPath`  | `boolean`                     | Highlight the critical path — see [Dependencies & scheduling](#dependencies--scheduling). Default `false`.             |
 | `columns`       | `ColumnDef[]`                 | Task-list columns. Falls back to built-in default columns.                                                             |
 | `readOnly`      | `boolean`                     | Remove every editing affordance — see [Read-only](#read-only).                                                         |
@@ -284,6 +285,17 @@ const tasks: GanttTask[] = [
 
 <Gantt tasks={tasks} height={500} />;
 ```
+
+Control visibility without removing task data:
+
+```tsx
+<Gantt tasks={tasks} height={500} showBaselines={showBaselines} />
+```
+
+`showBaselines` defaults to `true` and is also available on `GanttProvider`.
+When `false`, baseline lines and accessible descriptions disappear, rows return
+to `rowHeight`, and the axis, zoom, and reveal geometry use only live dates.
+Toggling the flag preserves baseline data, live edits, and undo/redo history.
 
 Summary baselines are supplied explicitly; they are not derived from children.
 The chart never moves or edits a baseline. To update one, pass a new `tasks`
