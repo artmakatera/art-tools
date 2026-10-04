@@ -11,6 +11,28 @@ Two rules that override the rest:
 - **`./init.sh` is the gate.** Nothing is done until it passes. See
   [Verification commands](#verification-commands).
 
+## Agent workflow and handoff
+
+Keep work scoped to the requested change. Before editing, read any existing
+handoff or feature state in `.claude/harness/`, then check it against the current
+working tree and `./init.sh`; old session notes are context, not authority over
+the checkout or the maintainer's request. If the baseline fails, record the
+failure before making changes so it is clear what the work introduced.
+
+If you use `.claude/harness/feature_list.json` to track a larger task, select one
+feature whose dependencies are satisfied and record its done criteria. Keep
+`activeFeature`, status, and evidence honest as work proceeds. Add unrelated
+findings to the backlog instead of expanding the change without reason. This
+state is local to a contributor's checkout; it must not assign or block work for
+other contributors.
+
+Before calling a change done, satisfy its done criteria and run `./init.sh`.
+Record the actual verification result, including failures, in the local
+`progress.md` if you use the harness. At the end of a multi-session task, update
+the local feature state and `session-handoff.md` with the current objective,
+files touched, blockers, and next step. Say plainly what remains unfinished.
+The testing and ADR requirements below are part of done, not follow-up cleanup.
+
 ## Read the reasoning before changing behaviour
 
 This repo keeps its _why_ in [`docs/adr/`](docs/adr/README.md) (23 records) and
