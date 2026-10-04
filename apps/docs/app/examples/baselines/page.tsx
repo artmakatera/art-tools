@@ -18,7 +18,8 @@ export default function Page() {
         <>
           Each thin line is a consumer-supplied plan. Hover for its title and dates, then drag a
           live bar: the plans stay fixed while the current schedule moves. Summary plans are
-          supplied explicitly, and milestone plans appear as points.
+          supplied explicitly, and milestone plans appear as points. Toggle Show baselines to
+          compare the current schedule with or without its plans.
         </>
       }
     >

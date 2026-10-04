@@ -32,6 +32,32 @@ const mockData = generateMockData(count, {
   addCriticalPathTask: true,
 });
 
+function shiftDays(date: Date, days: number): Date {
+  const shifted = new Date(date);
+  shifted.setDate(shifted.getDate() + days);
+  return shifted;
+}
+
+// Capture plans once from the seed so toggling visibility and editing live dates
+// never regenerate the snapshots. Civil-day shifts preserve times across DST.
+const mockTasks: GanttTask[] = mockData.tasks.map((task) => {
+  if (task.type !== "milestone" && (!task.endDate || task.endDate <= task.startDate)) {
+    return task;
+  }
+  return {
+    ...task,
+    baselines: [
+      { id: "original", title: "Original plan", days: -7 },
+      { id: "revised", title: "Revised plan", days: -3 },
+    ].map(({ id, title, days }) => ({
+      id,
+      title,
+      startDate: shiftDays(task.startDate, days),
+      endDate: task.type === "milestone" ? undefined : shiftDays(task.endDate!, days),
+    })),
+  };
+});
+
 // --- Slot examples --------------------------------------------------------
 // Module-level constants keep these config objects referentially stable, so the
 // memoized task rows don't re-render every frame.
@@ -149,7 +175,8 @@ function GanttWithTaskList() {
   // dataset and remounting <Gantt> (its `key` resets the edit log) is expensive.
   // Defer that work so the input stays responsive and rapid keystrokes coalesce
   // into one rebuild instead of one per digit.
-  const { tasks, dependencies: seededDeps } = mockData;
+  const tasks = mockTasks;
+  const { dependencies: seededDeps } = mockData;
 
   const [dependencies, setDependencies] = useState<TaskDependency[]>(seededDeps);
 
@@ -158,6 +185,7 @@ function GanttWithTaskList() {
   const [zoom, setZoom] = useState({ index: 0, count: 0 });
   const [tooltip, setTooltip] = useState(true);
   const [criticalPath, setCriticalPath] = useState(false);
+  const [showBaselines, setShowBaselines] = useState(true);
 
   const zoomIn = useCallback(() => ganttRef.current?.zoomIn(), []);
   const zoomOut = useCallback(() => ganttRef.current?.zoomOut(), []);
@@ -252,6 +280,14 @@ function GanttWithTaskList() {
           />
           Critical path
         </label>
+        <label style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <input
+            type="checkbox"
+            checked={showBaselines}
+            onChange={(event) => setShowBaselines(event.target.checked)}
+          />
+          Show baselines
+        </label>
       </div>
       <Suspense fallback={<div style={{ padding: 16, color: "#666" }}>Loading Gantt…</div>}>
         <Gantt
@@ -272,6 +308,7 @@ function GanttWithTaskList() {
           zoomWheel
           zoomKeyboard
           criticalPath={criticalPath}
+          showBaselines={showBaselines}
         />
       </Suspense>
       {editing && <TaskEditModal task={editing} onClose={closeEdit} onSave={saveEdit} />}

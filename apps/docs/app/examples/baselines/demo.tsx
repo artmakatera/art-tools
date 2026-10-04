@@ -94,5 +94,32 @@ const initialTasks: GanttTask[] = [
 
 export function BaselinesDemo() {
   const [tasks, setTasks] = useState(initialTasks);
-  return <Gantt tasks={tasks} onTasksChange={setTasks} bars={bars} height={340} />;
+  const [showBaselines, setShowBaselines] = useState(true);
+
+  return (
+    <>
+      <label
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "8px 12px",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={showBaselines}
+          onChange={(event) => setShowBaselines(event.target.checked)}
+        />
+        Show baselines
+      </label>
+      <Gantt
+        tasks={tasks}
+        onTasksChange={setTasks}
+        bars={bars}
+        showBaselines={showBaselines}
+        height={340}
+      />
+    </>
+  );
 }
