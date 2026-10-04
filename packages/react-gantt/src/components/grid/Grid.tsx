@@ -67,7 +67,7 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
 
   const { visibleTasks } = useGanttTaskState();
   const { updateTask, commitTask, onTaskClick, setSelectedId } = useGanttTaskActions();
-  const { colWidth, rowHeight, scales, padDays, height } = useGanttConfig();
+  const { colWidth, rowHeight, barRowHeight, scales, padDays, height } = useGanttConfig();
   const labels = useGanttLabels();
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
   const viewport = useGanttViewport();
@@ -206,7 +206,7 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
       <div className={styles.grid} style={{ width: totalWidth }} role="presentation">
         <Calendar
           colWidth={colWidth}
-          rowHeight={rowHeight}
+          rowHeight={barRowHeight}
           dates={dates}
           scales={scales}
           colRange={colRange}
@@ -217,6 +217,7 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
           origin={origin}
           colWidth={colWidth}
           rowHeight={rowHeight}
+          barRowHeight={barRowHeight}
           unit={unit}
           overrides={overrides}
         >
@@ -247,6 +248,7 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
                   origin={origin}
                   colWidth={colWidth}
                   rowHeight={rowHeight}
+                  barRowHeight={barRowHeight}
                   unit={unit}
                   onUpdate={updateTask}
                   onCommit={commitTask}

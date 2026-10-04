@@ -31,7 +31,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
   const { visibleTasks, expandedIds, parentIds } = useGanttTaskState();
   const { toggleExpand, setSelectedId, onTaskClick, revealTask } = useGanttTaskActions();
   const selectedId = useGanttSelectedId();
-  const { rowHeight, scales, height } = useGanttConfig();
+  const { rowHeight, barRowHeight, scales, height } = useGanttConfig();
   const labels = useGanttLabels();
   const { taskListRef, onTaskListScroll } = useGanttScroll();
 
@@ -119,7 +119,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
     >
       <TaskListHeader
         columns={resolvedColumns}
-        rowHeight={rowHeight}
+        rowHeight={barRowHeight}
         scales={scales}
         onResizeStart={onResizeStart}
         slots={taskList?.header?.slots}
@@ -147,6 +147,7 @@ export function TaskList({ columns = [], taskList }: TaskListProps) {
                 key={task.id}
                 task={task}
                 rowHeight={rowHeight}
+                barRowHeight={barRowHeight}
                 rowIndex={index}
                 depth={depthMap.get(task.id) ?? 0}
                 posinset={siblings?.posinset ?? 1}

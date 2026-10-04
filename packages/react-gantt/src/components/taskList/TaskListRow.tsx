@@ -7,6 +7,7 @@ import styles from "./TaskList.module.css";
 interface TaskListRowProps {
   task: GanttTask;
   rowHeight: number;
+  barRowHeight?: number;
   rowIndex: number;
   depth: number;
   posinset: number;
@@ -25,6 +26,7 @@ const DEFAULT_COL_WIDTH = 100;
 export const TaskListRow = memo(function TaskListRow({
   task,
   rowHeight,
+  barRowHeight = rowHeight,
   rowIndex,
   depth,
   posinset,
@@ -56,7 +58,7 @@ export const TaskListRow = memo(function TaskListRow({
           <div
             key={col.key}
             className={`${styles.cell} ${col.isTreeColumn ? styles.treeCell : ""}`}
-            style={{ width: col.width || DEFAULT_COL_WIDTH, flexShrink: 0 }}
+            style={{ width: col.width || DEFAULT_COL_WIDTH, flexShrink: 0, height: barRowHeight }}
             role={col.isTreeColumn ? "rowheader" : "gridcell"}
             aria-colindex={index + 1}
           >

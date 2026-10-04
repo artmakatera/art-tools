@@ -58,6 +58,12 @@ export const EXAMPLES: ExampleMeta[] = [
     group: "Core",
   },
   {
+    slug: "baselines",
+    title: "Baselines",
+    blurb: "Compare up to five consumer-supplied plans with each task's current dates.",
+    group: "Core",
+  },
+  {
     slug: "working-time",
     title: "Working time",
     blurb: "Weekends, holidays and business hours that the scheduler, drag and cascade all honour.",

@@ -92,6 +92,7 @@ interface PixelParams {
   origin: Date;
   colWidth: number;
   rowHeight: number;
+  barRowHeight?: number;
   unit: CalendarUnit;
 }
 
@@ -106,12 +107,12 @@ function boxOf(
   task: GanttTask,
   state: Partial<TaskState>,
   centerY: number,
-  { origin, colWidth, rowHeight, unit }: PixelParams,
+  { origin, colWidth, rowHeight, barRowHeight = rowHeight, unit }: PixelParams,
 ): Box {
   const { left, width } = computeTaskPixels(task, state, origin, colWidth, unit);
   if (task.type === "milestone") {
     // Milestones render as a diamond centered on `left`.
-    const half = (rowHeight - TASK_VERTICAL_PADDING * 2) / 2;
+    const half = (barRowHeight - TASK_VERTICAL_PADDING * 2) / 2;
     return { startX: left - half, endX: left + half, centerY, task };
   }
   return { startX: left, endX: left + width, centerY, task };
@@ -123,9 +124,9 @@ function boxOf(
  */
 function buildBoxes(tasks: GanttTask[], params: PixelParams): Map<Id, Box> {
   const boxes = new Map<Id, Box>();
-  const { rowHeight } = params;
+  const { rowHeight, barRowHeight = rowHeight } = params;
   tasks.forEach((task, index) => {
-    boxes.set(task.id, boxOf(task, EMPTY_STATE, index * rowHeight + rowHeight / 2, params));
+    boxes.set(task.id, boxOf(task, EMPTY_STATE, index * rowHeight + barRowHeight / 2, params));
   });
   return boxes;
 }

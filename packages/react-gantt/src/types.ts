@@ -69,6 +69,16 @@ export interface GanttCalendar {
 /** The unit an input `duration` is expressed in, and the unit it displays in. */
 export type DurationUnit = "day" | "hour" | "minute";
 
+/** Consumer-owned planned span. `endDate` is exclusive; milestones use only `startDate`. */
+export interface GanttBaseline {
+  /** Unique within one task. */
+  id: Id;
+  title?: string;
+  startDate: Date;
+  /** Required for tasks and summaries, omitted for milestones. */
+  endDate?: Date;
+}
+
 export interface GanttTask {
   id: Id;
   name: string;
@@ -79,6 +89,8 @@ export interface GanttTask {
   progress?: number;
   type?: GanttTaskType;
   parentId?: Id | null;
+  /** Ordered plans; only the first five entries are considered for display. */
+  baselines?: GanttBaseline[];
 }
 
 export interface ColumnDef<T extends GanttTask = GanttTask> {

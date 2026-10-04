@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import * as api from "../index";
+import type { BaselineTooltipProps, GanttBaseline } from "../index";
 
 /**
  * The package's runtime export surface, pinned.
@@ -15,6 +16,10 @@ import * as api from "../index";
  */
 
 describe("public API", () => {
+  it("exports baseline data and tooltip types", () => {
+    expectTypeOf<GanttBaseline["id"]>().toEqualTypeOf<string | number>();
+    expectTypeOf<BaselineTooltipProps["baseline"]>().toEqualTypeOf<GanttBaseline>();
+  });
   it("exports exactly this set of values", () => {
     expect(Object.keys(api).toSorted()).toEqual([
       "ACTION_COLUMN_KEY",

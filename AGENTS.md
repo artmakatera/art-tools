@@ -35,7 +35,7 @@ The testing and ADR requirements below are part of done, not follow-up cleanup.
 
 ## Read the reasoning before changing behaviour
 
-This repo keeps its _why_ in [`docs/adr/`](docs/adr/README.md) (23 records) and
+This repo keeps its _why_ in [`docs/adr/`](docs/adr/README.md) (25 records) and
 its vocabulary in [`docs/glossary.md`](docs/glossary.md). Both are short. An ADR
 that reads like a bug — ADR-007's asymmetric anchor projection, ADR-017's
 accepted behaviour change at coarse zoom — is a deliberate trade-off, and

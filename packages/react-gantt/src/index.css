@@ -22,6 +22,7 @@
   --am-gantt-project-color: #f0fdf4;
 
   --am-gantt-milestone-bg: #f59e0b;
+  --am-gantt-baseline-color: #64748b;
 
   --am-gantt-critical-bg: #dc2626;
   --am-gantt-critical-dependency-color: #dc2626;

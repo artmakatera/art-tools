@@ -7,6 +7,11 @@ import {
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
 import {
+  BASELINE_STRIP_PADDING,
+  BASELINE_LANE_STRIDE,
+  visibleBaselinesOf,
+} from "../../../core/baselines";
+import {
   useGanttCriticalPath,
   useGanttLabels,
   useGanttReadOnly,
@@ -21,6 +26,7 @@ import { ProjectBar } from "../projectBar/ProjectBar";
 import { TaskBar } from "../taskBar/TaskBar";
 import type { BarTooltipOwnerState } from "../barTooltip";
 import { ConnectorHandles } from "./ConnectorHandles";
+import { Baseline, baselineDescription } from "../baseline/Baseline";
 import type { BarA11yProps } from "./DraggableBar";
 import styles from "./Row.module.css";
 
@@ -30,6 +36,7 @@ interface RowProps {
   origin: Date;
   colWidth: number;
   rowHeight: number;
+  barRowHeight?: number;
   unit: CalendarUnit;
   onUpdate: (id: Id, patch: DatePatch) => void;
   onCommit: (id: Id, commit: BarCommit) => void;
@@ -45,6 +52,7 @@ export const Row = memo(function Row({
   origin,
   colWidth,
   rowHeight,
+  barRowHeight = rowHeight,
   unit,
   override,
   onOverride,
@@ -69,8 +77,10 @@ export const Row = memo(function Row({
   const { left, width, progress } = computeTaskPixels(task, override || {}, origin, colWidth, unit);
   const top = index * rowHeight;
   const visualLeft = left;
-  const barHeight = rowHeight - TASK_VERTICAL_PADDING * 2;
+  const barHeight = barRowHeight - TASK_VERTICAL_PADDING * 2;
   const barCenterY = TASK_VERTICAL_PADDING + barHeight / 2;
+  const baselines = visibleBaselinesOf(task);
+  const baselineDescriptions = baselines.map((baseline) => baselineDescription(task, baseline));
 
   // The handles bracket the bar's *painted* box, which for a milestone is not
   // its date span. A milestone is an instant, so `computeTaskPixels` returns
@@ -168,6 +178,7 @@ export const Row = memo(function Row({
     "aria-colindex": Math.max(1, Math.floor(visualLeft / colWidth) + 1),
     "aria-colspan": Math.max(1, Math.round(width / colWidth)),
     "aria-label": labels.bar(task, { progress }),
+    "aria-description": baselineDescriptions.join("; ") || undefined,
     "aria-selected": isSelected || undefined,
     title: Tooltip ? undefined : task.name,
   };
@@ -192,6 +203,19 @@ export const Row = memo(function Row({
       role="row"
       aria-rowindex={rowIndexOffset + index + 1}
     >
+      {baselines.map((baseline, baselineIndex) => (
+        <Baseline
+          key={baseline.id}
+          task={task}
+          baseline={baseline}
+          description={baselineDescriptions[baselineIndex]!}
+          index={baselineIndex}
+          origin={origin}
+          colWidth={colWidth}
+          unit={unit}
+          top={barRowHeight + BASELINE_STRIP_PADDING + baselineIndex * BASELINE_LANE_STRIDE}
+        />
+      ))}
       {!readOnly && (
         <ConnectorHandles
           taskId={task.id}

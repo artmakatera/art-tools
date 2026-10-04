@@ -1,6 +1,7 @@
-import type { CalendarUnit, Scale } from "../types";
+import type { CalendarUnit, GanttBaseline, GanttTask, Scale } from "../types";
 import { resolveColumnStep, resolveColumnUnit } from "./scales";
 import { addUnit, buildDates, getMinMaxDates, startOfUnit, unitOffset } from "./dateUtils";
+import { visibleBaselinesOf } from "./baselines";
 
 /**
  * Task-range → timeline geometry. The only layer that knows both about tasks and
@@ -12,10 +13,33 @@ import { addUnit, buildDates, getMinMaxDates, startOfUnit, unitOffset } from "./
 export interface TaskDates {
   startDate: Date;
   endDate?: Date;
+  type?: GanttTask["type"];
+  baselines?: GanttBaseline[];
+}
+
+function timelineRange(tasks: readonly TaskDates[]): { min: Date; max: Date } | null {
+  const range = getMinMaxDates(tasks);
+  if (!range) {
+    return null;
+  }
+  let { min, max } = range;
+  for (const task of tasks) {
+    for (const baseline of visibleBaselinesOf(task)) {
+      if (baseline.startDate < min) {
+        min = baseline.startDate;
+      }
+      const end = task.type === "milestone" ? baseline.startDate : baseline.endDate!;
+      if (end > max) {
+        max = end;
+      }
+    }
+  }
+  return { min, max };
 }
 
 /**
- * The timeline origin: the start-of-unit boundary containing the earliest task,
+ * The timeline origin: the start-of-unit boundary containing the earliest live
+ * task or visible baseline,
  * padded outward by `pad` whole columns.
  *
  * Every consumer must derive the origin from here. There were five separate
@@ -30,7 +54,7 @@ export function timelineOrigin(
   scales: Scale[] | undefined,
   pad: number,
 ): Date | null {
-  const range = getMinMaxDates(tasks);
+  const range = timelineRange(tasks);
   if (!range) {
     return null;
   }
@@ -64,7 +88,7 @@ export function resolveOriginAt(min: Date, unit: CalendarUnit, pad: number, step
  * padded end of the last task.
  */
 export function buildTimelineDates(tasks: readonly TaskDates[], pad = 0, scales?: Scale[]): Date[] {
-  const range = getMinMaxDates(tasks);
+  const range = timelineRange(tasks);
   if (!range) {
     return [];
   }
