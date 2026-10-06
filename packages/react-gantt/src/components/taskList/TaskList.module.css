@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   padding: 0 8px;
-  font-size: 12px;
+  font-size: var(--am-gantt-tasklist-header-font-size, 0.75rem);
   font-weight: 600;
   color: var(--am-gantt-calendar-header-color, #475569);
   border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
@@ -75,7 +75,7 @@
   display: flex;
   align-items: center;
   padding: 0 8px;
-  font-size: 13px;
+  font-size: var(--am-gantt-tasklist-font-size, 0.8125rem);
   color: var(--am-gantt-tasklist-color, #334155);
   border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
   overflow: hidden;
@@ -95,7 +95,7 @@
 .nameContent {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--am-gantt-tasklist-name-gap, 0.25rem);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -106,7 +106,7 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  font-size: 10px;
+  font-size: var(--am-gantt-expand-font-size, 1rem);
   color: var(--am-gantt-tasklist-color, #334155);
   width: 14px;
   flex-shrink: 0;

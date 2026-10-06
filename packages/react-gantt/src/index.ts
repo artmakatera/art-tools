@@ -168,6 +168,7 @@ export type {
   GanttProps,
   GanttHandle,
   GanttTask,
+  GanttBaseline,
   TaskPatch,
   Id,
   TaskDependency,
@@ -177,6 +178,13 @@ export type {
   GanttLabels,
   ResolvedGanttLabels,
 } from "./types";
+export type {
+  BaselineOwnerState,
+  BaselineTooltipProps,
+  BaselineSlots,
+  BaselineSlotProps,
+  BaselineSlotConfig,
+} from "./components/bars/baseline/Baseline";
 
 // Working-time calendar (see docs/adr/).
 export type { GanttCalendar, DayHours, WorkTimeRange, Weekday, DurationUnit } from "./types";

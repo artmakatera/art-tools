@@ -14,6 +14,14 @@ import { useZoom } from "../hooks/useZoom";
 import { DEFAULT_ZOOM_INDEX, resolveZoomLevels } from "../core/zoom";
 import { useDependencyDrag } from "../hooks/useDependencyDrag";
 import { DEFAULT_PAD_DAYS, DEFAULT_ROW_HEIGHT } from "../core/constants";
+import {
+  BASELINE_LINE_HEIGHT,
+  BASELINE_STRIP_PADDING,
+  BASELINE_LANE_GAP,
+  baselineLaneCount,
+  baselineStripHeight,
+  type BaselineLayout,
+} from "../core/baselines";
 import { useGanttHandle } from "./useGanttHandle";
 import { useColumnApi } from "./useColumnApi";
 import {
@@ -53,6 +61,7 @@ import {
 export function GanttProvider({
   tasks,
   rowHeight = DEFAULT_ROW_HEIGHT,
+  baselineLayout: baselineLayoutProp,
   colWidth,
   height,
   scales,
@@ -76,11 +85,19 @@ export function GanttProvider({
   snapToWorking = true,
   durationUnit = "day",
   readOnly = false,
+  showBaselines = true,
   // The computed critical-path result below is also named `criticalPath`, so the
   // prop is aliased on the way in to keep the two apart.
   criticalPath: highlightCriticalPath = false,
   children,
 }: GanttProviderProps) {
+  const baselineHeight = baselineLayoutProp?.height ?? BASELINE_LINE_HEIGHT;
+  const baselinePadding = baselineLayoutProp?.padding ?? BASELINE_STRIP_PADDING;
+  const baselineGap = baselineLayoutProp?.gap ?? BASELINE_LANE_GAP;
+  const baselineLayout = useMemo<BaselineLayout>(
+    () => ({ height: baselineHeight, padding: baselinePadding, gap: baselineGap }),
+    [baselineHeight, baselinePadding, baselineGap],
+  );
   const [selectedId, setSelectedId] = useState<Id | null>(null);
 
   const labelsValue = useMemo(() => resolveLabels(labels), [labels]);
@@ -127,6 +144,11 @@ export function GanttProvider({
 
   const { visibleTasks, expandedIds, parentIds, toggleExpand, revealAncestors } =
     useExpand(tasksList);
+  const laneCount = useMemo(
+    () => (showBaselines ? baselineLaneCount(visibleTasks) : 0),
+    [visibleTasks, showBaselines],
+  );
+  const effectiveRowHeight = rowHeight + baselineStripHeight(laneCount, baselineLayout);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
@@ -140,6 +162,7 @@ export function GanttProvider({
   const zoom = useZoom({
     gridRef,
     visibleTasks,
+    showBaselines,
     padDays,
     levels: zoomLevelsResolved,
     initialIndex: defaultZoomIndex ?? DEFAULT_ZOOM_INDEX,
@@ -152,7 +175,8 @@ export function GanttProvider({
     gridRef,
     tasksList,
     visibleTasks,
-    rowHeight,
+    showBaselines,
+    rowHeight: effectiveRowHeight,
     colWidth: zoom.level.colWidth,
     scales: zoom.level.scales,
     padDays,
@@ -212,13 +236,16 @@ export function GanttProvider({
   // --- Context values ---
   const configValue = useMemo<GanttConfigValue>(
     () => ({
-      rowHeight,
+      showBaselines,
+      baselineLayout,
+      rowHeight: effectiveRowHeight,
+      barRowHeight: rowHeight,
       colWidth: zoom.level.colWidth,
       scales: zoom.level.scales,
       padDays,
       height,
     }),
-    [rowHeight, zoom.level, padDays, height],
+    [showBaselines, baselineLayout, effectiveRowHeight, rowHeight, zoom.level, padDays, height],
   );
 
   const zoomValue = useMemo<GanttZoomValue>(

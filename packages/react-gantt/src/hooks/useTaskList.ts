@@ -113,8 +113,8 @@ export const useTaskList = (
   // Resolve the log incrementally: the cache reuses the snapshot at the
   // previous cursor, so an edit costs one map clone instead of replaying the
   // whole log, and undo/redo to a recent cursor reuses the cached map as-is.
-  // Both the display list and the edit base derive from this single resolved
-  // map — no second replay.
+  // The display list and edit base share this replay; the baseline-only overlay
+  // below applies consumer updates without replaying transactions again.
   const resolveCacheRef = useRef<ResolveCache | null>(null);
   const resolvedById = useMemo(() => {
     resolveCacheRef.current ??= createResolveCache();
@@ -124,12 +124,27 @@ export const useTaskList = (
   // Mirror the latest resolved map so event handlers (updateTask) can read the
   // current effective state without replaying. Updated every render, so at the
   // time a handler fires it matches the committed `log` (= `prev`).
-  const resolvedRef = useRef(resolvedById);
-  resolvedRef.current = resolvedById;
+  // Commands store whole tasks, so a local edit can otherwise mask a later
+  // consumer update to baselines. Plans remain owned by the latest `tasks` prop
+  // and never enter the chart's undo history (ADR-025).
+  const effectiveById = useMemo(() => {
+    let next: typeof resolvedById | null = null;
+    for (const seed of tasks) {
+      const current = resolvedById.get(seed.id);
+      if (current && current.baselines !== seed.baselines) {
+        next ??= new Map(resolvedById);
+        next.set(seed.id, { ...current, baselines: seed.baselines });
+      }
+    }
+    return next ?? resolvedById;
+  }, [resolvedById, tasks]);
+
+  const resolvedRef = useRef(effectiveById);
+  resolvedRef.current = effectiveById;
 
   // Depends on the calendar: the roll-up resolves duration-only children through
   // it, so a calendar change must recompute or every summary bar goes stale.
-  const tasksList = useMemo(() => getTaskList(resolvedById, ctx), [resolvedById, ctx]);
+  const tasksList = useMemo(() => getTaskList(effectiveById, ctx), [effectiveById, ctx]);
 
   // Off by default: a chart that never enables highlighting never pays for the
   // dependency-graph walk (ADR-023). Computed from the same resolved state
@@ -138,9 +153,9 @@ export const useTaskList = (
   const criticalPath = useMemo(
     () =>
       highlightCriticalPath
-        ? computeCriticalPath(resolvedById, dependencyGraph, ctx)
+        ? computeCriticalPath(effectiveById, dependencyGraph, ctx)
         : EMPTY_CRITICAL_PATH,
-    [highlightCriticalPath, resolvedById, dependencyGraph, ctx],
+    [highlightCriticalPath, effectiveById, dependencyGraph, ctx],
   );
 
   /**

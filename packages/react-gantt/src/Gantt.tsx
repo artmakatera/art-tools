@@ -13,6 +13,7 @@ export function Gantt({
   tasks,
   dependencies,
   rowHeight,
+  baselineLayout,
   colWidth,
   height,
   scales,
@@ -36,6 +37,7 @@ export function Gantt({
   durationUnit,
   readOnly = false,
   criticalPath,
+  showBaselines,
   apiRef,
   hideTaskList,
   taskList,
@@ -64,6 +66,7 @@ export function Gantt({
       tasks={tasks}
       dependencies={dependencies}
       rowHeight={rowHeight}
+      baselineLayout={baselineLayout}
       colWidth={colWidth}
       height={height}
       scales={scales}
@@ -87,6 +90,7 @@ export function Gantt({
       durationUnit={durationUnit}
       readOnly={readOnly}
       criticalPath={criticalPath}
+      showBaselines={showBaselines}
     >
       <GanttSlotsProvider value={slotsValue}>
         {showTaskList ? (

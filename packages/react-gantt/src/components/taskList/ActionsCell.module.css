@@ -1,6 +1,6 @@
 .actionsCell {
   display: flex;
-  gap: 2px;
+  gap: var(--am-gantt-tasklist-actions-gap, 0.125rem);
 }
 
 .actionsCell button {

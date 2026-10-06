@@ -10,6 +10,7 @@ interface DependencyLinksProviderProps {
   origin: Date;
   colWidth: number;
   rowHeight: number;
+  barRowHeight?: number;
   unit: CalendarUnit;
   children: ReactNode;
   overrides: Record<string, Partial<TaskState>>;
@@ -31,18 +32,20 @@ export function DependencyLinksProvider({
   origin,
   colWidth,
   rowHeight,
+  barRowHeight,
   unit,
   children,
   overrides,
 }: DependencyLinksProviderProps) {
   const base = useMemo(
-    () => computeLinkGeometry({ tasks, dependencies, origin, colWidth, rowHeight, unit }),
-    [tasks, dependencies, origin, colWidth, rowHeight, unit],
+    () =>
+      computeLinkGeometry({ tasks, dependencies, origin, colWidth, rowHeight, barRowHeight, unit }),
+    [tasks, dependencies, origin, colWidth, rowHeight, barRowHeight, unit],
   );
 
   const links = useMemo(
-    () => reRouteOverrides(base, overrides, { origin, colWidth, rowHeight, unit }),
-    [base, overrides, origin, colWidth, rowHeight, unit],
+    () => reRouteOverrides(base, overrides, { origin, colWidth, rowHeight, barRowHeight, unit }),
+    [base, overrides, origin, colWidth, rowHeight, barRowHeight, unit],
   );
 
   return (

@@ -1,5 +1,47 @@
 # @art-tools/react-gantt
 
+## 0.4.0
+
+### Minor Changes
+
+- Add baseline plans to compare saved schedules with live task dates. Tasks,
+  summaries, and milestones accept `baselines`, with the first five plans displayed
+  in separate lanes below each live bar. Plans remain consumer-owned and are not
+  changed by scheduling, dragging, resizing, or undo/redo of live dates.
+
+  Add `showBaselines` (default `true`) to toggle baseline visibility and
+  `baselineLayout` to configure line height, strip padding, and lane gap. Defaults
+  are 4px, 1px, and 2px. Rows remain aligned, and the timeline includes visible
+  baseline dates.
+
+  Support baseline styling through `--am-gantt-baseline-color` and the
+  `bars.baseline` slots, including a custom tooltip. Visible plans are included in
+  the task bar's accessible description. Task-list borders span the baseline strip
+  while labels and actions stay aligned with the live bar.
+
+- 575b934: **Breaking:** Drop React 18 as a supported peer. `peerDependencies` now requires `react` and
+  `react-dom` `^19.0.0` (previously `^18.0.0 || ^19.0.0`).
+
+## 0.3.1
+
+### Patch Changes
+
+- Fixed task bar stacking so row borders stay below dependency links while task,
+  project, and milestone bars layer correctly. The z-index now belongs to each
+  bar root instead of the row.
+
+## 0.3.0
+
+### Minor Changes
+
+- Added opt-in critical path analysis and highlighting with the `criticalPath`
+  prop. Critical tasks and the dependency links that constrain them are styled
+  using `--am-gantt-critical-bg` and
+  `--am-gantt-critical-dependency-color`, or can be customized through
+  `ownerState.isCritical` in the bar and dependency link slots. The feature is
+  off by default and computes from the chart's actual schedule using working-time
+  float.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -21,7 +21,7 @@
 .projectContent {
   vertical-align: middle;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--am-gantt-project-font-size, 0.875rem);
   color: var(--am-gantt-project-color);
   font-weight: 600;
   position: relative;

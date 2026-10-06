@@ -25,6 +25,7 @@ example is interactive, with the source that rendered it shown underneath.
 - [Composable API](#composable-api)
 - [`GanttProps` reference](#ganttprops-reference)
 - [Data model](#data-model)
+- [Baselines](#baselines)
 - [Working time (calendars)](#working-time-calendars)
 - [Task bars](#task-bars)
 - [Dependencies & scheduling](#dependencies--scheduling)
@@ -152,6 +153,7 @@ Defined in [`src/types.ts`](./src/types.ts).
 | --------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `tasks`         | `GanttTask[]`                 | **Required.** Stable seed list (see the note in Quick start).                                                          |
 | `dependencies`  | `TaskDependency[]`            | Links between tasks (FS/FF/SS/SF, optional lag).                                                                       |
+| `showBaselines` | `boolean`                     | Show baseline plans. Default `true`; `false` removes their row strips and date-axis extent.                            |
 | `criticalPath`  | `boolean`                     | Highlight the critical path — see [Dependencies & scheduling](#dependencies--scheduling). Default `false`.             |
 | `columns`       | `ColumnDef[]`                 | Task-list columns. Falls back to built-in default columns.                                                             |
 | `readOnly`      | `boolean`                     | Remove every editing affordance — see [Read-only](#read-only).                                                         |
@@ -161,15 +163,16 @@ Defined in [`src/types.ts`](./src/types.ts).
 
 ### Layout
 
-| Prop                   | Type      | Description                                                                                    |
-| ---------------------- | --------- | ---------------------------------------------------------------------------------------------- |
-| `height`               | `number`  | **Required.** Total component height in px; enables the pinned header + vertical scroll.       |
-| `rowHeight`            | `number`  | Row height in px.                                                                              |
-| `colWidth`             | `number`  | Width of one day column in px.                                                                 |
-| `scales`               | `Scale[]` | Calendar header rows (defaults to month + day — see [`DEFAULT_SCALES`](./src/core/scales.ts)). |
-| `padDays`              | `number`  | Extra day columns padded before/after the task date range.                                     |
-| `defaultTaskListWidth` | `number`  | Initial width of the task-list pane.                                                           |
-| `hideTaskList`         | `boolean` | Render only the calendar/grid.                                                                 |
+| Prop                   | Type                                                  | Description                                                                                    |
+| ---------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `height`               | `number`                                              | **Required.** Total component height in px; enables the pinned header + vertical scroll.       |
+| `baselineLayout`       | `{ height?: number; padding?: number; gap?: number }` | Baseline line height, strip padding per edge, and lane gap in px. Defaults: `4`, `1`, `2`.     |
+| `rowHeight`            | `number`                                              | Live-bar row height in px (default `36`); visible baselines add a strip below it.              |
+| `colWidth`             | `number`                                              | Width of one day column in px.                                                                 |
+| `scales`               | `Scale[]`                                             | Calendar header rows (defaults to month + day — see [`DEFAULT_SCALES`](./src/core/scales.ts)). |
+| `padDays`              | `number`                                              | Extra day columns padded before/after the task date range.                                     |
+| `defaultTaskListWidth` | `number`                                              | Initial width of the task-list pane.                                                           |
+| `hideTaskList`         | `boolean`                                             | Render only the calendar/grid.                                                                 |
 
 ### Callbacks
 
@@ -208,6 +211,14 @@ interface GanttTask {
   progress?: number; // 0–100
   type?: "task" | "milestone" | "summary"; // default: "task"
   parentId?: Id | null; // null/undefined = root
+  baselines?: GanttBaseline[];
+}
+
+interface GanttBaseline {
+  id: Id; // unique within this task
+  title?: string;
+  startDate: Date;
+  endDate?: Date; // exclusive; required except for milestones
 }
 ```
 
@@ -242,6 +253,99 @@ type TaskDependency = {
 
 For the full seed → change-log → resolved-list pipeline (transactions, cursor,
 roll-up), see [`docs/data-structures.md`](./docs/data-structures.md).
+
+---
+
+## Baselines
+
+Pass planned dates on each task to compare earlier plans with the current
+schedule. The chart shows the **first five** baselines in array order as thin
+lanes below the live bar; later entries stay in your data but are not drawn or
+included in the date axis. Each `id` is unique within its task, and `title` is
+optional. A task or summary baseline needs both dates. A milestone baseline has
+only `startDate` and appears as a point. `endDate` is exclusive, like task dates.
+
+```tsx
+const tasks: GanttTask[] = [
+  {
+    id: "design",
+    name: "Design",
+    startDate: new Date(2026, 5, 1),
+    endDate: new Date(2026, 5, 12),
+    baselines: [
+      {
+        id: "v1",
+        title: "Original plan",
+        startDate: new Date(2026, 4, 18),
+        endDate: new Date(2026, 4, 30),
+      },
+      { id: "v2", startDate: new Date(2026, 4, 25), endDate: new Date(2026, 5, 6) },
+    ],
+  },
+];
+
+<Gantt tasks={tasks} height={500} />;
+```
+
+Control visibility without removing task data:
+
+```tsx
+<Gantt tasks={tasks} height={500} showBaselines={showBaselines} />
+```
+
+`showBaselines` defaults to `true` and is also available on `GanttProvider`.
+When `false`, baseline lines and accessible descriptions disappear, rows return
+to `rowHeight`, and the axis, zoom, and reveal geometry use only live dates.
+Toggling the flag preserves baseline data, live edits, and undo/redo history.
+
+Summary baselines are supplied explicitly; they are not derived from children.
+The chart never moves or edits a baseline. To update one, pass a new `tasks`
+array. Those external values take priority even after a local task edit, and
+undo/redo of live dates does not roll back a baseline update. Invalid entries
+(missing/reversed dates or duplicate ids among the first five) are skipped with
+a development warning.
+
+Rows all receive the same extra height, calculated from the largest number of
+visible baselines on any currently visible task. `rowHeight` still controls the
+space for the live bar (default 36px), so a custom height is preserved.
+`baselineLayout` configures line thickness, strip padding at each vertical edge,
+and gaps between lanes on both `Gantt` and `GanttProvider`. Each omitted field
+keeps its default: `height: 4`, `padding: 1`, `gap: 2`. For example:
+
+```tsx
+<Gantt tasks={tasks} baselineLayout={{ height: 4, padding: 3, gap: 5 }} />
+```
+
+The extra strip is `count * height + (count - 1) * gap + 2 * padding` when
+baselines are visible, and zero when there are no visible lanes. The default color is
+`--am-gantt-baseline-color`; `bars.baseline.slotProps.root` can set a different
+style for a particular plan from its `ownerState`.
+
+Without a tooltip slot, hovering a baseline shows its `title` (or `id`) and
+dates in the browser's native tooltip. A custom tooltip can wrap the line through
+`bars.baseline.slots.tooltip`; it receives `task`, `baseline`, `index`,
+`displayEnd`, and the line as `children`. For example, a wrapper can use the
+optional title in its own tooltip:
+
+```tsx
+import type { BaselineTooltipProps } from "@art-tools/react-gantt";
+
+function BaselineTitle({ baseline, displayEnd, children }: BaselineTooltipProps) {
+  return (
+    <span
+      title={`${baseline.title ?? baseline.id}: ${baseline.startDate.toLocaleDateString()} – ${(displayEnd ?? baseline.startDate).toLocaleDateString()}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+<Gantt tasks={tasks} height={500} bars={{ baseline: { slots: { tooltip: BaselineTitle } } }} />;
+```
+
+The five visible plans are included in the task bar's accessible description;
+the baseline lines do not add keyboard stops. Clicking one does not select the
+task.
 
 ---
 
@@ -473,6 +577,7 @@ The default look is driven by `--am-gantt-*` variables in
   --am-gantt-task-bg: #0ba5ff; /* task bar fill */
   --am-gantt-project-bg: #16a34a; /* summary bar fill */
   --am-gantt-milestone-bg: #f59e0b; /* milestone diamond */
+  --am-gantt-baseline-color: #64748b; /* planned spans and milestone points */
   --am-gantt-critical-bg: #dc2626; /* critical-path bars, when criticalPath is set */
   --am-gantt-critical-dependency-color: #dc2626; /* critical-path dependency links */
   --am-gantt-calendar-header-bg: #f8fafc;
@@ -480,6 +585,31 @@ The default look is driven by `--am-gantt-*` variables in
   /* …plus task colors, border radii, resizer sizing, z-indices */
 }
 ```
+
+Font sizes and visual gaps use `rem`, relative to the document root font size.
+The defaults below preserve their pixel sizes at a 16px root. Override these
+variables on `:root` or a chart wrapper; the built-in tooltip is portalled to
+`document.body`, so its variables must be set on `:root`/`body` or the tooltip itself.
+
+| CSS custom property                      | Default     |
+| ---------------------------------------- | ----------- |
+| `--am-gantt-task-font-size`              | `0.875rem`  |
+| `--am-gantt-project-font-size`           | `0.875rem`  |
+| `--am-gantt-calendar-font-size`          | `0.8125rem` |
+| `--am-gantt-tasklist-font-size`          | `0.8125rem` |
+| `--am-gantt-tasklist-header-font-size`   | `0.75rem`   |
+| `--am-gantt-expand-font-size`            | `1rem`      |
+| `--am-gantt-tooltip-font-size`           | `0.75rem`   |
+| `--am-gantt-dependency-label-font-size`  | `0.6875rem` |
+| `--am-gantt-dependency-delete-font-size` | `1rem`      |
+| `--am-gantt-tasklist-name-gap`           | `0.25rem`   |
+| `--am-gantt-tasklist-actions-gap`        | `0.125rem`  |
+| `--am-gantt-tooltip-gap`                 | `0.75rem`   |
+
+Row heights, timeline widths, tree indentation, and baseline layout remain in
+pixels because the chart's positioning calculations use those dimensions.
+If you increase text size substantially, adjust `rowHeight` to provide enough
+room for task text and check that calendar labels still fit the header.
 
 ### Slots
 
@@ -490,7 +620,7 @@ shallow-merged, and any other prop the consumer sets wins
 ([`mergeSlotProps`](./src/core/slots.ts)).
 
 The `<Gantt>` props group slots into four buckets: **`taskList`** (`treeCell`,
-`header`), **`bars`** (`taskBar`, `projectBar`, `milestoneBar`, progress, resizer,
+`header`), **`bars`** (`taskBar`, `projectBar`, `milestoneBar`, baseline, progress, resizer,
 connector handles), **`dependencySlots`** (links, preview), and **`timeline`**
 (calendar rows, grid columns, grid, resize handle).
 
@@ -710,20 +840,13 @@ and `-offset`.
 Proposed future features. These are **not yet implemented** — they capture gaps in the
 current design and a sketch of how each would hook in.
 
-### 1. Baselines
-
-Propose accepting a baseline as data — the consumer supplies
-the originally-planned dates, not the chart — and rendering it alongside the live
-bar, so schedule drift is visible at a glance instead of reconstructed from memory or
-an external doc.
-
-### 2. Custom timeline elements
+### 1. Custom timeline elements
 
 The grid has no way to place anything on the calendar that isn't a task bar.
 Propose a way to render arbitrary elements into it, positioned by date rather than
 by row — a "today" line or a deadline marker being the obvious example.
 
-### 3. Export / print
+### 2. Export / print
 
 Propose export of the chart to PNG/SVG/PDF, plus a print-friendly render mode that
 temporarily disables virtualization and renders the full extent so browser print

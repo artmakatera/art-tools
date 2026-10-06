@@ -16,7 +16,7 @@
     "bench": "turbo run bench",
     "changeset": "changeset",
     "version-packages": "changeset version && pnpm install --lockfile-only",
-    "release": "turbo run build --filter=@art-tools/react-gantt && changeset publish"
+    "release": "turbo run build --filter=@art-tools/react-gantt && cd packages/react-gantt && npm stage publish"
   },
   "devDependencies": {
     "@am/oxlint-config": "workspace:*",

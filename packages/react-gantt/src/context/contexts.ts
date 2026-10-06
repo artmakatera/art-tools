@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import { LINEAR_CONTEXT, type SchedulingContext } from "../core/taskDates";
 import { DEFAULT_LABELS } from "../core/labels";
+import type { BaselineLayout } from "../core/baselines";
 import type { CriticalPathResult } from "../core/criticalPath";
 import type { ViewportMetrics } from "../hooks/useScrollSync";
 import type { ConnectorHandle, DependencyDragState } from "../hooks/useDependencyDrag";
@@ -42,7 +43,12 @@ export type { ConnectorHandle, DependencyDragState } from "../hooks/useDependenc
 // --- Config ---------------------------------------------------------------
 
 export interface GanttConfigValue {
+  showBaselines: boolean;
+  baselineLayout: BaselineLayout;
+  /** Physical row height, including the baseline strip when present. */
   rowHeight: number;
+  /** Consumer-selected row height occupied by the live bar. */
+  barRowHeight: number;
   colWidth: number;
   scales?: Scale[];
   padDays: number;

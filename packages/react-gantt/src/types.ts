@@ -69,6 +69,16 @@ export interface GanttCalendar {
 /** The unit an input `duration` is expressed in, and the unit it displays in. */
 export type DurationUnit = "day" | "hour" | "minute";
 
+/** Consumer-owned planned span. `endDate` is exclusive; milestones use only `startDate`. */
+export interface GanttBaseline {
+  /** Unique within one task. */
+  id: Id;
+  title?: string;
+  startDate: Date;
+  /** Required for tasks and summaries, omitted for milestones. */
+  endDate?: Date;
+}
+
 export interface GanttTask {
   id: Id;
   name: string;
@@ -79,6 +89,8 @@ export interface GanttTask {
   progress?: number;
   type?: GanttTaskType;
   parentId?: Id | null;
+  /** Ordered plans; only the first five entries are considered for display. */
+  baselines?: GanttBaseline[];
 }
 
 export interface ColumnDef<T extends GanttTask = GanttTask> {
@@ -202,7 +214,17 @@ export type ResolvedGanttLabels = Required<GanttLabels>;
  */
 export interface GanttEngineProps {
   tasks: GanttTask[];
+  /** Live-bar area height in px. Defaults to 36; baseline lanes add to it. */
   rowHeight?: number;
+  /** Baseline dimensions in px; omitted fields use the existing defaults. */
+  baselineLayout?: {
+    /** Line thickness, including milestone marker size. Defaults to 4. */
+    height?: number;
+    /** Padding at each vertical edge of the baseline strip. Defaults to 1. */
+    padding?: number;
+    /** Gap between baseline lanes. Defaults to 2. */
+    gap?: number;
+  };
   colWidth?: number;
   /** Total component height in px. When set, rows scroll vertically within it
    *  (calendar/header stay pinned); omit to grow with content. */
@@ -261,6 +283,12 @@ export interface GanttEngineProps {
    * to today (ADR-023).
    */
   criticalPath?: boolean;
+  /**
+   * Show baseline plans. Defaults to `true`. When false, baseline lines,
+   * accessible descriptions, row strips, and date-axis extent are omitted.
+   * Consumer baseline data and live edits are preserved (ADR-025).
+   */
+  showBaselines?: boolean;
   /** Receives the imperative API: `apiRef.current.createTask(...)`, `.undo()`, etc. */
   apiRef?: React.Ref<GanttHandle>;
   /**

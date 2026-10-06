@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: release
@@ -10,11 +11,12 @@ concurrency:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-      id-token: write # required for npm trusted publishing (OIDC)
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -28,25 +30,41 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Verify before release
+        run: ./init.sh
 
-      # Pinned to 11.x, and both bounds are load-bearing. Floor: trusted
-      # publishing needs npm >= 11.5.1, and pnpm has no native OIDC support
-      # (pnpm#9812) — it shells out to whatever npm is on PATH, so the runner's
-      # npm is what must clear it, not the pinned pnpm. Ceiling: npm 12 changed
-      # `info --json` to return an array, and changesets 3.0.1's pnpm path
-      # parses that without unwrapping (its npm path does unwrap), so
-      # `publishedVersions` lands undefined and publish dies on a TypeError
-      # reading 'includes'. Do not move this to @latest.
-      - run: npm install -g npm@11
+      - name: Install npm with staged publishing support
+        run: npm install -g 'npm@^11.15.0'
 
-      # Opens a "Version Packages" PR while changesets are pending; publishes
-      # once that PR is merged and none are left.
       - uses: changesets/action@v1
+        id: changesets
         with:
           version: pnpm version-packages
-          publish: pnpm release
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Check for a new package version
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        id: candidate
+        env:
+          BEFORE: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const file = 'packages/react-gantt/package.json';
+          const current = JSON.parse(readFileSync(file, 'utf8')).version;
+          let changed = process.env.EVENT_NAME === 'workflow_dispatch';
+          if (!changed && process.env.BEFORE && !/^0+$/.test(process.env.BEFORE)) {
+            const previous = JSON.parse(execFileSync('git', ['show', `${process.env.BEFORE}:${file}`], { encoding: 'utf8' })).version;
+            changed = current !== previous;
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `stage=${changed}\n`);
+          NODE
+
+      - name: Stage package for npm approval
+        if: steps.candidate.outputs.stage == 'true'
+        run: pnpm release

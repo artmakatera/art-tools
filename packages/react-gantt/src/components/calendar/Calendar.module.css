@@ -42,7 +42,7 @@
   box-sizing: border-box;
   padding: 0 8px;
   border-right: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
-  font-size: 13px;
+  font-size: var(--am-gantt-calendar-font-size, 0.8125rem);
   color: var(--am-gantt-calendar-color, #334155);
   white-space: nowrap;
   overflow: hidden;

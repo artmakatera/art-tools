@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,15 +31,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm lint
-
-      - run: pnpm check-types
-
-      - run: pnpm test
-
-      - run: pnpm build
+      - run: ./init.sh
 
   package:
     name: package checks
@@ -55,7 +50,4 @@ jobs:
 
       - run: pnpm dlx publint packages/react-gantt
 
-      # style.css is excluded, not fixed: attw judges it by Node resolution,
-      # which a bundler-only stylesheet never goes through. Excluding the
-      # entrypoint rather than the rule keeps the JS entry fully checked.
       - run: pnpm dlx @arethetypeswrong/cli --pack packages/react-gantt --exclude-entrypoints style.css

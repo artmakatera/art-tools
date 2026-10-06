@@ -20,6 +20,7 @@ interface UseRevealTaskOptions {
   /** The whole list, so an id hidden under a collapsed parent is still known. */
   tasksList: GanttTask[];
   visibleTasks: GanttTask[];
+  showBaselines: boolean;
   rowHeight: number;
   colWidth: number;
   scales?: Scale[];
@@ -50,6 +51,7 @@ export function useRevealTask({
   gridRef,
   tasksList,
   visibleTasks,
+  showBaselines,
   rowHeight,
   colWidth,
   scales,
@@ -81,7 +83,7 @@ export function useRevealTask({
 
   const revealHorizontally = (task: GanttTask): void => {
     const grid = gridRef.current;
-    const origin = timelineOrigin(visibleTasksRef.current, scales, padDays);
+    const origin = timelineOrigin(visibleTasksRef.current, scales, padDays, showBaselines);
     if (!grid || !origin) {
       return;
     }

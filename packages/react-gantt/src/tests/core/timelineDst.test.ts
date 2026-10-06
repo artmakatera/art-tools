@@ -53,13 +53,13 @@ describe("timeline origin across DST", () => {
       const tasks = taskStarting(start);
       // This is the invariant the whole bug came down to: the origin every
       // consumer derives must be the same instant the grid lays its columns from.
-      expect(timelineOrigin(tasks, dayScales, 1)).toEqual(
-        buildTimelineDates(tasks, 1, dayScales)[0],
+      expect(timelineOrigin(tasks, dayScales, 1, true)).toEqual(
+        buildTimelineDates(tasks, 1, dayScales, true)[0],
       );
     });
 
     it(`lands exactly on a unit boundary (${label})`, () => {
-      const origin = timelineOrigin(taskStarting(start), dayScales, 1)!;
+      const origin = timelineOrigin(taskStarting(start), dayScales, 1, true)!;
       // What `resolveOriginAt`'s name has always claimed, and what the un-normalised
       // version did not deliver: midnight, not 23:00 or 01:00.
       expect(origin).toEqual(startOfUnit(origin, "day"));
@@ -70,8 +70,8 @@ describe("timeline origin across DST", () => {
 
   it("holds for week columns too, where the same fixed-ms addition applies", () => {
     const tasks = taskStarting(AFTER_SPRING_FORWARD);
-    const origin = timelineOrigin(tasks, weekScales, 1)!;
-    expect(origin).toEqual(buildTimelineDates(tasks, 1, weekScales)[0]);
+    const origin = timelineOrigin(tasks, weekScales, 1, true)!;
+    expect(origin).toEqual(buildTimelineDates(tasks, 1, weekScales, true)[0]);
     expect(origin).toEqual(startOfUnit(origin, "week"));
   });
 
@@ -90,7 +90,7 @@ describe("timeline origin across DST", () => {
   });
 
   it("returns null for an empty task list", () => {
-    expect(timelineOrigin([], dayScales, 1)).toBeNull();
-    expect(buildTimelineDates([], 1, dayScales)).toEqual([]);
+    expect(timelineOrigin([], dayScales, 1, true)).toBeNull();
+    expect(buildTimelineDates([], 1, dayScales, true)).toEqual([]);
   });
 });

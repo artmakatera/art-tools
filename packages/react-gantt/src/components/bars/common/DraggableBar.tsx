@@ -8,6 +8,7 @@ export interface BarA11yProps {
   "aria-colindex": number;
   "aria-colspan": number;
   "aria-label": string;
+  "aria-description"?: string;
   "aria-selected": boolean | undefined;
   /**
    * The native browser tooltip. Optional because a chart with a tooltip slot
