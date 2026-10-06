@@ -166,7 +166,7 @@ Defined in [`src/types.ts`](./src/types.ts).
 | Prop                   | Type                                                  | Description                                                                                    |
 | ---------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `height`               | `number`                                              | **Required.** Total component height in px; enables the pinned header + vertical scroll.       |
-| `baselineLayout`       | `{ height?: number; padding?: number; gap?: number }` | Baseline line height, strip padding per edge, and lane gap in px. Defaults: `3`, `1`, `2`.     |
+| `baselineLayout`       | `{ height?: number; padding?: number; gap?: number }` | Baseline line height, strip padding per edge, and lane gap in px. Defaults: `4`, `1`, `2`.     |
 | `rowHeight`            | `number`                                              | Live-bar row height in px (default `36`); visible baselines add a strip below it.              |
 | `colWidth`             | `number`                                              | Width of one day column in px.                                                                 |
 | `scales`               | `Scale[]`                                             | Calendar header rows (defaults to month + day — see [`DEFAULT_SCALES`](./src/core/scales.ts)). |
@@ -310,7 +310,7 @@ visible baselines on any currently visible task. `rowHeight` still controls the
 space for the live bar (default 36px), so a custom height is preserved.
 `baselineLayout` configures line thickness, strip padding at each vertical edge,
 and gaps between lanes on both `Gantt` and `GanttProvider`. Each omitted field
-keeps its default: `height: 3`, `padding: 1`, `gap: 2`. For example:
+keeps its default: `height: 4`, `padding: 1`, `gap: 2`. For example:
 
 ```tsx
 <Gantt tasks={tasks} baselineLayout={{ height: 4, padding: 3, gap: 5 }} />

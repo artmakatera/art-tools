@@ -218,7 +218,7 @@ export interface GanttEngineProps {
   rowHeight?: number;
   /** Baseline dimensions in px; omitted fields use the existing defaults. */
   baselineLayout?: {
-    /** Line thickness, including milestone marker size. Defaults to 3. */
+    /** Line thickness, including milestone marker size. Defaults to 4. */
     height?: number;
     /** Padding at each vertical edge of the baseline strip. Defaults to 1. */
     padding?: number;

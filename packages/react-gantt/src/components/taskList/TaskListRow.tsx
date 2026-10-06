@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import { memo } from "react";
 import type { ColumnDef, GanttTask, Id } from "../../types";
 import { useGanttTaskActions } from "../../context/contexts";
@@ -40,9 +41,12 @@ export const TaskListRow = memo(function TaskListRow({
   treeCell,
 }: TaskListRowProps) {
   const { columnApi } = useGanttTaskActions();
+  // Cells and borders fill the physical row; bottom padding keeps their
+  // content centered on the live bar rather than the added baseline strip (ADR-025).
+  const baselineStripHeight = rowHeight - barRowHeight;
   return (
     <div
-      className={`${styles.row} ${isSelected ? styles.selected : ""}`}
+      className={clsx(styles.row, isSelected && styles.selected)}
       style={{ height: rowHeight }}
       onClick={() => onSelect(task.id)}
       role="row"
@@ -57,8 +61,13 @@ export const TaskListRow = memo(function TaskListRow({
         return (
           <div
             key={col.key}
-            className={`${styles.cell} ${col.isTreeColumn ? styles.treeCell : ""}`}
-            style={{ width: col.width || DEFAULT_COL_WIDTH, flexShrink: 0, height: barRowHeight }}
+            className={clsx(styles.cell, col.isTreeColumn && styles.treeCell)}
+            style={{
+              width: col.width || DEFAULT_COL_WIDTH,
+              flexShrink: 0,
+              height: rowHeight,
+              paddingBottom: baselineStripHeight,
+            }}
             role={col.isTreeColumn ? "rowheader" : "gridcell"}
             aria-colindex={index + 1}
           >

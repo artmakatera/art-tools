@@ -17,7 +17,7 @@ strip sized from the maximum number of rendered lanes is added equally to every
 row. `rowHeight` defaults to the existing 36px constant. Baseline line thickness
 is configured through the common `baselineLayout` prop on `Gantt` and
 `GanttProvider`, alongside strip padding and lane gap. Its optional `height`,
-`padding`, and `gap` fields default individually to the existing 3px, 1px, and
+`padding`, and `gap` fields default individually to the existing 4px, 1px, and
 2px constants. Padding applies at both vertical edges, and gap applies only
 between lanes. Zero padding and gap are valid. Resolved dimensions drive strip
 height, lane offsets, and milestone baseline size, keeping rows aligned when
@@ -25,6 +25,11 @@ any field changes. Grouping these dimensions prevents presentation and row
 geometry from acquiring independent settings. Empty strips reserve no padding. The date axis, zoom origin, and reveal geometry include only rendered
 baselines. The live bar, task scheduling, dependency constraints, and critical
 path continue to use only current task dates.
+
+Task-list cells occupy the full physical row so their vertical borders span the
+baseline strip too. Bottom padding equal to that strip keeps cell content
+centered within the live-bar area. Centering text over the entire expanded row
+would misalign task labels and actions with the live schedule bars.
 
 `showBaselines` is a chart-level boolean on both `Gantt` and `GanttProvider`,
 defaulting to `true` to preserve existing charts. When false, baseline lines and

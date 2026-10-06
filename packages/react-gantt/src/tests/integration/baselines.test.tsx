@@ -42,7 +42,18 @@ describe("baseline rendering", () => {
         ),
       );
     const lines = () => container.querySelectorAll<HTMLElement>(".am-gantt-baseline");
+    const assertCellGeometry = (height: string, paddingBottom: string) => {
+      const cells = container.querySelectorAll<HTMLElement>(
+        '[role="treegrid"] [aria-level] [role="gridcell"], [role="treegrid"] [aria-level] [role="rowheader"]',
+      );
+      expect(cells.length).toBeGreaterThan(0);
+      for (const cell of cells) {
+        expect(cell.style.height).toBe(height);
+        expect(cell.style.paddingBottom).toBe(paddingBottom);
+      }
+    };
     expect(rows().map((row) => row.style.height)).toEqual(["52px", "52px"]);
+    assertCellGeometry("52px", "16px");
     expect(lines()[0]!.style.height).toBe("6px");
     expect(lines()[0]!.style.top).toBe("37px");
     expect(lines()[1]!.style.top).toBe("45px");
@@ -55,17 +66,19 @@ describe("baseline rendering", () => {
       <Gantt tasks={tasks} rowHeight={44} baselineLayout={{ height: 4, padding: 3, gap: 5 }} />,
     );
     expect(rows().map((row) => row.style.height)).toEqual(["63px", "63px"]);
+    assertCellGeometry("63px", "19px");
     expect(lines()[1]!.style.top).toBe("56px");
     expect(lines()[0]!.style.top).toBe("47px");
     rerender(<Gantt tasks={tasks} baselineLayout={{ padding: 0, gap: 0 }} />);
-    expect(rows().map((row) => row.style.height)).toEqual(["42px", "42px"]);
+    expect(rows().map((row) => row.style.height)).toEqual(["44px", "44px"]);
     expect(lines()[0]!.style.top).toBe("36px");
-    expect(lines()[1]!.style.top).toBe("39px");
-    expect(lines()[0]!.style.height).toBe("3px");
+    expect(lines()[1]!.style.top).toBe("40px");
+    expect(lines()[0]!.style.height).toBe("4px");
     rerender(<Gantt tasks={tasks} baselineLayout={{}} />);
-    expect(rows().map((row) => row.style.height)).toEqual(["46px", "46px"]);
+    expect(rows().map((row) => row.style.height)).toEqual(["48px", "48px"]);
     rerender(<Gantt tasks={tasks} baselineLayout={{ height: 6 }} showBaselines={false} />);
     expect(rows().map((row) => row.style.height)).toEqual(["36px", "36px"]);
+    assertCellGeometry("36px", "0px");
   });
 
   it("uses the provider's line thickness for milestone size and centering", () => {
@@ -80,8 +93,8 @@ describe("baseline rendering", () => {
     expect(line.style.width).toBe("8px");
     const { container: defaultContainer } = render(<Gantt tasks={[milestone]} />);
     const defaultLine = defaultContainer.querySelector<HTMLElement>(".am-gantt-baseline")!;
-    expect(defaultLine.style.height).toBe("3px");
-    expect(parseFloat(line.style.left) + 4).toBe(parseFloat(defaultLine.style.left) + 1.5);
+    expect(defaultLine.style.height).toBe("4px");
+    expect(parseFloat(line.style.left) + 4).toBe(parseFloat(defaultLine.style.left) + 2);
   });
 
   it("toggles plans, row strips, descriptions, and axis extent without losing edits", () => {
@@ -111,7 +124,7 @@ describe("baseline rendering", () => {
 
     rerender(<Gantt {...props} showBaselines />);
     expect(container.querySelectorAll(".am-gantt-baseline")).toHaveLength(2);
-    expect(row().style.height).toBe("54px");
+    expect(row().style.height).toBe("56px");
     expect(row().querySelector(".am-gantt-bar-task")?.getAttribute("aria-description")).toContain(
       "Original",
     );
@@ -152,13 +165,18 @@ describe("baseline rendering", () => {
     const row = container.querySelector('[role="row"][aria-rowindex="3"]') as HTMLElement;
     const baselines = row.querySelectorAll<HTMLElement>(".am-gantt-baseline");
     expect(baselines).toHaveLength(2);
-    expect(row.style.height).toBe("54px");
-    expect(
-      container.querySelector('[role="treegrid"] [role="gridcell"]')?.getAttribute("style"),
-    ).toContain("height: 44px");
+    expect(row.style.height).toBe("56px");
+    const cells = container.querySelectorAll<HTMLElement>(
+      '[role="treegrid"] [aria-level] [role="gridcell"], [role="treegrid"] [aria-level] [role="rowheader"]',
+    );
+    expect(cells.length).toBeGreaterThan(0);
+    for (const cell of cells) {
+      expect(cell.style.height).toBe(row.style.height);
+      expect(cell.style.paddingBottom).toBe("12px");
+    }
     expect(baselines[0]!.style.top).toBe("45px");
-    expect(baselines[0]!.style.height).toBe("3px");
-    expect(baselines[1]!.style.top).toBe("50px");
+    expect(baselines[0]!.style.height).toBe("4px");
+    expect(baselines[1]!.style.top).toBe("51px");
     expect(
       Number.parseInt(baselines[1]!.style.top) -
         Number.parseInt(baselines[0]!.style.top) -
