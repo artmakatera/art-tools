@@ -1,7 +1,7 @@
 .baseline {
   position: absolute;
   box-sizing: border-box;
-  background-color: var(--am-gantt-baseline-color, #64748b);
+  background-color: var(--am-gantt-baseline-color, #7789a2);
   border-radius: 2px;
   cursor: default;
 }

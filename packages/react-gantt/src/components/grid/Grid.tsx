@@ -67,8 +67,16 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
 
   const { visibleTasks } = useGanttTaskState();
   const { updateTask, commitTask, onTaskClick, setSelectedId } = useGanttTaskActions();
-  const { colWidth, rowHeight, barRowHeight, scales, padDays, height, showBaselines } =
-    useGanttConfig();
+  const {
+    colWidth,
+    rowHeight,
+    barRowHeight,
+    scales,
+    padDays,
+    height,
+    showBaselines,
+    baselineLayout,
+  } = useGanttConfig();
   const labels = useGanttLabels();
   const { gridRef, onGridScroll, gridBodyRef } = useGanttScroll();
   const viewport = useGanttViewport();
@@ -246,6 +254,7 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
                   key={task.id}
                   task={task}
                   showBaselines={showBaselines}
+                  baselineLayout={baselineLayout}
                   index={index}
                   origin={origin}
                   colWidth={colWidth}

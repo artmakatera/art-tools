@@ -163,15 +163,16 @@ Defined in [`src/types.ts`](./src/types.ts).
 
 ### Layout
 
-| Prop                   | Type      | Description                                                                                    |
-| ---------------------- | --------- | ---------------------------------------------------------------------------------------------- |
-| `height`               | `number`  | **Required.** Total component height in px; enables the pinned header + vertical scroll.       |
-| `rowHeight`            | `number`  | Live-bar row height in px; visible baselines add a small strip below it.                       |
-| `colWidth`             | `number`  | Width of one day column in px.                                                                 |
-| `scales`               | `Scale[]` | Calendar header rows (defaults to month + day — see [`DEFAULT_SCALES`](./src/core/scales.ts)). |
-| `padDays`              | `number`  | Extra day columns padded before/after the task date range.                                     |
-| `defaultTaskListWidth` | `number`  | Initial width of the task-list pane.                                                           |
-| `hideTaskList`         | `boolean` | Render only the calendar/grid.                                                                 |
+| Prop                   | Type                                                  | Description                                                                                    |
+| ---------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `height`               | `number`                                              | **Required.** Total component height in px; enables the pinned header + vertical scroll.       |
+| `baselineLayout`       | `{ height?: number; padding?: number; gap?: number }` | Baseline line height, strip padding per edge, and lane gap in px. Defaults: `3`, `1`, `2`.     |
+| `rowHeight`            | `number`                                              | Live-bar row height in px (default `36`); visible baselines add a strip below it.              |
+| `colWidth`             | `number`                                              | Width of one day column in px.                                                                 |
+| `scales`               | `Scale[]`                                             | Calendar header rows (defaults to month + day — see [`DEFAULT_SCALES`](./src/core/scales.ts)). |
+| `padDays`              | `number`                                              | Extra day columns padded before/after the task date range.                                     |
+| `defaultTaskListWidth` | `number`                                              | Initial width of the task-list pane.                                                           |
+| `hideTaskList`         | `boolean`                                             | Render only the calendar/grid.                                                                 |
 
 ### Callbacks
 
@@ -306,7 +307,17 @@ a development warning.
 
 Rows all receive the same extra height, calculated from the largest number of
 visible baselines on any currently visible task. `rowHeight` still controls the
-space for the live bar, so a custom height is preserved. The default color is
+space for the live bar (default 36px), so a custom height is preserved.
+`baselineLayout` configures line thickness, strip padding at each vertical edge,
+and gaps between lanes on both `Gantt` and `GanttProvider`. Each omitted field
+keeps its default: `height: 3`, `padding: 1`, `gap: 2`. For example:
+
+```tsx
+<Gantt tasks={tasks} baselineLayout={{ height: 4, padding: 3, gap: 5 }} />
+```
+
+The extra strip is `count * height + (count - 1) * gap + 2 * padding` when
+baselines are visible, and zero when there are no visible lanes. The default color is
 `--am-gantt-baseline-color`; `bars.baseline.slotProps.root` can set a different
 style for a particular plan from its `ownerState`.
 

@@ -21,6 +21,14 @@ describe("public API", () => {
     expectTypeOf<BaselineTooltipProps["baseline"]>().toEqualTypeOf<GanttBaseline>();
   });
   it("exposes the baseline visibility flag on both chart entry points", () => {
+    expectTypeOf<GanttProps["rowHeight"]>().toEqualTypeOf<number | undefined>();
+    expectTypeOf<GanttProviderProps["rowHeight"]>().toEqualTypeOf<number | undefined>();
+    expectTypeOf<GanttProps["baselineLayout"]>().toEqualTypeOf<
+      { height?: number; padding?: number; gap?: number } | undefined
+    >();
+    expectTypeOf<GanttProviderProps["baselineLayout"]>().toEqualTypeOf<
+      GanttProps["baselineLayout"]
+    >();
     expectTypeOf<GanttProps["showBaselines"]>().toEqualTypeOf<boolean | undefined>();
     expectTypeOf<GanttProviderProps["showBaselines"]>().toEqualTypeOf<boolean | undefined>();
   });

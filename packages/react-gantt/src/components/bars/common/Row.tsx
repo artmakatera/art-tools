@@ -6,11 +6,7 @@ import {
   pxToDate,
 } from "../../../core/barUtils";
 import { TASK_VERTICAL_PADDING } from "../../../core/constants";
-import {
-  BASELINE_STRIP_PADDING,
-  BASELINE_LANE_STRIDE,
-  visibleBaselinesOf,
-} from "../../../core/baselines";
+import { type BaselineLayout, visibleBaselinesOf } from "../../../core/baselines";
 import {
   useGanttCriticalPath,
   useGanttLabels,
@@ -32,6 +28,7 @@ import styles from "./Row.module.css";
 
 interface RowProps {
   showBaselines: boolean;
+  baselineLayout: BaselineLayout;
   task: GanttTask;
   index: number;
   origin: Date;
@@ -47,9 +44,18 @@ interface RowProps {
   rowIndexOffset: number;
 }
 
+function baselineTop(
+  barRowHeight: number,
+  baselineIndex: number,
+  { height, padding, gap }: BaselineLayout,
+): number {
+  return barRowHeight + padding + baselineIndex * (height + gap);
+}
+
 export const Row = memo(function Row({
   task,
   showBaselines,
+  baselineLayout,
   index,
   origin,
   colWidth,
@@ -215,7 +221,8 @@ export const Row = memo(function Row({
           origin={origin}
           colWidth={colWidth}
           unit={unit}
-          top={barRowHeight + BASELINE_STRIP_PADDING + baselineIndex * BASELINE_LANE_STRIDE}
+          lineHeight={baselineLayout.height}
+          top={baselineTop(barRowHeight, baselineIndex, baselineLayout)}
         />
       ))}
       {!readOnly && (

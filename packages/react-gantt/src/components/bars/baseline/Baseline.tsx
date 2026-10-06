@@ -1,7 +1,6 @@
 import { clsx } from "clsx";
 import type { ComponentProps, ElementType, MouseEvent, ReactNode } from "react";
 import { unitOffset } from "../../../core/dateUtils";
-import { BASELINE_LINE_HEIGHT } from "../../../core/baselines";
 import { displayEndDate } from "../../../core/taskDates";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../../core/slots";
 import { useGanttSlots } from "../../../context/GanttSlotsContext";
@@ -64,6 +63,7 @@ interface BaselineProps {
   colWidth: number;
   unit: CalendarUnit;
   top: number;
+  lineHeight: number;
   description: string;
 }
 
@@ -75,14 +75,15 @@ export function Baseline({
   colWidth,
   unit,
   top,
+  lineHeight,
   description,
 }: BaselineProps) {
   const config = useGanttSlots().bars?.baseline;
   const milestone = task.type === "milestone";
   const start = unitOffset(origin, baseline.startDate, unit) * colWidth;
   const end = milestone ? start : unitOffset(origin, baseline.endDate!, unit) * colWidth;
-  const left = milestone ? start - BASELINE_LINE_HEIGHT / 2 : start;
-  const width = milestone ? BASELINE_LINE_HEIGHT : end - start;
+  const left = milestone ? start - lineHeight / 2 : start;
+  const width = milestone ? lineHeight : end - start;
   const displayEnd = milestone ? undefined : displayEndDate(baseline.startDate, baseline.endDate!);
   const ownerState: BaselineOwnerState = { task, baseline, index, left, width, displayEnd };
   const Root = config?.slots?.root ?? "div";
@@ -90,7 +91,7 @@ export function Baseline({
   const rootProps = mergeSlotProps(
     {
       className: clsx(styles.baseline, "am-gantt-baseline", milestone && styles.milestone),
-      style: { left, top, width, height: BASELINE_LINE_HEIGHT },
+      style: { left, top, width, height: lineHeight },
       title: Tooltip ? undefined : description,
       "aria-hidden": true,
       onClick: (event: MouseEvent<HTMLDivElement>) => event.stopPropagation(),

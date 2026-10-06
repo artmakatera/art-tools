@@ -32,6 +32,58 @@ function Tooltip({ baseline, displayEnd, children }: BaselineTooltipProps) {
 }
 
 describe("baseline rendering", () => {
+  it("recalculates equal rows and lane positions from the common baseline layout", () => {
+    const tasks: GanttTask[] = [task, { ...task, id: "b", baselines: undefined }];
+    const { container, rerender } = render(<Gantt tasks={tasks} baselineLayout={{ height: 6 }} />);
+    const rows = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>(
+          '[role="grid"] [role="row"][aria-rowindex="3"], [role="grid"] [role="row"][aria-rowindex="4"]',
+        ),
+      );
+    const lines = () => container.querySelectorAll<HTMLElement>(".am-gantt-baseline");
+    expect(rows().map((row) => row.style.height)).toEqual(["52px", "52px"]);
+    expect(lines()[0]!.style.height).toBe("6px");
+    expect(lines()[0]!.style.top).toBe("37px");
+    expect(lines()[1]!.style.top).toBe("45px");
+    const listRows = container.querySelectorAll<HTMLElement>(
+      '[role="treegrid"] [role="row"][aria-level]',
+    );
+    expect(Array.from(listRows, (row) => row.style.height)).toEqual(["52px", "52px"]);
+
+    rerender(
+      <Gantt tasks={tasks} rowHeight={44} baselineLayout={{ height: 4, padding: 3, gap: 5 }} />,
+    );
+    expect(rows().map((row) => row.style.height)).toEqual(["63px", "63px"]);
+    expect(lines()[1]!.style.top).toBe("56px");
+    expect(lines()[0]!.style.top).toBe("47px");
+    rerender(<Gantt tasks={tasks} baselineLayout={{ padding: 0, gap: 0 }} />);
+    expect(rows().map((row) => row.style.height)).toEqual(["42px", "42px"]);
+    expect(lines()[0]!.style.top).toBe("36px");
+    expect(lines()[1]!.style.top).toBe("39px");
+    expect(lines()[0]!.style.height).toBe("3px");
+    rerender(<Gantt tasks={tasks} baselineLayout={{}} />);
+    expect(rows().map((row) => row.style.height)).toEqual(["46px", "46px"]);
+    rerender(<Gantt tasks={tasks} baselineLayout={{ height: 6 }} showBaselines={false} />);
+    expect(rows().map((row) => row.style.height)).toEqual(["36px", "36px"]);
+  });
+
+  it("uses the provider's line thickness for milestone size and centering", () => {
+    const milestone: GanttTask = { ...task, type: "milestone" };
+    const { container } = render(
+      <GanttProvider tasks={[milestone]} baselineLayout={{ height: 8 }}>
+        <GanttGrid />
+      </GanttProvider>,
+    );
+    const line = container.querySelector<HTMLElement>(".am-gantt-baseline")!;
+    expect(line.style.height).toBe("8px");
+    expect(line.style.width).toBe("8px");
+    const { container: defaultContainer } = render(<Gantt tasks={[milestone]} />);
+    const defaultLine = defaultContainer.querySelector<HTMLElement>(".am-gantt-baseline")!;
+    expect(defaultLine.style.height).toBe("3px");
+    expect(parseFloat(line.style.left) + 4).toBe(parseFloat(defaultLine.style.left) + 1.5);
+  });
+
   it("toggles plans, row strips, descriptions, and axis extent without losing edits", () => {
     const apiRef = createRef<GanttHandle>();
     const onTasksChange = vi.fn();

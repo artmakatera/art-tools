@@ -13,6 +13,7 @@ export function Gantt({
   tasks,
   dependencies,
   rowHeight,
+  baselineLayout,
   colWidth,
   height,
   scales,
@@ -65,6 +66,7 @@ export function Gantt({
       tasks={tasks}
       dependencies={dependencies}
       rowHeight={rowHeight}
+      baselineLayout={baselineLayout}
       colWidth={colWidth}
       height={height}
       scales={scales}

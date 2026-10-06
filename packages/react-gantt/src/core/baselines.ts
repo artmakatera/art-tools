@@ -1,10 +1,11 @@
-import type { GanttBaseline, GanttTask, Id } from "../types";
+import type { GanttBaseline, GanttEngineProps, GanttTask, Id } from "../types";
 
 export const MAX_VISIBLE_BASELINES = 5;
-export const BASELINE_LINE_HEIGHT = 3;
+export const BASELINE_LINE_HEIGHT = 4;
 export const BASELINE_LANE_GAP = 2;
-export const BASELINE_LANE_STRIDE = BASELINE_LINE_HEIGHT + BASELINE_LANE_GAP;
 export const BASELINE_STRIP_PADDING = 1;
+
+export type BaselineLayout = Required<NonNullable<GanttEngineProps["baselineLayout"]>>;
 
 type BaselineTask = Pick<GanttTask, "baselines" | "type"> & { id?: Id };
 
@@ -75,8 +76,9 @@ export function baselineLaneCount(tasks: readonly BaselineTask[]): number {
   return max;
 }
 
-export function baselineStripHeight(count: number): number {
-  return count > 0
-    ? count * BASELINE_LINE_HEIGHT + (count - 1) * BASELINE_LANE_GAP + BASELINE_STRIP_PADDING * 2
-    : 0;
+export function baselineStripHeight(
+  count: number,
+  { height, padding, gap }: BaselineLayout,
+): number {
+  return count > 0 ? count * height + (count - 1) * gap + padding * 2 : 0;
 }

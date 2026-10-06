@@ -7,6 +7,12 @@ import { computeLinkGeometry } from "../../components/dependency-links/geometry"
 const date = (day: number) => new Date(2026, 0, day);
 
 describe("baseline data", () => {
+  it("reserves no empty strip and counts padding once at each edge", () => {
+    const layout = { height: 4, padding: 3, gap: 5 };
+    expect(baselineStripHeight(0, layout)).toBe(0);
+    expect(baselineStripHeight(1, layout)).toBe(10);
+    expect(baselineStripHeight(5, layout)).toBe(46);
+  });
   it("excludes hidden plans from both ends of the axis and its origin", () => {
     const task: GanttTask = {
       id: "a",
@@ -36,7 +42,7 @@ describe("baseline data", () => {
 
     expect(visibleBaselinesOf(task)).toHaveLength(5);
     expect(baselineLaneCount([task])).toBe(5);
-    expect(baselineStripHeight(5)).toBe(25);
+    expect(baselineStripHeight(5, { height: 3, padding: 1, gap: 2 })).toBe(25);
     expect(timelineOrigin([task], undefined, 0, true)).toEqual(date(10));
     expect(buildTimelineDates([task], 0, undefined, true).at(-1)).toEqual(date(16));
   });

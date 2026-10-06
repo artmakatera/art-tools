@@ -14,7 +14,14 @@ import { useZoom } from "../hooks/useZoom";
 import { DEFAULT_ZOOM_INDEX, resolveZoomLevels } from "../core/zoom";
 import { useDependencyDrag } from "../hooks/useDependencyDrag";
 import { DEFAULT_PAD_DAYS, DEFAULT_ROW_HEIGHT } from "../core/constants";
-import { baselineLaneCount, baselineStripHeight } from "../core/baselines";
+import {
+  BASELINE_LINE_HEIGHT,
+  BASELINE_STRIP_PADDING,
+  BASELINE_LANE_GAP,
+  baselineLaneCount,
+  baselineStripHeight,
+  type BaselineLayout,
+} from "../core/baselines";
 import { useGanttHandle } from "./useGanttHandle";
 import { useColumnApi } from "./useColumnApi";
 import {
@@ -54,6 +61,7 @@ import {
 export function GanttProvider({
   tasks,
   rowHeight = DEFAULT_ROW_HEIGHT,
+  baselineLayout: baselineLayoutProp,
   colWidth,
   height,
   scales,
@@ -83,6 +91,13 @@ export function GanttProvider({
   criticalPath: highlightCriticalPath = false,
   children,
 }: GanttProviderProps) {
+  const baselineHeight = baselineLayoutProp?.height ?? BASELINE_LINE_HEIGHT;
+  const baselinePadding = baselineLayoutProp?.padding ?? BASELINE_STRIP_PADDING;
+  const baselineGap = baselineLayoutProp?.gap ?? BASELINE_LANE_GAP;
+  const baselineLayout = useMemo<BaselineLayout>(
+    () => ({ height: baselineHeight, padding: baselinePadding, gap: baselineGap }),
+    [baselineHeight, baselinePadding, baselineGap],
+  );
   const [selectedId, setSelectedId] = useState<Id | null>(null);
 
   const labelsValue = useMemo(() => resolveLabels(labels), [labels]);
@@ -133,7 +148,7 @@ export function GanttProvider({
     () => (showBaselines ? baselineLaneCount(visibleTasks) : 0),
     [visibleTasks, showBaselines],
   );
-  const effectiveRowHeight = rowHeight + baselineStripHeight(laneCount);
+  const effectiveRowHeight = rowHeight + baselineStripHeight(laneCount, baselineLayout);
   const { taskListRef, gridRef, onTaskListScroll, onGridScroll, viewport } = useScrollSync();
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
@@ -222,6 +237,7 @@ export function GanttProvider({
   const configValue = useMemo<GanttConfigValue>(
     () => ({
       showBaselines,
+      baselineLayout,
       rowHeight: effectiveRowHeight,
       barRowHeight: rowHeight,
       colWidth: zoom.level.colWidth,
@@ -229,7 +245,7 @@ export function GanttProvider({
       padDays,
       height,
     }),
-    [showBaselines, effectiveRowHeight, rowHeight, zoom.level, padDays, height],
+    [showBaselines, baselineLayout, effectiveRowHeight, rowHeight, zoom.level, padDays, height],
   );
 
   const zoomValue = useMemo<GanttZoomValue>(

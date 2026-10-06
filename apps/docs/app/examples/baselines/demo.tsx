@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { NumberField } from "@base-ui/react/number-field";
 import {
   Gantt,
   type BaselineTooltipProps,
@@ -92,32 +93,82 @@ const initialTasks: GanttTask[] = [
   },
 ];
 
+const layoutFields = [
+  { key: "height", label: "Height", min: 1 },
+  { key: "padding", label: "Padding", min: 0 },
+  { key: "gap", label: "Gap", min: 0 },
+] as const;
+
 export function BaselinesDemo() {
   const [tasks, setTasks] = useState(initialTasks);
   const [showBaselines, setShowBaselines] = useState(true);
+  const [baselineLayout, setBaselineLayout] = useState({ height: 4, padding: 1, gap: 2 });
+  const layoutId = useId();
 
   return (
     <>
-      <label
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "8px 12px",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={showBaselines}
-          onChange={(event) => setShowBaselines(event.target.checked)}
-        />
-        Show baselines
-      </label>
+      <div className="flex flex-wrap items-end gap-4 p-3">
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 12px",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showBaselines}
+            onChange={(event) => setShowBaselines(event.target.checked)}
+          />
+          Show baselines
+        </label>
+        <fieldset className="flex flex-wrap gap-3">
+          <legend className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+            Baseline layout (px)
+          </legend>
+          {layoutFields.map(({ key, label, min }) => (
+            <NumberField.Root
+              key={key}
+              id={`${layoutId}-${key}`}
+              value={baselineLayout[key]}
+              min={min}
+              step={1}
+              onValueChange={(value) => {
+                if (value === null) {
+                  return;
+                }
+                setBaselineLayout((previous) => ({ ...previous, [key]: value }));
+              }}
+            >
+              <label htmlFor={`${layoutId}-${key}`} className="mb-1 block text-sm">
+                {label}
+              </label>
+              <NumberField.Group className="flex h-8 overflow-hidden rounded-md border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-blue-500 dark:border-slate-600 dark:bg-slate-900">
+                <NumberField.Decrement
+                  aria-label={`Decrease baseline ${key}`}
+                  className="w-8 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800"
+                >
+                  −
+                </NumberField.Decrement>
+                <NumberField.Input className="w-10 border-x border-slate-300 text-center text-sm outline-none dark:border-slate-600" />
+                <NumberField.Increment
+                  aria-label={`Increase baseline ${key}`}
+                  className="w-8 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800"
+                >
+                  +
+                </NumberField.Increment>
+              </NumberField.Group>
+            </NumberField.Root>
+          ))}
+        </fieldset>
+      </div>
       <Gantt
         tasks={tasks}
         onTasksChange={setTasks}
         bars={bars}
         showBaselines={showBaselines}
+        baselineLayout={baselineLayout}
         height={340}
       />
     </>

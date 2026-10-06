@@ -214,7 +214,17 @@ export type ResolvedGanttLabels = Required<GanttLabels>;
  */
 export interface GanttEngineProps {
   tasks: GanttTask[];
+  /** Live-bar area height in px. Defaults to 36; baseline lanes add to it. */
   rowHeight?: number;
+  /** Baseline dimensions in px; omitted fields use the existing defaults. */
+  baselineLayout?: {
+    /** Line thickness, including milestone marker size. Defaults to 3. */
+    height?: number;
+    /** Padding at each vertical edge of the baseline strip. Defaults to 1. */
+    padding?: number;
+    /** Gap between baseline lanes. Defaults to 2. */
+    gap?: number;
+  };
   colWidth?: number;
   /** Total component height in px. When set, rows scroll vertically within it
    *  (calendar/header stay pinned); omit to grow with content. */
