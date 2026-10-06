@@ -586,6 +586,31 @@ The default look is driven by `--am-gantt-*` variables in
 }
 ```
 
+Font sizes and visual gaps use `rem`, relative to the document root font size.
+The defaults below preserve their pixel sizes at a 16px root. Override these
+variables on `:root` or a chart wrapper; the built-in tooltip is portalled to
+`document.body`, so its variables must be set on `:root`/`body` or the tooltip itself.
+
+| CSS custom property                      | Default     |
+| ---------------------------------------- | ----------- |
+| `--am-gantt-task-font-size`              | `0.875rem`  |
+| `--am-gantt-project-font-size`           | `0.875rem`  |
+| `--am-gantt-calendar-font-size`          | `0.8125rem` |
+| `--am-gantt-tasklist-font-size`          | `0.8125rem` |
+| `--am-gantt-tasklist-header-font-size`   | `0.75rem`   |
+| `--am-gantt-expand-font-size`            | `1rem`      |
+| `--am-gantt-tooltip-font-size`           | `0.75rem`   |
+| `--am-gantt-dependency-label-font-size`  | `0.6875rem` |
+| `--am-gantt-dependency-delete-font-size` | `1rem`      |
+| `--am-gantt-tasklist-name-gap`           | `0.25rem`   |
+| `--am-gantt-tasklist-actions-gap`        | `0.125rem`  |
+| `--am-gantt-tooltip-gap`                 | `0.75rem`   |
+
+Row heights, timeline widths, tree indentation, and baseline layout remain in
+pixels because the chart's positioning calculations use those dimensions.
+If you increase text size substantially, adjust `rowHeight` to provide enough
+room for task text and check that calendar labels still fit the header.
+
 ### Slots
 
 Every customizable component follows the MUI `{ slots, slotProps }` pattern with an

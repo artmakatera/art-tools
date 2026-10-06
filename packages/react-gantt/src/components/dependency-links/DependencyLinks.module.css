@@ -71,7 +71,7 @@
   background: var(--am-gantt-grid-bg, #ffffff);
   border: 1px solid var(--am-gantt-calendar-border, #e2e8f0);
   border-radius: 3px;
-  font-size: 11px;
+  font-size: var(--am-gantt-dependency-label-font-size, 0.6875rem);
   padding: 1px 4px;
   pointer-events: none;
   transform: translate(-50%, -100%);
@@ -88,7 +88,7 @@
   border: 1px solid var(--am-gantt-dependency-selected-color, #ef4444);
   background: var(--am-gantt-grid-bg, #ffffff);
   color: var(--am-gantt-dependency-selected-color, #ef4444);
-  font-size: 16px;
+  font-size: var(--am-gantt-dependency-delete-font-size, 1rem);
   line-height: 1;
   cursor: pointer;
   display: flex;
