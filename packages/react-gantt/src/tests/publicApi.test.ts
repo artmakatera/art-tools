@@ -16,6 +16,20 @@ import type { BaselineTooltipProps, GanttBaseline, GanttProps, GanttProviderProp
  */
 
 describe("public API", () => {
+  it("exposes timeline elements on both chart entry points", () => {
+    expectTypeOf<api.GanttTimelineElement["key"]>().toEqualTypeOf<import("react").Key>();
+    expectTypeOf<GanttProviderProps["timelineElements"]>().toEqualTypeOf<
+      GanttProps["timelineElements"]
+    >();
+    expectTypeOf<api.GanttTimelineElement["render"]>().toEqualTypeOf<
+      (context: api.TimelineElementRenderProps) => import("react").ReactNode
+    >();
+    expectTypeOf<api.MarkerProps["date"]>().toEqualTypeOf<api.TimelineElementRenderProps["date"]>();
+    expectTypeOf<api.TimelineElementRenderProps["date"]>().toEqualTypeOf<Date>();
+    expectTypeOf<api.MarkerProps["formatDate"]>().toEqualTypeOf<
+      ((date: Date) => string) | undefined
+    >();
+  });
   it("exports baseline data and tooltip types", () => {
     expectTypeOf<GanttBaseline["id"]>().toEqualTypeOf<string | number>();
     expectTypeOf<BaselineTooltipProps["baseline"]>().toEqualTypeOf<GanttBaseline>();
@@ -46,6 +60,7 @@ describe("public API", () => {
       "GanttGrid",
       "GanttProvider",
       "GanttSlotsProvider",
+      "Marker",
       "MilestoneBar",
       "ProjectBar",
       "READ_ONLY_COLUMNS",

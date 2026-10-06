@@ -1,3 +1,4 @@
+import type { MarkerProps } from "./components/timelineElements/Marker";
 import type React from "react";
 import type {
   GanttTaskListSlots,
@@ -7,6 +8,29 @@ import type {
 } from "./context/GanttSlotsContext";
 import type { ZoomLevel } from "./core/zoom";
 import type { RevealOptions } from "./hooks/useRevealTask";
+
+export interface GanttTimelineElement {
+  key: React.Key;
+  date: Date;
+  title?: string;
+  props?: Omit<
+    MarkerProps,
+    "date" | "title" | "visibleTop" | "x" | "bodyHeight" | "visibleHeight" | "props"
+  >;
+  /** Horizontal mounting allowance in px on either side of the viewport. Default: 256. */
+  overscanPx?: number;
+  render: (props: TimelineElementRenderProps) => React.ReactNode;
+}
+
+export interface TimelineElementRenderProps {
+  date: Date;
+  title?: string;
+  x: number;
+  bodyHeight: number;
+  visibleTop: number;
+  visibleHeight: number;
+  props?: GanttTimelineElement["props"];
+}
 
 type GanttTaskType = "task" | "milestone" | "summary";
 
@@ -216,6 +240,8 @@ export interface GanttEngineProps {
   tasks: GanttTask[];
   /** Live-bar area height in px. Defaults to 36; baseline lanes add to it. */
   rowHeight?: number;
+  /** Date-anchored overlays; do not expand the timeline. */
+  timelineElements?: readonly GanttTimelineElement[];
   /** Baseline dimensions in px; omitted fields use the existing defaults. */
   baselineLayout?: {
     /** Line thickness, including milestone marker size. Defaults to 4. */

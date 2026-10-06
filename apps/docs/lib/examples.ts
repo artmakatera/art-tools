@@ -21,6 +21,12 @@ export interface ExampleMeta {
 
 export const EXAMPLES: ExampleMeta[] = [
   {
+    slug: "timeline-elements",
+    title: "Timeline elements",
+    blurb: "Date markers and custom overlays with pinned labels and horizontal virtualization.",
+    group: "Customization",
+  },
+  {
     slug: "basic",
     title: "Basic chart",
     blurb: "The smallest thing that renders: a task array and a height.",

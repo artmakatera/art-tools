@@ -20,3 +20,7 @@ live in [`docs/adr/`](./adr/README.md).
 | **Float**                 | Working time between a task's actual start and the latest start it could take without moving the chart's actual current end date. Computed from the actual schedule, never a hypothetical one (ADR-023).     |
 | **Critical (path)**       | A task with zero float, or the specific dependency link whose constraint exactly pins a critical successor's actual start — not merely a link between two critical tasks (ADR-023).                          |
 | **Baseline**              | A consumer-owned planned span or milestone instant, displayed alongside the current schedule. Only the first five versions per task can appear (ADR-025).                                                    |
+
+**Timeline element:** a consumer-supplied visual anchored to a date in the existing
+axis, independent of tasks and scheduling. **Marker:** an opt-in vertical line
+and optional pinned title (ADR-026).

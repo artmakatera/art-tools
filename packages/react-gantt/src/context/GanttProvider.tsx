@@ -1,3 +1,4 @@
+import { TimelineElementsContext, EMPTY_TIMELINE_ELEMENTS } from "./TimelineElementsContext";
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { GanttProviderProps } from "../types";
 import type { GanttTask, Id } from "../types";
@@ -60,6 +61,7 @@ import {
  */
 export function GanttProvider({
   tasks,
+  timelineElements = EMPTY_TIMELINE_ELEMENTS,
   rowHeight = DEFAULT_ROW_HEIGHT,
   baselineLayout: baselineLayoutProp,
   colWidth,
@@ -326,7 +328,9 @@ export function GanttProvider({
                           <GanttDragActiveContext.Provider value={drag !== null}>
                             <GanttViewportContext.Provider value={viewport}>
                               <GanttDragContext.Provider value={drag}>
-                                {children}
+                                <TimelineElementsContext.Provider value={timelineElements}>
+                                  {children}
+                                </TimelineElementsContext.Provider>
                               </GanttDragContext.Provider>
                             </GanttViewportContext.Provider>
                           </GanttDragActiveContext.Provider>

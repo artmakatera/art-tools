@@ -33,6 +33,7 @@ in particular documents an _intentional_ asymmetry that reads like a bug.
 | [ADR-023](./023-critical-path-is-computed-from-the-actual-schedule.md)                       | Critical path is computed from the actual schedule, not an idealized one   | Accepted              |
 | [ADR-024](./024-bar-roots-own-stacking.md)                                                   | Bar roots own stacking                                                     | Accepted              |
 | [ADR-025](./025-baselines-are-consumer-owned-snapshots.md)                                   | Baselines are consumer-owned snapshots                                     | Accepted              |
+| [ADR-026](./026-timeline-elements-are-date-anchored-overlays.md)                             | Timeline elements are date-anchored overlays                               | Accepted              |
 
 ## Settled without a full ADR
 

@@ -11,6 +11,7 @@ import { DEFAULT_LABELS } from "./core/labels";
 
 export function Gantt({
   tasks,
+  timelineElements,
   dependencies,
   rowHeight,
   baselineLayout,
@@ -64,6 +65,7 @@ export function Gantt({
   return (
     <GanttProvider
       tasks={tasks}
+      timelineElements={timelineElements}
       dependencies={dependencies}
       rowHeight={rowHeight}
       baselineLayout={baselineLayout}

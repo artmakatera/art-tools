@@ -1,3 +1,4 @@
+import { TimelineElements } from "../timelineElements/TimelineElements";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentProps, ElementType } from "react";
 import { buildTimelineDates } from "../../core/timeline";
@@ -246,6 +247,15 @@ export function GanttGrid({ slots: slotsProp, slotProps: slotPropsProp }: GanttG
               visibleRect={visibleRect}
             />
             <DependencyPreview />
+            <TimelineElements
+              origin={origin}
+              unit={unit}
+              step={resolveColumnStep(scales)}
+              colWidth={colWidth}
+              totalWidth={totalWidth}
+              bodyHeight={bodyHeight}
+              headerHeight={headerRowCount * barRowHeight + 2}
+            />
 
             {visibleTasks.slice(rowRange.start, rowRange.end).map((task, i) => {
               const index = rowRange.start + i;
