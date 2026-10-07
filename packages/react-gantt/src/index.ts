@@ -202,3 +202,13 @@ export { displayEndDate, endInstantFromDisplayDate } from "./core/taskDates";
 
 /** Why a timeline column is shaded, surfaced on the grid/calendar ownerStates. */
 export type { NonWorkingReason } from "./core/workingTime";
+
+export { Marker } from "./components/timelineElements/Marker";
+export type {
+  MarkerProps,
+  MarkerOwnerState,
+  MarkerSlots,
+  MarkerSlotProps,
+  MarkerSlotConfig,
+} from "./components/timelineElements/Marker";
+export type { GanttTimelineElement, TimelineElementRenderProps } from "./types";

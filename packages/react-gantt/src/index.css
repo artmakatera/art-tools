@@ -1,4 +1,13 @@
 :root {
+  --am-gantt-timeline-elements-z-index: 25;
+  --am-gantt-marker-color: #f59e0b;
+  --am-gantt-marker-line-width: 1px;
+  --am-gantt-marker-label-bg: #f59e0b;
+  --am-gantt-marker-label-color: #0f172a;
+  --am-gantt-marker-font-size: 0.75rem;
+  --am-gantt-marker-label-padding: 0.25rem 0.5rem;
+  --am-gantt-marker-label-radius: 0.25rem;
+  --am-gantt-marker-label-max-width: 16rem;
   --am-gantt-focus-ring-color: #1d4ed8;
   --am-gantt-focus-ring-width: 2px;
   --am-gantt-focus-ring-offset: -2px;

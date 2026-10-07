@@ -1,0 +1,47 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--am-gantt-timeline-elements-z-index, 25);
+}
+.element {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 0;
+  pointer-events: none;
+}
+.marker {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--am-gantt-marker-line-width, 1px);
+  background: var(--am-gantt-marker-color, #f59e0b);
+  pointer-events: none;
+}
+.label {
+  position: absolute;
+  left: 0;
+  width: max-content;
+  max-width: var(--am-gantt-marker-label-max-width, 16rem);
+  padding: var(--am-gantt-marker-label-padding, 0.25rem 0.5rem);
+  border-radius: var(--am-gantt-marker-label-radius, 0.25rem);
+  background: var(--am-gantt-marker-label-bg, #f59e0b);
+  color: var(--am-gantt-marker-label-color, #0f172a);
+  font-size: var(--am-gantt-marker-font-size, 0.75rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: auto;
+}
+
+/* A moving label must never become the pointer target or block task editing (ADR-027). */
+.pointerElement,
+.pointerElement * {
+  pointer-events: none !important;
+}

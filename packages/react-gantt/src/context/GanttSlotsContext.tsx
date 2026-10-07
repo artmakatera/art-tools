@@ -1,3 +1,4 @@
+import type { MarkerSlotConfig } from "../components/timelineElements/Marker";
 import { createContext, useContext, type ReactNode } from "react";
 import type { TreeCellSlotConfig } from "../components/taskList/TreeCell";
 import type { TaskListHeaderSlotConfig } from "../components/taskList/TaskListHeader";
@@ -50,6 +51,7 @@ export interface GanttDependenciesSlots {
 
 /** Slots for the calendar/grid timeline chrome. Delivered via context. */
 export interface GanttTimelineSlots {
+  marker?: MarkerSlotConfig;
   calendarRow?: CalendarRowSlotConfig;
   gridColumn?: GridColumnsSlotConfig;
   grid?: GridSlotConfig;

@@ -8,6 +8,25 @@ import type {
 import type { ZoomLevel } from "./core/zoom";
 import type { RevealOptions } from "./hooks/useRevealTask";
 
+export interface GanttTimelineElement {
+  key: React.Key;
+  /** A fixed instant, or the date under the mouse while it is over the grid body. */
+  date: Date | "pointer";
+  title?: string;
+  /** Horizontal mounting allowance in px on either side of the viewport. Default: 256. */
+  overscanPx?: number;
+  render: (props: TimelineElementRenderProps) => React.ReactNode;
+}
+
+export interface TimelineElementRenderProps {
+  date: Date;
+  title?: string;
+  x: number;
+  bodyHeight: number;
+  visibleTop: number;
+  visibleHeight: number;
+}
+
 type GanttTaskType = "task" | "milestone" | "summary";
 
 export type CalendarUnit = "minute" | "hour" | "day" | "week" | "month" | "quarter" | "year";
@@ -216,6 +235,8 @@ export interface GanttEngineProps {
   tasks: GanttTask[];
   /** Live-bar area height in px. Defaults to 36; baseline lanes add to it. */
   rowHeight?: number;
+  /** Date-anchored overlays; do not expand the timeline. */
+  timelineElements?: readonly GanttTimelineElement[];
   /** Baseline dimensions in px; omitted fields use the existing defaults. */
   baselineLayout?: {
     /** Line thickness, including milestone marker size. Defaults to 4. */
