@@ -1,5 +1,18 @@
 # @art-tools/react-gantt
 
+## 0.5.0
+
+### Minor Changes
+
+- 45e4ac0: Add date-anchored `timelineElements` to Gantt and GanttProvider, with explicit Marker
+  composition, required render callbacks, direct component customization and horizontal virtualization.
+  Export Marker and timeline element/marker types. Support marker slots, CSS
+  variables, labels pinned below the calendar and native date tooltips. Overlay
+  dates do not expand the timeline or affect task scheduling.
+
+  Support `date: "pointer"` timeline elements that resolve the hovered axis date,
+  follow horizontal mouse movement and scrolling, and reuse explicit Marker composition.
+
 ## 0.4.0
 
 ### Minor Changes
