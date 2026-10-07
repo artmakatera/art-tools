@@ -5,7 +5,7 @@ Status: Accepted
 ## Decision
 
 `timelineElements` accepts keyed date-anchored overlays, with optional title,
-Marker props and horizontal overscan, and a required rendering callback. The
+horizontal overscan, and a required rendering callback. The
 layer never selects a default visual. Consumers explicitly return
 `<Marker {...props} />` or their own component, matching the opt-in
 composition used by bar tooltips. Render props omit the React key, which stays
@@ -39,3 +39,14 @@ would require additional layout passes, so extent allowance is explicit.
 A native tooltip on a line requires hit testing and would block task interaction
 under that line. Only the label accepts events by default. An unlabeled marker
 has no tooltip. All elements are body-only; the calendar remains readable.
+
+## Customization API revision
+
+Component-specific options are passed directly to the component inside
+`render`. The former nested `props` field is removed from timeline elements,
+render context and Marker. A required render callback already provides this
+customization point; typing a second path as Marker props couples generic
+overlays to one visual and adds redundant merging precedence. Consumers that
+shared a renderer and varied nested props now supply those options in their
+render callbacks. Chart-wide Marker defaults still merge with direct Marker
+props, with direct props taking precedence.

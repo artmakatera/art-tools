@@ -1,4 +1,3 @@
-import type { GanttTimelineElement } from "../../types";
 import type { ComponentProps, ElementType } from "react";
 import { mergeSlotProps, type SlotConfig, type SlotPropsInput } from "../../core/slots";
 import { useGanttSlots } from "../../context/GanttSlotsContext";
@@ -31,7 +30,6 @@ export interface MarkerProps extends Omit<ComponentProps<"div">, "title" | "chil
   x?: number;
   bodyHeight?: number;
   visibleHeight?: number;
-  props?: GanttTimelineElement["props"];
   title?: string;
   formatDate?: (date: Date) => string;
   slots?: MarkerSlots;
@@ -52,66 +50,39 @@ export function Marker({
   x: _x,
   bodyHeight: _bodyHeight,
   visibleHeight: _visibleHeight,
-  props: elementProps,
-  formatDate = elementProps?.formatDate ?? formatDateDefault,
+  formatDate = formatDateDefault,
   slots,
   slotProps,
   ...rootProps
 }: MarkerProps) {
-  const {
-    slots: elementSlots,
-    slotProps: elementSlotProps,
-    formatDate: _formatDate,
-    ...elementRootProps
-  } = elementProps ?? {};
   const config = useGanttSlots().timeline?.marker;
   const state: MarkerOwnerState = { date, title, visibleTop };
-  const Root = slots?.root ?? elementSlots?.root ?? config?.slots?.root ?? "div";
-  const Line = slots?.line ?? elementSlots?.line ?? config?.slots?.line ?? "div";
-  const Label = slots?.label ?? elementSlots?.label ?? config?.slots?.label ?? "span";
+  const Root = slots?.root ?? config?.slots?.root ?? "div";
+  const Line = slots?.line ?? config?.slots?.line ?? "div";
+  const Label = slots?.label ?? config?.slots?.label ?? "span";
   const root = mergeSlotProps(
-    mergeSlotProps(
-      mergeSlotProps(
-        mergeSlotProps<ComponentProps<"div">, MarkerOwnerState>(
-          { className: styles.marker },
-          config?.slotProps?.root,
-          state,
-        ),
-        elementSlotProps?.root,
-        state,
-      ),
-      elementRootProps,
+    mergeSlotProps<ComponentProps<"div">, MarkerOwnerState>(
+      { className: styles.marker },
+      config?.slotProps?.root,
       state,
     ),
     slotProps?.root,
     state,
   );
   const line = mergeSlotProps(
-    mergeSlotProps(
-      mergeSlotProps<ComponentProps<"div">, MarkerOwnerState>(
-        { className: styles.line, "aria-hidden": true },
-        config?.slotProps?.line,
-        state,
-      ),
-      elementSlotProps?.line,
-      state,
-    ),
+    mergeSlotProps({ className: styles.line, "aria-hidden": true }, config?.slotProps?.line, state),
     slotProps?.line,
     state,
   );
   const label = mergeSlotProps(
     mergeSlotProps(
-      mergeSlotProps<ComponentProps<"span">, MarkerOwnerState>(
-        {
-          className: styles.label,
-          style: { top: visibleTop },
-          title: formatDate(date),
-          children: title,
-        },
-        config?.slotProps?.label,
-        state,
-      ),
-      elementSlotProps?.label,
+      {
+        className: styles.label,
+        style: { top: visibleTop },
+        title: formatDate(date),
+        children: title,
+      },
+      config?.slotProps?.label,
       state,
     ),
     slotProps?.label,

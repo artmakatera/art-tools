@@ -50,27 +50,31 @@ const elements: GanttTimelineElement[] = [
   { render: renderMarker, key: "start", date: day(-3), title: "Project start" },
   {
     key: "today",
-    render: renderMarker,
     date: today,
     title: "Today",
-    props: {
-      slotProps: {
-        label: { style: { background: "#0ba5ff" } },
-        line: { style: { background: "#0ba5ff" } },
-      },
-    },
+    render: (props) => (
+      <Marker
+        {...props}
+        slotProps={{
+          label: { style: { background: "#2e7d32", color: "white" } },
+          line: { style: { background: "#2e7d32" } },
+        }}
+      />
+    ),
   },
   {
     key: "deadline",
-    render: renderMarker,
     date: day(7),
     title: "Deadline",
-    props: {
-      slotProps: {
-        label: { style: { background: "#ef4444", color: "white" } },
-        line: { style: { background: "#ef4444" } },
-      },
-    },
+    render: (props) => (
+      <Marker
+        {...props}
+        slotProps={{
+          label: { style: { background: "#ef4444", color: "white" } },
+          line: { style: { background: "#ef4444" } },
+        }}
+      />
+    ),
   },
   {
     key: "review",

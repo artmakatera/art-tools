@@ -17,6 +17,9 @@ import type { BaselineTooltipProps, GanttBaseline, GanttProps, GanttProviderProp
 
 describe("public API", () => {
   it("exposes timeline elements on both chart entry points", () => {
+    expectTypeOf<api.GanttTimelineElement>().not.toHaveProperty("props");
+    expectTypeOf<api.TimelineElementRenderProps>().not.toHaveProperty("props");
+    expectTypeOf<api.MarkerProps>().not.toHaveProperty("props");
     expectTypeOf<api.GanttTimelineElement["key"]>().toEqualTypeOf<import("react").Key>();
     expectTypeOf<GanttProviderProps["timelineElements"]>().toEqualTypeOf<
       GanttProps["timelineElements"]

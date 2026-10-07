@@ -66,7 +66,7 @@ describe("timeline overlays", () => {
       warning.mockRestore();
     }
   });
-  it("lets explicit Marker props override the supplied element props", () => {
+  it("accepts direct Marker customization and overrides the supplied title", () => {
     const { getByText } = render(
       <Chart
         elements={[
@@ -74,10 +74,6 @@ describe("timeline overlays", () => {
             key: "explicit",
             date: date(2),
             title: "Element title",
-            props: {
-              style: { color: "red", background: "red" },
-              slotProps: { label: { style: { background: "red" } } },
-            },
             render: (props) => (
               <Marker
                 {...props}
@@ -199,24 +195,23 @@ describe("timeline overlays", () => {
     );
     expect(getByText("Project start").style.top).toBe("90px");
   });
-  it("unmounts offscreen custom components and passes geometry and props", () => {
+  it("unmounts offscreen custom components and passes date and geometry", () => {
     const callback = vi.fn((_context: import("../../types").TimelineElementRenderProps) => (
       <button style={{ pointerEvents: "auto" }}>Custom</button>
     ));
-    const elements = [
-      { key: "custom", date: date(20), props: { className: "custom" }, render: callback },
-    ];
+    const elements = [{ key: "custom", date: date(20), render: callback }];
     const { queryByText, rerender } = render(<Chart elements={elements} />);
     expect(queryByText("Custom")).toBeNull();
     expect(callback).not.toHaveBeenCalled();
     rerender(<Chart elements={elements} scrollLeft={600} scrollTop={50} />);
     expect(queryByText("Custom")).not.toBeNull();
     expect(callback.mock.calls[0]?.[0]).not.toHaveProperty("key");
+    expect(callback.mock.calls[0]?.[0]).not.toHaveProperty("props");
     expect(callback.mock.calls[0]?.[0]).toMatchObject({
       x: 760,
       bodyHeight: 144,
       visibleTop: 50,
-      props: { className: "custom" },
+      date: date(20),
     });
     rerender(<Chart elements={elements} />);
     expect(queryByText("Custom")).toBeNull();
@@ -274,7 +269,7 @@ describe("timeline overlays", () => {
     );
     expect(queryByText("Empty")).toBeNull();
   });
-  it("merges global and per-element slots with individual props winning", () => {
+  it("merges global slots with direct Marker props winning", () => {
     const { getByText } = render(
       <Gantt
         padDays={0}
@@ -289,15 +284,17 @@ describe("timeline overlays", () => {
         }}
         timelineElements={[
           {
-            render: renderMarker,
             key: "m",
             date: date(2),
             title: "Project start",
-            props: {
-              className: "individual-root",
-              formatDate: () => "Custom date",
-              slotProps: { label: { style: { color: "blue" }, className: "individual-label" } },
-            },
+            render: (props) => (
+              <Marker
+                {...props}
+                className="individual-root"
+                formatDate={() => "Custom date"}
+                slotProps={{ label: { style: { color: "blue" }, className: "individual-label" } }}
+              />
+            ),
           },
         ]}
       />,

@@ -860,8 +860,7 @@ An empty chart has no timeline to attach them to.
       key: "start",
       date: projectStart,
       title: "Project start",
-      props: { className: "start-marker" },
-      render: (props) => <Marker {...props} />,
+      render: (props) => <Marker {...props} className="start-marker" />,
     },
     {
       key: "review",
@@ -881,11 +880,11 @@ Each entry requires a unique React `key`, valid `date`, and `render(props)`
 callback. The layer provides positioning and virtualization; it chooses no
 default visual. Return `<Marker {...props} />` to draw a line through the
 body with an optional `title` pinned below the calendar. Only its label accepts hover, showing the date and time in a
-native tooltip. `props.formatDate(date)` overrides that tooltip text. Without a
+native tooltip. The `Marker` prop `formatDate(date)` overrides that tooltip text. Without a
 title, only the line is drawn. No Today marker is added automatically.
 
 `render(props)` returns React content (or `null`) inside a date-positioned,
-full-body-height wrapper. Render props supply `date`, `title`, `props`, `x`,
+full-body-height wrapper. Render props supply `date`, `title`, `x`,
 `bodyHeight`, `visibleTop` and `visibleHeight`, with dimensions in pixels.
 Return a separate component if it uses hooks. Custom interactive descendants must
 set `pointerEvents: "auto"`; wrappers and marker lines allow task interactions
@@ -900,12 +899,12 @@ Invalid dates and repeated React keys are skipped with development warnings.
 
 Configure all composed markers with `timeline.marker.slots` (`root`, `line`,
 `label`) and `slotProps`, including owner-state functions receiving `date`,
-`title`, and `visibleTop`. Per-element `props.slots`/`props.slotProps` override the
-global configuration, while classes and styles merge. Direct root props in
-`props` take final precedence. `Marker` consumes the supplied date and viewport offset directly. Nested
-`props` are applied before explicit Marker props. Layout-only values are consumed
-without forwarding them to the DOM. React keys remain on the positioned wrapper. Compose any custom JSX in `render` instead when a marker is not
-needed.
+`title`, and `visibleTop`. Pass `slots` and `slotProps` directly to `Marker`
+inside `render` to override global configuration; classes and styles merge.
+Direct root props on `Marker` take final precedence. `Marker` consumes the supplied
+date and viewport offset directly. Layout-only values are consumed without
+forwarding them to the DOM. React keys remain on the positioned wrapper.
+Compose any custom JSX in `render` when a marker is not needed.
 
 CSS variables: `--am-gantt-marker-color`, `-line-width`, `-label-bg`,
 `-label-color`, `-font-size`, `-label-padding`, `-label-radius`,

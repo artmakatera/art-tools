@@ -1,4 +1,3 @@
-import type { MarkerProps } from "./components/timelineElements/Marker";
 import type React from "react";
 import type {
   GanttTaskListSlots,
@@ -13,10 +12,6 @@ export interface GanttTimelineElement {
   key: React.Key;
   date: Date;
   title?: string;
-  props?: Omit<
-    MarkerProps,
-    "date" | "title" | "visibleTop" | "x" | "bodyHeight" | "visibleHeight" | "props"
-  >;
   /** Horizontal mounting allowance in px on either side of the viewport. Default: 256. */
   overscanPx?: number;
   render: (props: TimelineElementRenderProps) => React.ReactNode;
@@ -29,7 +24,6 @@ export interface TimelineElementRenderProps {
   bodyHeight: number;
   visibleTop: number;
   visibleHeight: number;
-  props?: GanttTimelineElement["props"];
 }
 
 type GanttTaskType = "task" | "milestone" | "summary";

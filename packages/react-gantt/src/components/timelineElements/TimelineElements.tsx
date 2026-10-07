@@ -68,7 +68,6 @@ function TimelineElementsLayer({
           bodyHeight,
           visibleTop,
           visibleHeight,
-          props: element.props,
         };
         return (
           <div className={styles.element} key={element.key} style={{ left: x }}>
