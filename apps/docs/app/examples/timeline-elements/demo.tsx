@@ -46,6 +46,11 @@ function CustomBadge({ top }: { top: number }) {
 
 const renderMarker = (props: TimelineElementRenderProps) => <Marker {...props} />;
 
+const hoverDate = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
 const elements: GanttTimelineElement[] = [
   { render: renderMarker, key: "start", date: day(-3), title: "Project start" },
   {
@@ -81,6 +86,11 @@ const elements: GanttTimelineElement[] = [
     date: day(2),
     overscanPx: 400,
     render: ({ visibleTop }) => <CustomBadge top={visibleTop} />,
+  },
+  {
+    key: "hover-date",
+    date: "pointer",
+    render: (props) => <Marker {...props} title={hoverDate.format(props.date)} />,
   },
 ];
 

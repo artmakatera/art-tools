@@ -14,9 +14,10 @@ export default function Page() {
       fallbackHeight={340}
       notes={
         <>
-          Hover a marker label for its date. Scroll vertically to keep labels below the calendar, or
-          click the custom Review button. Markers stay fixed while tasks move. Offscreen custom
-          components unmount and reset their local state.
+          Move over the grid to see the date under your pointer. Hover a fixed marker label for its
+          date. Scroll vertically to keep labels below the calendar, or click the custom Review
+          button. Markers stay fixed while tasks move. Offscreen custom components unmount and reset
+          their local state.
         </>
       }
     >

@@ -39,3 +39,9 @@
   text-overflow: ellipsis;
   pointer-events: auto;
 }
+
+/* A moving label must never become the pointer target or block task editing (ADR-027). */
+.pointerElement,
+.pointerElement * {
+  pointer-events: none !important;
+}

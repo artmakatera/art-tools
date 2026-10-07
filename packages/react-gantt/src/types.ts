@@ -10,7 +10,8 @@ import type { RevealOptions } from "./hooks/useRevealTask";
 
 export interface GanttTimelineElement {
   key: React.Key;
-  date: Date;
+  /** A fixed instant, or the date under the mouse while it is over the grid body. */
+  date: Date | "pointer";
   title?: string;
   /** Horizontal mounting allowance in px on either side of the viewport. Default: 256. */
   overscanPx?: number;

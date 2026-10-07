@@ -20,6 +20,7 @@ describe("public API", () => {
     expectTypeOf<api.GanttTimelineElement>().not.toHaveProperty("props");
     expectTypeOf<api.TimelineElementRenderProps>().not.toHaveProperty("props");
     expectTypeOf<api.MarkerProps>().not.toHaveProperty("props");
+    expectTypeOf<api.GanttTimelineElement["date"]>().toEqualTypeOf<Date | "pointer">();
     expectTypeOf<api.GanttTimelineElement["key"]>().toEqualTypeOf<import("react").Key>();
     expectTypeOf<GanttProviderProps["timelineElements"]>().toEqualTypeOf<
       GanttProps["timelineElements"]

@@ -7,3 +7,6 @@ composition, required render callbacks, direct component customization and horiz
 Export Marker and timeline element/marker types. Support marker slots, CSS
 variables, labels pinned below the calendar and native date tooltips. Overlay
 dates do not expand the timeline or affect task scheduling.
+
+Support `date: "pointer"` timeline elements that resolve the hovered axis date,
+follow horizontal mouse movement and scrolling, and reuse explicit Marker composition.

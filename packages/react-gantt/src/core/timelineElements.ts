@@ -10,7 +10,8 @@ export function validTimelineElements(
     const key = String(element.key);
     if (
       keys.has(key) ||
-      !Number.isFinite(element.date.getTime()) ||
+      (element.date !== "pointer" &&
+        (!(element.date instanceof Date) || !Number.isFinite(element.date.getTime()))) ||
       typeof element.render !== "function"
     ) {
       if ((import.meta as ImportMeta & { env: { DEV: boolean } }).env.DEV) {

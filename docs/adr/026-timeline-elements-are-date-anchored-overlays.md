@@ -50,3 +50,7 @@ overlays to one visual and adds redundant merging precedence. Consumers that
 shared a renderer and varied nested props now supply those options in their
 render callbacks. Chart-wide Marker defaults still merge with direct Marker
 props, with direct props taking precedence.
+
+Pointer-anchored entries extend this API with `date: "pointer"`; see
+[ADR-027](./027-pointer-anchored-timeline-elements.md) for their tracking and
+pointer-event policy.

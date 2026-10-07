@@ -24,3 +24,6 @@ live in [`docs/adr/`](./adr/README.md).
 **Timeline element:** a consumer-supplied visual anchored to a date in the existing
 axis, independent of tasks and scheduling. **Marker:** an opt-in vertical line
 and optional pinned title (ADR-026).
+
+**Pointer-anchored timeline element:** an overlay with `date: "pointer"` whose
+resolved date follows the mouse over the visible grid body (ADR-027).

@@ -876,7 +876,7 @@ An empty chart has no timeline to attach them to.
 />
 ```
 
-Each entry requires a unique React `key`, valid `date`, and `render(props)`
+Each entry requires a unique React `key`, a valid `Date` or `date: "pointer"`, and `render(props)`
 callback. The layer provides positioning and virtualization; it chooses no
 default visual. Return `<Marker {...props} />` to draw a line through the
 body with an optional `title` pinned below the calendar. Only its label accepts hover, showing the date and time in a
@@ -905,6 +905,28 @@ Direct root props on `Marker` take final precedence. `Marker` consumes the suppl
 date and viewport offset directly. Layout-only values are consumed without
 forwarding them to the DOM. React keys remain on the positioned wrapper.
 Compose any custom JSX in `render` when a marker is not needed.
+
+To follow the mouse, include a pointer-anchored entry in the same array:
+
+```tsx
+{
+  key: "hover-date",
+  date: "pointer",
+  render: (props) => (
+    <Marker {...props} title={props.date.toLocaleString()} />
+  ),
+}
+```
+
+Pointer entries appear only while the mouse is over the visible grid body.
+The callback receives the exact axis `Date` at the pointer, including fractional
+columns and the current zoom step; there is no working-time snapping. Scrolling
+updates that date even when the mouse stays still. Leaving the body or window
+focus hides the entry. Its entire subtree ignores pointer events so the moving
+label cannot block task editing. Fixed-date entries retain interactive labels.
+The label uses the same pinned position below the calendar as a fixed Marker;
+its formatting and appearance remain the render callback's choice. Pointer
+entries are mouse-only, with no touch or keyboard cursor.
 
 CSS variables: `--am-gantt-marker-color`, `-line-width`, `-label-bg`,
 `-label-color`, `-font-size`, `-label-padding`, `-label-radius`,

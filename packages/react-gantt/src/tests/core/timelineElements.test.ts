@@ -21,6 +21,19 @@ describe("timeline element geometry", () => {
     expect(isTimelineElementVisible(50, 1000, 400, 100)).toBe(false);
     expect(isTimelineElementVisible(50, 1000, 400, 100, 400)).toBe(true);
   });
+  it("accepts pointer anchors and rejects unknown anchors", () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const pointer = { key: "pointer", date: "pointer" as const, render: () => null };
+    expect(
+      validTimelineElements([
+        pointer,
+        // @ts-expect-error Only the pointer sentinel is supported.
+        { key: "invalid", date: "mouse", render: () => null },
+      ]),
+    ).toEqual([pointer]);
+    expect(warning).toHaveBeenCalledOnce();
+    warning.mockRestore();
+  });
   it("skips invalid dates and duplicate React keys but allows shared dates", () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     const elements = [
