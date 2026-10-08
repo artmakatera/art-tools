@@ -25,13 +25,22 @@ export function SiteHeader() {
             </span>
           </span>
         </Link>
-        <nav aria-label="Main navigation" className="flex items-center gap-2 text-sm font-medium">
+        <nav
+          aria-label="Main navigation"
+          className="flex flex-wrap items-center gap-2 text-sm font-medium"
+        >
           <Link
             className="docs-control rounded-lg px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
             href="/#examples"
           >
             Examples
           </Link>
+          <a
+            className="docs-control rounded-lg px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            href="https://github.com/artmakatera/art-tools"
+          >
+            GitHub
+          </a>
           <Link
             className="docs-control rounded-lg bg-slate-900 px-4 py-3 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
             href="/#install"

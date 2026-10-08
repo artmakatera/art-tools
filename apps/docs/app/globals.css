@@ -102,7 +102,6 @@
   .docs-nav-link {
     display: block;
     min-height: 2.75rem;
-    border-left: 2px solid transparent;
     border-radius: 0.5rem;
     padding: 0.625rem 0.75rem;
     color: var(--color-slate-600);
@@ -112,7 +111,6 @@
     color: var(--color-slate-900);
   }
   .docs-nav-link[aria-current="page"] {
-    border-left-color: var(--color-slate-900);
     background: var(--color-slate-100);
     color: var(--color-slate-900);
     font-weight: 600;
@@ -124,9 +122,6 @@
   .dark .docs-nav-link[aria-current="page"] {
     background: var(--color-slate-800);
     color: var(--color-slate-100);
-  }
-  .dark .docs-nav-link[aria-current="page"] {
-    border-left-color: var(--color-slate-100);
   }
   .docs-skip {
     position: fixed;

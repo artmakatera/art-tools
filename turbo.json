@@ -47,6 +47,9 @@
     "test": {},
     "bench": {
       "cache": false
+    },
+    "@am/docs#test": {
+      "dependsOn": ["^build"]
     }
   }
 }
