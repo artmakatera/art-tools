@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ClientOnly } from "@/components/client-only";
+import { ChartPlaceholder } from "@/components/chart-placeholder";
 import { ExampleCatalog } from "@/components/example-catalog";
 import { BasicDemo } from "./examples/basic/demo";
 
@@ -19,7 +20,7 @@ export default function HomePage() {
         <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
           A composable Gantt chart for React.
         </h1>
-        <p className="max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+        <p className="max-w-2xl text-lg leading-relaxed text-pretty text-slate-600 dark:text-slate-400">
           Build scheduling interfaces with task hierarchies, dependencies, working-time calendars,
           and a chart you can customize.
         </p>
@@ -47,14 +48,7 @@ export default function HomePage() {
           Live chart
         </h2>
         <div className="isolate overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-          <ClientOnly
-            fallback={
-              <div
-                style={{ height: 420 }}
-                className="motion-safe:animate-pulse bg-slate-100 dark:bg-slate-800"
-              />
-            }
-          >
+          <ClientOnly fallback={<ChartPlaceholder height={420} />}>
             <BasicDemo />
           </ClientOnly>
         </div>
@@ -68,13 +62,26 @@ export default function HomePage() {
 
       <section id="install" className="flex min-w-0 scroll-mt-6 flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Install</h2>
-        <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm dark:border-slate-800 dark:bg-slate-900">
+        <pre
+          // Long commands must remain reachable by keyboard on narrow screens.
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+          tabIndex={0}
+          role="region"
+          aria-label="Package installation command"
+          className="docs-control overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm dark:border-slate-800 dark:bg-slate-900"
+        >
           <code>pnpm add @art-tools/react-gantt</code>
         </pre>
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Then import the stylesheet once, at your app&rsquo;s entry point:
         </p>
-        <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm dark:border-slate-800 dark:bg-slate-900">
+        <pre
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+          tabIndex={0}
+          role="region"
+          aria-label="Stylesheet import"
+          className="docs-control overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm dark:border-slate-800 dark:bg-slate-900"
+        >
           <code>import &quot;@art-tools/react-gantt/style.css&quot;;</code>
         </pre>
       </section>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ClientOnly } from "@/components/client-only";
+import { ChartPlaceholder } from "@/components/chart-placeholder";
 import { DemoShell } from "@/components/demo-shell";
 import type { ExampleMeta } from "@/lib/examples";
 import { highlight, type HighlightLang } from "@/lib/highlight";
@@ -46,16 +47,7 @@ export async function ExamplePage({
       notes={notes}
       sources={sources}
     >
-      <ClientOnly
-        fallback={
-          <div
-            style={{ height: fallbackHeight }}
-            className="motion-safe:animate-pulse bg-slate-100 dark:bg-slate-800"
-          />
-        }
-      >
-        {children}
-      </ClientOnly>
+      <ClientOnly fallback={<ChartPlaceholder height={fallbackHeight} />}>{children}</ClientOnly>
     </DemoShell>
   );
 }

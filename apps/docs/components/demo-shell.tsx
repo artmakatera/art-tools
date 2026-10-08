@@ -41,7 +41,7 @@ export function DemoShell({ slug, title, blurb, children, notes, sources }: Demo
           Examples / {ordered[index]?.group}
         </Link>
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h1>
-        <p className="text-slate-600 dark:text-slate-400">{blurb}</p>
+        <p className="max-w-2xl text-pretty text-slate-600 dark:text-slate-400">{blurb}</p>
       </header>
 
       {notes ? (
@@ -50,21 +50,23 @@ export function DemoShell({ slug, title, blurb, children, notes, sources }: Demo
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-sm font-semibold">Live example</h2>
-        <a
-          href="#source"
-          className="docs-control py-2 text-sm text-slate-600 underline underline-offset-4 dark:text-slate-400"
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Live example</h2>
+          <a
+            href="#source"
+            className="docs-control py-2 text-sm text-slate-600 underline underline-offset-4 dark:text-slate-400"
+          >
+            Jump to source
+          </a>
+        </div>
+        <section
+          aria-label="Live example"
+          className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
         >
-          Jump to source
-        </a>
+          {children}
+        </section>
       </div>
-      <section
-        aria-label="Live example"
-        className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-      >
-        {children}
-      </section>
 
       <section id="source" aria-label="Source" className="flex scroll-mt-6 flex-col gap-4">
         <h2 className="text-lg font-semibold">Source code</h2>
@@ -105,7 +107,7 @@ export function DemoShell({ slug, title, blurb, children, notes, sources }: Demo
             <span className="font-medium">{previous.title}</span>
           </Link>
         ) : (
-          <div />
+          <div aria-hidden="true" className="hidden sm:block" />
         )}
         {next ? (
           <Link

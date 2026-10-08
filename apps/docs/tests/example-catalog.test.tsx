@@ -66,6 +66,13 @@ describe("example catalog", () => {
     expect(destinations()).toEqual([]);
     expect(screen.getByRole("heading", { name: "No matching examples" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(`0 of ${EXAMPLES.length} examples`);
+    const reset = screen.getByRole("button", { name: "Clear search" });
+    expect(
+      screen.getByRole("heading", { name: "No matching examples" }).parentElement,
+    ).toContainElement(reset);
+    fireEvent.click(reset);
+    expect(screen.getByRole("searchbox")).toHaveValue("");
+    expect(destinations()).toHaveLength(EXAMPLES.length);
   });
 
   it("clears the query and restores every example", () => {

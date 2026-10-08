@@ -125,8 +125,8 @@
   }
   .docs-skip {
     position: fixed;
-    top: 0.5rem;
-    left: 0.5rem;
+    top: max(0.5rem, env(safe-area-inset-top));
+    left: max(0.5rem, env(safe-area-inset-left));
     z-index: 100;
     transform: translateY(-200%);
     border-radius: 0.5rem;

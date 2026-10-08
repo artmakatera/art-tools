@@ -11,6 +11,15 @@ export function ExampleCatalog() {
     const text = `${example.title} ${example.blurb} ${example.group}`.toLowerCase();
     return terms.every((term) => text.includes(term));
   });
+  const clearSearch = (
+    <button
+      type="button"
+      className="docs-control min-h-11 cursor-pointer rounded-lg px-4 py-3 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800"
+      onClick={() => setQuery("")}
+    >
+      Clear search
+    </button>
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -27,26 +36,19 @@ export function ExampleCatalog() {
             placeholder="Try dependencies, slots, or zoom"
             className="docs-control min-h-12 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-700 dark:bg-slate-900"
           />
-          {query ? (
-            <button
-              type="button"
-              className="docs-control cursor-pointer rounded-lg px-4 py-3 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={() => setQuery("")}
-            >
-              Clear search
-            </button>
-          ) : null}
+          {query && matches.length > 0 ? clearSearch : null}
         </div>
-        <p role="status" className="text-sm text-slate-500 dark:text-slate-400">
+        <p role="status" className="text-sm tabular-nums text-slate-500 dark:text-slate-400">
           {matches.length} of {EXAMPLES.length} examples
         </p>
       </div>
       {matches.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 p-8 dark:border-slate-700">
-          <h3 className="font-semibold">No matching examples</h3>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          <h3 className="font-semibold text-balance">No matching examples</h3>
+          <p className="mt-2 text-sm text-pretty text-slate-600 dark:text-slate-400">
             Try a feature name such as “zoom” or clear your search to see everything.
           </p>
+          <div className="mt-4">{clearSearch}</div>
         </div>
       ) : (
         EXAMPLE_GROUPS.map((group) => {
@@ -75,7 +77,7 @@ export function ExampleCatalog() {
                           →
                         </span>
                       </span>
-                      <span className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                      <span className="text-sm leading-relaxed text-pretty text-slate-600 dark:text-slate-400">
                         {example.blurb}
                       </span>
                     </Link>
