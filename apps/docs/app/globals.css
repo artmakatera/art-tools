@@ -66,3 +66,85 @@
     color: var(--shiki-dark);
   }
 }
+
+/* Docs-only classes keep focus, navigation and card styling out of the chart. */
+@layer site {
+  .docs-control {
+    transition:
+      color 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+  .docs-control:focus-visible {
+    outline: 2px solid var(--color-blue-600);
+    outline-offset: 4px;
+  }
+  .dark .docs-control:focus-visible {
+    outline-color: var(--color-blue-400);
+  }
+  .docs-card {
+    border: 1px solid var(--color-slate-200);
+    border-radius: 0.75rem;
+    background: var(--color-white);
+  }
+  .docs-card:hover {
+    border-color: var(--color-slate-400);
+    background: var(--color-slate-50);
+  }
+  .dark .docs-card {
+    border-color: var(--color-slate-800);
+    background: var(--color-slate-950);
+  }
+  .dark .docs-card:hover {
+    border-color: var(--color-slate-600);
+    background: var(--color-slate-900);
+  }
+  .docs-nav-link {
+    display: block;
+    min-height: 2.75rem;
+    border-left: 2px solid transparent;
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    color: var(--color-slate-600);
+  }
+  .docs-nav-link:hover {
+    background: var(--color-slate-50);
+    color: var(--color-slate-900);
+  }
+  .docs-nav-link[aria-current="page"] {
+    border-left-color: var(--color-slate-900);
+    background: var(--color-slate-100);
+    color: var(--color-slate-900);
+    font-weight: 600;
+  }
+  .dark .docs-nav-link {
+    color: var(--color-slate-300);
+  }
+  .dark .docs-nav-link:hover,
+  .dark .docs-nav-link[aria-current="page"] {
+    background: var(--color-slate-800);
+    color: var(--color-slate-100);
+  }
+  .dark .docs-nav-link[aria-current="page"] {
+    border-left-color: var(--color-slate-100);
+  }
+  .docs-skip {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 100;
+    transform: translateY(-200%);
+    border-radius: 0.5rem;
+    background: var(--color-slate-900);
+    color: var(--color-white);
+    padding: 0.75rem 1rem;
+  }
+  .docs-skip:focus {
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .docs-control {
+      transition: none;
+    }
+  }
+}

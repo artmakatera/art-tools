@@ -39,12 +39,18 @@ export async function ExamplePage({
   );
 
   return (
-    <DemoShell title={meta.title} blurb={meta.blurb} notes={notes} sources={sources}>
+    <DemoShell
+      slug={meta.slug}
+      title={meta.title}
+      blurb={meta.blurb}
+      notes={notes}
+      sources={sources}
+    >
       <ClientOnly
         fallback={
           <div
             style={{ height: fallbackHeight }}
-            className="animate-pulse bg-slate-100 dark:bg-slate-800"
+            className="motion-safe:animate-pulse bg-slate-100 dark:bg-slate-800"
           />
         }
       >

@@ -1,3 +1,4 @@
+import { SiteHeader } from "@/components/site-header";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -16,7 +17,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <SiteHeader />
+        {children}
+      </body>
     </html>
   );
 }
