@@ -15,6 +15,12 @@ export function Nav() {
       >
         All examples
       </Link>
+      <Link
+        href="/api"
+        className="docs-control px-3 py-2 font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+      >
+        API reference
+      </Link>
       {EXAMPLE_GROUPS.map((group) => (
         <div key={group} className="flex flex-col gap-2">
           <h2 className="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">

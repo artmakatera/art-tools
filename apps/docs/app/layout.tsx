@@ -8,10 +8,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "@art-tools/react-gantt examples",
+    default: "@art-tools/react-gantt docs",
     template: "%s · @art-tools/react-gantt",
   },
-  description: "A gallery of runnable examples for the @art-tools/react-gantt component library.",
+  description:
+    "API reference and runnable examples for the @art-tools/react-gantt component library.",
   icons: { icon: "/logo.svg" },
 };
 
