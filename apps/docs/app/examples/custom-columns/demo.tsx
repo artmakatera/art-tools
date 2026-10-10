@@ -44,13 +44,7 @@ const columns: ColumnDef[] = [
     key: "duration",
     header: "Days",
     width: 60,
-    render: (task) => {
-      if (!task.endDate) {
-        return "—";
-      }
-      const ms = task.endDate.getTime() - task.startDate.getTime();
-      return Math.round(ms / 86_400_000) + 1;
-    },
+    render: (task, api) => api.format.duration(task),
   },
   {
     key: "actions",

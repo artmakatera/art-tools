@@ -10,7 +10,9 @@
     "start": "next start --port 3000",
     "check-types": "next typegen && tsc --noEmit",
     "lint": "oxlint",
-    "lint:fix": "oxlint --fix"
+    "lint:fix": "oxlint --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@am/mock-data": "workspace:*",
@@ -28,10 +30,16 @@
     "@am/config-typescript": "workspace:*",
     "@am/oxlint-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   }
 }

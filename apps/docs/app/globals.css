@@ -31,15 +31,19 @@
 
 @layer site {
   html {
+    --docs-header-height: 4rem;
+    --docs-header-offset: calc(var(--docs-header-height) + env(safe-area-inset-top));
     font-family: var(--font-sans);
     line-height: 1.5;
     -webkit-text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--docs-header-offset) + 1rem);
   }
 
   body {
     background-color: var(--color-white);
     color: var(--color-slate-900);
     position: relative;
+    padding-top: var(--docs-header-offset);
   }
 
   .dark body {
@@ -64,5 +68,145 @@
   }
   .dark .shiki span {
     color: var(--shiki-dark);
+  }
+}
+
+/* Docs-only classes keep focus, navigation and card styling out of the chart. */
+@layer site {
+  /* Header, page padding, anchor scroll, and sidebar offsets share one height. */
+  .docs-header {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    height: var(--docs-header-offset);
+    padding-top: env(safe-area-inset-top);
+  }
+  .docs-sidebar {
+    position: sticky;
+    top: calc(var(--docs-header-offset) + 1.5rem);
+    max-height: calc(100dvh - var(--docs-header-offset) - 3rem);
+    overflow-y: auto;
+  }
+  .docs-site-link {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    color: var(--color-slate-600);
+  }
+  .docs-site-link:hover {
+    background: var(--color-slate-100);
+  }
+  .dark .docs-site-link {
+    color: var(--color-slate-300);
+  }
+  .dark .docs-site-link:hover {
+    background: var(--color-slate-800);
+  }
+  .docs-site-link[data-prominent] {
+    background: var(--color-slate-900);
+    color: var(--color-white);
+  }
+  .docs-site-link[data-prominent]:hover {
+    background: var(--color-slate-700);
+  }
+  .dark .docs-site-link[data-prominent] {
+    background: var(--color-slate-100);
+    color: var(--color-slate-900);
+  }
+  .dark .docs-site-link[data-prominent]:hover {
+    background: var(--color-white);
+  }
+  .docs-nav-backdrop {
+    transition: opacity 180ms ease;
+  }
+  .docs-nav-drawer {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    transition: transform 180ms ease;
+  }
+  .docs-nav-backdrop[data-starting-style],
+  .docs-nav-backdrop[data-ending-style] {
+    opacity: 0;
+  }
+  .docs-nav-drawer[data-starting-style],
+  .docs-nav-drawer[data-ending-style] {
+    transform: translateX(-100%);
+  }
+  .docs-control {
+    transition:
+      color 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+  .docs-control:focus-visible {
+    outline: 2px solid var(--color-blue-600);
+    outline-offset: 4px;
+  }
+  .dark .docs-control:focus-visible {
+    outline-color: var(--color-blue-400);
+  }
+  .docs-card {
+    border: 1px solid var(--color-slate-200);
+    border-radius: 0.75rem;
+    background: var(--color-white);
+  }
+  .docs-card:hover {
+    border-color: var(--color-slate-400);
+    background: var(--color-slate-50);
+  }
+  .dark .docs-card {
+    border-color: var(--color-slate-800);
+    background: var(--color-slate-950);
+  }
+  .dark .docs-card:hover {
+    border-color: var(--color-slate-600);
+    background: var(--color-slate-900);
+  }
+  .docs-nav-link {
+    display: block;
+    min-height: 2.75rem;
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    color: var(--color-slate-600);
+  }
+  .docs-nav-link:hover {
+    background: var(--color-slate-50);
+    color: var(--color-slate-900);
+  }
+  .docs-nav-link[aria-current="page"] {
+    background: var(--color-slate-100);
+    color: var(--color-slate-900);
+    font-weight: 600;
+  }
+  .dark .docs-nav-link {
+    color: var(--color-slate-300);
+  }
+  .dark .docs-nav-link:hover,
+  .dark .docs-nav-link[aria-current="page"] {
+    background: var(--color-slate-800);
+    color: var(--color-slate-100);
+  }
+  .docs-skip {
+    position: fixed;
+    top: max(0.5rem, env(safe-area-inset-top));
+    left: max(0.5rem, env(safe-area-inset-left));
+    z-index: 100;
+    transform: translateY(-200%);
+    border-radius: 0.5rem;
+    background: var(--color-slate-900);
+    color: var(--color-white);
+    padding: 0.75rem 1rem;
+  }
+  .docs-skip:focus {
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .docs-control,
+    .docs-nav-backdrop,
+    .docs-nav-drawer {
+      transition: none;
+    }
   }
 }

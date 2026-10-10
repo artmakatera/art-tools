@@ -35,6 +35,8 @@ in particular documents an _intentional_ asymmetry that reads like a bug.
 | [ADR-025](./025-baselines-are-consumer-owned-snapshots.md)                                   | Baselines are consumer-owned snapshots                                     | Accepted              |
 | [ADR-026](./026-timeline-elements-are-date-anchored-overlays.md)                             | Timeline elements are date-anchored overlays                               | Accepted              |
 | [ADR-027](./027-pointer-anchored-timeline-elements.md)                                       | Pointer-anchored timeline elements                                         | Accepted              |
+| [ADR-028](./028-docs-date-editor-validates-civil-dates.md)                                   | Docs task editor validates local civil dates                               | Accepted              |
+| [ADR-029](./029-fixed-docs-header-and-mobile-navigation.md)                                  | Fixed docs header and mobile navigation                                    | Accepted              |
 
 ## Settled without a full ADR
 

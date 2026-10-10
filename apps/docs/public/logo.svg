@@ -1,0 +1,42 @@
+<svg width="82" height="82" viewBox="0 0 82 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="82" height="82" rx="14" fill="black"/>
+<path d="M43 36C43 34.3431 44.3431 33 46 33H55.2642V39H46C44.3431 39 43 37.6569 43 36V36Z" fill="#EBEBEB"/>
+<path d="M65.9995 33.5C67.3802 33.5 68.4995 34.6193 68.4995 36C68.4995 37.3807 67.3802 38.5 65.9995 38.5H55.2358V33.5H65.9995Z" stroke="#EBEBEB"/>
+<path d="M42 47C42 45.3431 43.3431 44 45 44H54.9638V50H45C43.3431 50 42 48.6569 42 47V47Z" fill="#EBEBEB"/>
+<path d="M66.0001 44.5C67.3807 44.5 68.5001 45.6193 68.5001 47C68.5001 48.3807 67.3807 49.5 66.0001 49.5H54.5362V44.5H66.0001Z" stroke="#EBEBEB"/>
+<path d="M12 26C12 24.3431 13.3431 23 15 23H31.0943V29H15C13.3431 29 12 27.6569 12 26V26Z" fill="#EBEBEB"/>
+<path d="M33.0002 23.5C34.3808 23.5001 35.5002 24.6193 35.5002 26C35.5002 27.3807 34.3808 28.4999 33.0002 28.5H23.217V23.5H33.0002Z" stroke="#EBEBEB"/>
+<path d="M13 57C13 55.3431 14.3431 54 16 54H24.8868V60H16C14.3431 60 13 58.6569 13 57V57Z" fill="#EBEBEB"/>
+<path d="M53.0001 54.5C54.3807 54.5 55.5001 55.6193 55.5001 57C55.5001 58.3807 54.3807 59.5 53.0001 59.5H24.3868V54.5H53.0001Z" stroke="#EBEBEB"/>
+<path d="M12 16C12 14.3431 13.3431 13 15 13H27.566V19H15C13.3431 19 12 17.6569 12 16V16Z" fill="#EBEBEB"/>
+<path d="M64.9996 13.5C66.3803 13.5 67.4996 14.6193 67.4996 16C67.4996 17.3807 66.3803 18.5 64.9996 18.5H27.066V13.5H64.9996Z" stroke="#EBEBEB"/>
+<line x1="40.5" y1="35.5" x2="43.5" y2="35.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="55.5" y1="56.5" x2="63.5" y2="56.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="9.5" y1="25.5" x2="12.5" y2="25.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="10.5" y1="56.5" x2="13.5" y2="56.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="39.5" y1="46.5" x2="42.5" y2="46.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="35.5" y1="25.5" x2="38.5" y2="25.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="68.5" y1="35.5" x2="71.5" y2="35.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="68.5" y1="46.5" x2="71.5" y2="46.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="67.5" y1="15.5" x2="70.5" y2="15.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<path d="M39.5 35.5V25.5" stroke="#EBEBEB" stroke-linecap="square"/>
+<line x1="39.5" y1="35" x2="39.5" y2="47" stroke="#EBEBEB"/>
+<line x1="63.5" y1="56" x2="63.5" y2="63" stroke="#EBEBEB"/>
+<line x1="9.5" y1="25" x2="9.5" y2="57" stroke="#EBEBEB"/>
+<line x1="71.5" y1="15" x2="71.5" y2="47" stroke="#EBEBEB"/>
+<g filter="url(#filter0_d_1186_712)">
+<rect x="59" y="67" width="6.36396" height="6.36396" transform="rotate(-45 59 67)" fill="#EBEBEB"/>
+</g>
+<defs>
+<filter id="filter0_d_1186_712" x="55" y="58.5" width="17" height="17" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset/>
+<feGaussianBlur stdDeviation="2"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1186_712"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1186_712" result="shape"/>
+</filter>
+</defs>
+</svg>

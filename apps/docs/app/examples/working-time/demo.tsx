@@ -17,8 +17,8 @@ import { Gantt, type GanttCalendar, type GanttTask } from "@art-tools/react-gant
  */
 const BASE_TASKS: GanttTask[] = [
   { id: 1, name: "Kickoff", startDate: new Date(2026, 0, 5), endDate: new Date(2026, 0, 6) },
-  { id: 2, name: "Build (3 working days)", startDate: new Date(2026, 0, 6), duration: 3 },
-  { id: 3, name: "Review (2 working days)", startDate: new Date(2026, 0, 8), duration: 2 },
+  { id: 2, name: "Build", startDate: new Date(2026, 0, 6), duration: 3 },
+  { id: 3, name: "Review", startDate: new Date(2026, 0, 8), duration: 2 },
 ];
 
 const WEEKENDS_OFF: GanttCalendar = { days: { 0: false, 6: false } };
@@ -45,6 +45,7 @@ export function WorkingTimeDemo() {
   const [tasks, setTasks] = useState<GanttTask[]>(BASE_TASKS);
 
   const active = useMemo(() => PRESETS.find((p) => p.key === preset)!, [preset]);
+  const durationUnit = preset === "hours" ? "hour" : "day";
 
   return (
     <div>
@@ -69,14 +70,15 @@ export function WorkingTimeDemo() {
         ))}
       </div>
       <p style={{ margin: 0, padding: "0 12px 8px", fontSize: 12, color: "#475569" }}>
-        Non-working columns are shaded. Drag a bar across a weekend: it keeps its working duration
-        and grows visually. Drag an edge onto a Sunday and it settles back onto the last working
-        day.
+        Build and Review start with durations of 3 and 2 {active.calendar ? "working " : ""}
+        {durationUnit === "hour" ? "hours" : "days"}, respectively. Non-working columns are shaded.
+        Drag a bar across a weekend: it keeps its working duration and grows visually. Drag an edge
+        onto a Sunday and it settles back onto the last working day.
       </p>
       <Gantt
         tasks={tasks}
         calendar={active.calendar}
-        durationUnit={preset === "hours" ? "hour" : "day"}
+        durationUnit={durationUnit}
         onTasksChange={setTasks}
         height={260}
       />

@@ -1,19 +1,42 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Gantt, type GanttHandle, type GanttTask, type TaskPatch } from "@art-tools/react-gantt";
+import { useCallback, useId, useRef, useState } from "react";
+import {
+  Gantt,
+  displayEndDate,
+  endInstantFromDisplayDate,
+  type GanttHandle,
+  type GanttTask,
+  type TaskPatch,
+} from "@art-tools/react-gantt";
 import { simpleTasks } from "@/lib/demo-tasks";
 
 /** `<input type="date">` wants YYYY-MM-DD in *local* time, not an ISO UTC string. */
 function toInputValue(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${m}-${d}`;
+  return `${String(date.getFullYear()).padStart(4, "0")}-${m}-${d}`;
 }
 
-function fromInputValue(value: string): Date {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y!, m! - 1, d!);
+type DateErrors = { start?: string; end?: string };
+
+function fromInputValue(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+  const [year, month, day] = value.split("-").map(Number) as [number, number, number];
+  const date = new Date(0);
+  date.setFullYear(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  if (
+    year < 100 ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
 }
 
 /**
@@ -34,17 +57,34 @@ export function TaskEditingDemo() {
       if (!editing) {
         return;
       }
+      const start = fromInputValue(form.start);
+      const end = fromInputValue(form.end);
+      if (!start || !end) {
+        return {
+          start: start ? undefined : "Enter a valid start date (year 0100–9999).",
+          end: end ? undefined : "Enter a valid end date (year 0100–9999).",
+        };
+      }
+      if (end < start) {
+        return { end: "End must be on or after Start." };
+      }
       const patch: TaskPatch = {};
       if (form.name !== editing.name) {
         patch.name = form.name;
       }
-      const start = fromInputValue(form.start);
-      if (start.getTime() !== editing.startDate.getTime()) {
+      if (form.start !== toInputValue(editing.startDate)) {
         patch.startDate = start;
       }
-      const end = fromInputValue(form.end);
-      if (end.getTime() !== editing.endDate?.getTime()) {
-        patch.endDate = end;
+      // ADR-028: change civil-day boundaries only for edited fields; preserve untouched instants.
+      if (
+        form.end !==
+        toInputValue(displayEndDate(editing.startDate, editing.endDate ?? editing.startDate))
+      ) {
+        patch.endDate = endInstantFromDisplayDate(end);
+      }
+      const candidateEnd = patch.endDate ?? editing.endDate;
+      if (candidateEnd && candidateEnd < (patch.startDate ?? editing.startDate)) {
+        return { end: "End must not precede the stored start time." };
       }
       if (form.progress !== (editing.progress ?? 0)) {
         patch.progress = form.progress;
@@ -81,19 +121,30 @@ function EditForm({
   onCancel,
 }: {
   task: GanttTask;
-  onSave: (form: { name: string; start: string; end: string; progress: number }) => void;
+  onSave: (form: {
+    name: string;
+    start: string;
+    end: string;
+    progress: number;
+  }) => DateErrors | undefined;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(task.name);
   const [start, setStart] = useState(toInputValue(task.startDate));
-  const [end, setEnd] = useState(toInputValue(task.endDate ?? task.startDate));
+  const [end, setEnd] = useState(
+    toInputValue(displayEndDate(task.startDate, task.endDate ?? task.startDate)),
+  );
   const [progress, setProgress] = useState(task.progress ?? 0);
+
+  const [errors, setErrors] = useState<DateErrors>({});
+  const errorId = useId();
 
   return (
     <form
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        onSave({ name, start, end, progress });
+        setErrors(onSave({ name, start, end, progress }) ?? {});
       }}
       style={{
         display: "flex",
@@ -109,12 +160,34 @@ function EditForm({
         <input value={name} onChange={(e) => setName(e.target.value)} />
       </label>
       <label style={{ display: "flex", flexDirection: "column", fontSize: 12, gap: 2 }}>
-        Start
-        <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+        <span id={`${errorId}-start-label`}> Start </span>
+        <input
+          aria-labelledby={`${errorId}-start-label`}
+          type="date"
+          value={start}
+          aria-invalid={Boolean(errors.start)}
+          aria-describedby={errors.start ? `${errorId}-start` : undefined}
+          onChange={(e) => {
+            setStart(e.target.value);
+            setErrors({});
+          }}
+        />
+        {errors.start ? <span id={`${errorId}-start`}>{errors.start}</span> : null}
       </label>
       <label style={{ display: "flex", flexDirection: "column", fontSize: 12, gap: 2 }}>
-        End
-        <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+        <span id={`${errorId}-end-label`}> End </span>
+        <input
+          aria-labelledby={`${errorId}-end-label`}
+          type="date"
+          value={end}
+          aria-invalid={Boolean(errors.end)}
+          aria-describedby={errors.end ? `${errorId}-end` : undefined}
+          onChange={(e) => {
+            setEnd(e.target.value);
+            setErrors({});
+          }}
+        />
+        {errors.end ? <span id={`${errorId}-end`}>{errors.end}</span> : null}
       </label>
       <label style={{ display: "flex", flexDirection: "column", fontSize: 12, gap: 2 }}>
         Progress {progress}%
