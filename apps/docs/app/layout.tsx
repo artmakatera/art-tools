@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     template: "%s · @art-tools/react-gantt",
   },
   description: "A gallery of runnable examples for the @art-tools/react-gantt component library.",
+  icons: { icon: "/logo.svg" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

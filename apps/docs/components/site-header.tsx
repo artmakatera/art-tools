@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { MobileNav } from "./mobile-nav";
 
@@ -12,12 +13,7 @@ export function SiteHeader() {
           href="/"
           className="docs-control flex items-center gap-3 font-semibold tracking-tight"
         >
-          <span
-            className="flex size-10 items-center justify-center rounded-xl bg-slate-900 text-sm text-white dark:bg-slate-100 dark:text-slate-900"
-            aria-hidden="true"
-          >
-            G
-          </span>
+          <Image src="/logo.svg" alt="" width={40} height={40} aria-hidden="true" />
           <span>
             React Gantt
             <span className="block text-xs font-normal tracking-normal text-slate-500 dark:text-slate-400">
